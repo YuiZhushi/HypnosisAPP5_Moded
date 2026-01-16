@@ -1,0 +1,23 @@
+{
+  "name": "hypnoos",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node -e \"console.error('此目录不再使用 Vite 构建：请在仓库根目录运行 pnpm watch/build（产物位于 dist/催眠APP前端/index.html）'); process.exit(1)\"",
+    "build": "node -e \"console.error('此目录不再使用 Vite 构建：请在仓库根目录运行 pnpm watch/build（产物位于 dist/催眠APP前端/index.html）'); process.exit(1)\"",
+    "preview": "node -e \"console.error('此目录不再使用 Vite 构建：请在仓库根目录运行 pnpm watch/build（产物位于 dist/催眠APP前端/index.html）'); process.exit(1)\""
+  },
+  "dependencies": {
+    "zod": "^4.2.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "lucide-react": "^0.562.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  }
+}

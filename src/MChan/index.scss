@@ -1,0 +1,34 @@
+:root {
+  --mchan-bg0: #12061f;
+  --mchan-bg1: #1a0a2c;
+  --mchan-surface0: rgba(36, 14, 54, 0.78);
+  --mchan-surface1: rgba(58, 22, 86, 0.62);
+  --mchan-border: rgba(230, 215, 255, 0.10);
+  --mchan-border2: rgba(230, 215, 255, 0.16);
+  --mchan-text: rgba(244, 238, 255, 0.92);
+  --mchan-text-dim: rgba(244, 238, 255, 0.72);
+  --mchan-text-faint: rgba(244, 238, 255, 0.55);
+  --mchan-accent: #b66cff;
+  --mchan-accent2: #ff5bc8;
+
+  --mchan-font-ui: ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
+  --mchan-font-display: ui-serif, Georgia, 'Times New Roman', serif;
+  --mchan-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--mchan-font-ui);
+  color: var(--mchan-text);
+}
+
+#app {
+  max-width: 980px;
+  margin: 14px auto;
+  padding: 0 10px;
+}
