@@ -9,3 +9,4 @@
 @.agents/rules/mvu变量框架.md
 @.agents/rules/mvu角色卡.md
 @.agents/rules/frontend-design.md
+@.agents/rules/MVU交互參考.md
