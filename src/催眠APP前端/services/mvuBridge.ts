@@ -264,4 +264,30 @@ export const MvuBridge = {
       }
     });
   },
+
+  getCalendarOps: async (): Promise<unknown[] | null> => {
+    const data = await getMvuData();
+    if (!data) return null;
+    const ops = _.get(data.mvu, 'stat_data.本轮日曆操作') ?? _.get(data.mvu, 'stat_data.本轮日历操作');
+    if (!Array.isArray(ops) || ops.length === 0) return null;
+    return ops;
+  },
+
+  clearCalendarOps: async () => {
+    return enqueueMvuWrite(async () => {
+      const data = await getMvuData();
+      if (!data) return;
+      const { mvu, option } = data;
+      let changed = false;
+      if (_.has(mvu.stat_data, '本轮日曆操作')) {
+        if (await setIfChanged(mvu, '本轮日曆操作', [])) changed = true;
+      }
+      if (_.has(mvu.stat_data, '本轮日历操作')) {
+        if (await setIfChanged(mvu, '本轮日历操作', [])) changed = true;
+      }
+      if (changed) {
+        await Mvu.replaceMvuData(mvu, option);
+      }
+    });
+  },
 };

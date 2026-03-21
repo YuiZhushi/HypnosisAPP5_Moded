@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -12,10 +12,14 @@ import {
   ChevronUp,
   Construction,
   Lock,
+  Pencil,
+  Plus,
   Search,
+  Trash2,
   User,
+  X,
 } from 'lucide-react';
-import { DataService } from '../services/dataService';
+import { DataService, type CustomCalendarEvent } from '../services/dataService';
 import { MvuBridge, waitForMvuReady } from '../services/mvuBridge';
 import { WorldBookService, type WbCheckResult } from '../services/worldBookService';
 
@@ -745,10 +749,91 @@ const CalendarDarkApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [selectedDay, setSelectedDay] = useState<number>(1);
   const didInitRef = useRef(false);
 
+  // Custom events
+  const [customEvents, setCustomEvents] = useState<CustomCalendarEvent[]>([]);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addTitle, setAddTitle] = useState('');
+  const [addDesc, setAddDesc] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const refreshCustomEvents = useCallback(() => {
+    setCustomEvents(DataService.getCalendarEvents());
+  }, []);
+
+  const lastProcessedMsgRef = useRef<number>(-1);
+
+  const processAiOps = useCallback(async () => {
+    try {
+      // 防重：只在新樓層時處理，回退時跳過
+      const currentMsgId = typeof getCurrentMessageId === 'function' ? getCurrentMessageId() : -1;
+      if (currentMsgId >= 0 && currentMsgId <= lastProcessedMsgRef.current) return;
+
+      const ops = await MvuBridge.getCalendarOps();
+      if (!ops || ops.length === 0) {
+        if (currentMsgId >= 0) lastProcessedMsgRef.current = currentMsgId;
+        return;
+      }
+
+      // 排序：刪除(0) → 修改(1) → 新增(2)
+      const ORDER: Record<string, number> = { '删除': 0, '刪除': 0, '修改': 1, '新增': 2 };
+      const sorted = [...ops].sort((a: any, b: any) =>
+        (ORDER[a['操作']] ?? 9) - (ORDER[b['操作']] ?? 9),
+      );
+
+      let changed = false;
+      for (const raw of sorted) {
+        const op = raw as Record<string, any>;
+        const action = op['操作'] ?? op['操作'];
+        const month = Number(op['月']);
+        const day = Number(op['日']);
+        const title = String(op['标题'] ?? op['標題'] ?? '');
+        const desc = op['描述'] !== undefined ? String(op['描述']) : undefined;
+        const target = String(op['目标事件'] ?? op['目標事件'] ?? '');
+
+        if (!Number.isFinite(month) || !Number.isFinite(day)) {
+          console.warn('[HypnoOS] AI日历操作: 无效的月/日', op);
+          continue;
+        }
+
+        if (action === '新增') {
+          if (!title) { console.warn('[HypnoOS] AI日历操作: 缺少标题', op); continue; }
+          await DataService.addCalendarEvent({ month, day, title, description: desc });
+          changed = true;
+        } else if (action === '修改') {
+          const found = DataService.findCalendarEventByTitleAndDate(target, month, day);
+          if (!found) { console.warn('[HypnoOS] AI日历操作: 未找到目标事件', op); continue; }
+          await DataService.updateCalendarEvent(found.id, {
+            ...(title ? { title } : {}),
+            ...(desc !== undefined ? { description: desc } : {}),
+          });
+          changed = true;
+        } else if (action === '删除' || action === '刪除') {
+          const found = DataService.findCalendarEventByTitleAndDate(target, month, day);
+          if (!found) { console.warn('[HypnoOS] AI日历操作: 未找到目标事件', op); continue; }
+          await DataService.deleteCalendarEvent(found.id);
+          changed = true;
+        } else {
+          console.warn('[HypnoOS] AI日历操作: 未知操作', op);
+        }
+      }
+
+      await MvuBridge.clearCalendarOps();
+      if (currentMsgId >= 0) lastProcessedMsgRef.current = currentMsgId;
+      if (changed) refreshCustomEvents();
+    } catch (err) {
+      console.warn('[HypnoOS] AI日历操作处理失败', err);
+    }
+  }, [refreshCustomEvents]);
+
   const loadSystem = async () => {
     const sys = await MvuBridge.getSystem();
     setSystem(sys);
     setCurrentDate(parseSystemDate(sys?.当前日期));
+    refreshCustomEvents();
+    await processAiOps();
   };
 
   useEffect(() => {
@@ -835,6 +920,42 @@ const CalendarDarkApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     return eventsForDay(displayedMonth, selectedDay);
   }, [displayedMonth, selectedDay]);
 
+  const selectedCustomEvents = useMemo(() => {
+    return customEvents.filter(e => e.month === displayedMonth && e.day === selectedDay);
+  }, [customEvents, displayedMonth, selectedDay]);
+
+  const handleAddEvent = async () => {
+    const trimmed = addTitle.trim();
+    if (!trimmed) return;
+    await DataService.addCalendarEvent({
+      month: displayedMonth,
+      day: selectedDay,
+      title: trimmed,
+      description: addDesc.trim() || undefined,
+    });
+    refreshCustomEvents();
+    setAddTitle('');
+    setAddDesc('');
+    setShowAddForm(false);
+  };
+
+  const handleUpdateEvent = async (id: string) => {
+    const trimmed = editTitle.trim();
+    if (!trimmed) return;
+    await DataService.updateCalendarEvent(id, {
+      title: trimmed,
+      description: editDesc.trim() || undefined,
+    });
+    refreshCustomEvents();
+    setEditingId(null);
+  };
+
+  const handleDeleteEvent = async (id: string) => {
+    await DataService.deleteCalendarEvent(id);
+    refreshCustomEvents();
+    setDeleteConfirmId(null);
+  };
+
   return (
     <div className="h-full flex flex-col bg-gradient-to-b from-slate-950 via-slate-950 to-black text-white overflow-hidden animate-fade-in">
       <div className="px-4 pt-6 pb-4 border-b border-white/10 bg-black/20 backdrop-blur-md">
@@ -903,9 +1024,16 @@ const CalendarDarkApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             const isToday = displayedYearOffset === 0 && todayMonth === displayedMonth && todayDay === day;
             const isSelected = selectedDay === day;
             const events = eventsForDay(displayedMonth, day);
+            const dayCustom = customEvents.filter(e => e.month === displayedMonth && e.day === day);
             const hasHoliday = events.some(e => e.kind === 'holiday');
             const hasFestival = events.some(e => e.kind === 'festival');
-            const primary = events[0] ? formatEventTitleForCell(events[0]) : null;
+            const hasCustom = dayCustom.length > 0;
+            const totalCount = events.length + dayCustom.length;
+            const primary = events[0]
+              ? formatEventTitleForCell(events[0])
+              : dayCustom[0]
+                ? (dayCustom[0].title.length > 6 ? dayCustom[0].title.slice(0, 6) + '…' : dayCustom[0].title)
+                : null;
 
             return (
               <button
@@ -945,18 +1073,18 @@ const CalendarDarkApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     <div
                       className={[
                         'text-[9px] leading-tight truncate',
-                        hasHoliday ? 'text-red-200/90' : hasFestival ? 'text-fuchsia-200/90' : 'text-white/55',
+                        hasHoliday ? 'text-red-200/90' : hasFestival ? 'text-fuchsia-200/90' : hasCustom && !events[0] ? 'text-cyan-200/80' : 'text-white/55',
                       ].join(' ')}
                     >
                       {primary}
-                      {events.length > 1 ? ` +${events.length - 1}` : ''}
+                      {totalCount > 1 ? ` +${totalCount - 1}` : ''}
                     </div>
                   )}
-                  {events.length > 0 && (
+                  {totalCount > 0 && (
                     <div className="mt-1 flex items-center gap-1">
                       {events.slice(0, 3).map((e, i) => (
                         <span
-                          key={i}
+                          key={`p-${i}`}
                           className={[
                             'w-1.5 h-1.5 rounded-full',
                             e.kind === 'holiday'
@@ -966,6 +1094,9 @@ const CalendarDarkApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                 : 'bg-white/25',
                           ].join(' ')}
                         />
+                      ))}
+                      {dayCustom.slice(0, Math.max(0, 3 - events.length)).map((_, i) => (
+                        <span key={`c-${i}`} className="w-1.5 h-1.5 rounded-full bg-cyan-400/80" />
                       ))}
                     </div>
                   )}
@@ -985,16 +1116,51 @@ const CalendarDarkApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </span>
               )}
             </div>
-            <div className="text-[10px] text-white/40">{selectedEvents.length} 项</div>
+            <div className="flex items-center gap-2">
+              <div className="text-[10px] text-white/40">{selectedEvents.length + selectedCustomEvents.length} 项</div>
+              <button
+                onClick={() => { setShowAddForm(v => !v); setAddTitle(''); setAddDesc(''); }}
+                className="p-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/25 text-cyan-200 hover:bg-cyan-500/25 transition-colors"
+                aria-label="新增事件"
+              >
+                {showAddForm ? <X size={12} /> : <Plus size={12} />}
+              </button>
+            </div>
           </div>
 
-          {selectedEvents.length === 0 ? (
+          {/* Add Form */}
+          {showAddForm && (
+            <div className="mb-3 p-3 rounded-xl border border-cyan-500/20 bg-black/30 space-y-2">
+              <input
+                value={addTitle}
+                onChange={e => setAddTitle(e.target.value)}
+                placeholder="事件标题"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/90 placeholder:text-white/30 focus:outline-none focus:border-cyan-400/40"
+              />
+              <input
+                value={addDesc}
+                onChange={e => setAddDesc(e.target.value)}
+                placeholder="描述（可选）"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/90 placeholder:text-white/30 focus:outline-none focus:border-cyan-400/40"
+              />
+              <button
+                onClick={() => void handleAddEvent()}
+                disabled={!addTitle.trim()}
+                className="w-full py-2 rounded-lg text-xs font-bold bg-cyan-500/20 border border-cyan-500/30 text-cyan-200 hover:bg-cyan-500/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                确认新增
+              </button>
+            </div>
+          )}
+
+          {selectedEvents.length === 0 && selectedCustomEvents.length === 0 ? (
             <div className="text-[11px] text-white/45">今日无记录事件</div>
           ) : (
             <div className="space-y-2">
+              {/* Predefined events */}
               {selectedEvents.map((e, i) => (
                 <div
-                  key={i}
+                  key={`pre-${i}`}
                   className="p-3 rounded-xl border border-white/10 bg-black/20 flex items-start justify-between gap-3"
                 >
                   <div className="min-w-0">
@@ -1017,6 +1183,80 @@ const CalendarDarkApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   >
                     {e.kind === 'holiday' ? '祝日' : e.kind === 'festival' ? '节日' : '事件'}
                   </div>
+                </div>
+              ))}
+
+              {/* Custom events */}
+              {selectedCustomEvents.map(ce => (
+                <div
+                  key={ce.id}
+                  className="p-3 rounded-xl border border-cyan-500/20 bg-black/20"
+                >
+                  {editingId === ce.id ? (
+                    <div className="space-y-2">
+                      <input
+                        value={editTitle}
+                        onChange={e => setEditTitle(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/90 focus:outline-none focus:border-cyan-400/40"
+                      />
+                      <input
+                        value={editDesc}
+                        onChange={e => setEditDesc(e.target.value)}
+                        placeholder="描述（可选）"
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/90 placeholder:text-white/30 focus:outline-none focus:border-cyan-400/40"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => void handleUpdateEvent(ce.id)}
+                          disabled={!editTitle.trim()}
+                          className="flex-1 py-1.5 rounded-lg text-xs font-bold bg-cyan-500/20 border border-cyan-500/30 text-cyan-200 hover:bg-cyan-500/30 disabled:opacity-40"
+                        >
+                          保存
+                        </button>
+                        <button
+                          onClick={() => setEditingId(null)}
+                          className="px-3 py-1.5 rounded-lg text-xs bg-white/5 border border-white/10 text-white/60 hover:bg-white/10"
+                        >
+                          取消
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-semibold text-white/85 truncate">{ce.title}</span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-200">自订</span>
+                        </div>
+                        {ce.description && (
+                          <div className="text-[10px] text-white/50 mt-0.5 truncate">{ce.description}</div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => { setEditingId(ce.id); setEditTitle(ce.title); setEditDesc(ce.description ?? ''); }}
+                          className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
+                        >
+                          <Pencil size={12} />
+                        </button>
+                        {deleteConfirmId === ce.id ? (
+                          <button
+                            onClick={() => void handleDeleteEvent(ce.id)}
+                            className="px-2 py-1 rounded-lg text-[10px] font-bold bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30"
+                          >
+                            确认
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setDeleteConfirmId(ce.id)}
+                            className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-red-300 transition-colors"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
