@@ -58,6 +58,7 @@ export interface Quest {
   description: string;
   rewardMcPoints: number;
   status: QuestStatus;
+  isCustom?: boolean;
 }
 
 // Data payload for backend submission
