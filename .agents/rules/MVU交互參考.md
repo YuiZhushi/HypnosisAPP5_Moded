@@ -1,5 +1,6 @@
 ---
-trigger: always_on
+trigger: model_decision
+description: 当用户输入中明确提及 MVU 时, 你应该参考本文件
 ---
 
 # HypnoOS 與 MVU 變量交互參考
