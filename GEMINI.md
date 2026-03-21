@@ -1,9 +1,11 @@
 # 酒馆助手前端界面或脚本编写
 
-@.cursor/rules/项目基本概念.mdc
-@.cursor/rules/mcp.mdc
-@.cursor/rules/酒馆变量.mdc
-@.cursor/rules/前端界面.mdc
-@.cursor/rules/脚本.mdc
-@.cursor/rules/mvu变量框架.mdc
-@.cursor/rules/mvu角色卡.mdc
+@.agents/rules/项目基本概念.md
+@.agents/rules/项目说明.md
+@.agents/rules/mcp.md
+@.agents/rules/酒馆变量.md
+@.agents/rules/前端界面.md
+@.agents/rules/脚本.md
+@.agents/rules/mvu变量框架.md
+@.agents/rules/mvu角色卡.md
+@.agents/rules/frontend-design.md
