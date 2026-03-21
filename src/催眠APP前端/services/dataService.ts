@@ -437,6 +437,13 @@ function getPurchasePricePoints(feature: HypnosisFeature): number | null {
   return PURCHASE_PRICE_BY_TIER[feature.tier] ?? PURCHASE_PRICE_BY_TIER.VIP5;
 }
 
+type CustomQuestDef = {
+  name: string;
+  condition: string;
+  rewardMcPoints: number;
+  createdAt: number;
+};
+
 type PersistedStore = {
   version: number;
   debugEnabled: boolean;
@@ -452,6 +459,7 @@ type PersistedStore = {
   purchases: Record<string, boolean>;
   achievements: Record<string, boolean>;
   quests: Record<string, QuestStatus>;
+  customQuests: Record<string, CustomQuestDef>;
 };
 
 const STORE_SCHEMA: z.ZodType<PersistedStore> = z
@@ -483,6 +491,17 @@ const STORE_SCHEMA: z.ZodType<PersistedStore> = z
     purchases: z.record(z.string(), z.coerce.boolean()).default({}),
     achievements: z.record(z.string(), z.boolean()).default({}),
     quests: z.record(z.string(), z.enum(['AVAILABLE', 'ACTIVE', 'COMPLETED', 'CLAIMED'])).default({}),
+    customQuests: z
+      .record(
+        z.string(),
+        z.object({
+          name: z.string(),
+          condition: z.string(),
+          rewardMcPoints: z.coerce.number(),
+          createdAt: z.coerce.number(),
+        }),
+      )
+      .default({}),
   })
   .default({
     version: 1,
@@ -492,6 +511,7 @@ const STORE_SCHEMA: z.ZodType<PersistedStore> = z
     purchases: {},
     achievements: {},
     quests: {},
+    customQuests: {},
   });
 
 function toFiniteNumber(value: unknown): number | null {
@@ -792,6 +812,18 @@ function validateQuestDb(db: QuestDefinition[]) {
 }
 
 const QUEST_DATABASE = validateQuestDb(QUEST_DB);
+
+/** Look up a quest definition from both predefined and custom sources. */
+function findQuestDef(
+  id: string,
+  store: PersistedStore,
+): QuestDefinition | null {
+  const predefined = QUEST_DATABASE.find(q => q.id === id);
+  if (predefined) return predefined;
+  const custom = store.customQuests?.[id];
+  if (custom) return { id, name: custom.name, condition: custom.condition, rewardMcPoints: custom.rewardMcPoints };
+  return null;
+}
 
 const PERSISTENT_FEATURE_IDS = new Set<string>([]);
 
@@ -1149,33 +1181,33 @@ export const DataService = {
     const claimed = store.quests ?? {};
     const tasks = (await MvuBridge.getTasks().catch(() => null)) ?? {};
 
-    const quests = QUEST_DATABASE.map(q => {
-      const locked = claimed[q.id] === 'CLAIMED';
-      if (locked) {
-        return {
-          id: q.id,
-          title: q.name,
-          description: q.condition,
-          rewardMcPoints: q.rewardMcPoints,
-          status: 'CLAIMED' as QuestStatus,
-        };
-      }
-
-      const taskState = (tasks as any)[q.name];
+    function resolveStatus(name: string, id: string): QuestStatus {
+      if (claimed[id] === 'CLAIMED') return 'CLAIMED';
+      const taskState = (tasks as any)[name];
       const completed = Boolean(taskState && typeof taskState === 'object' && taskState.已完成 === true);
       const active = Boolean(taskState && typeof taskState === 'object' && typeof taskState.已完成 === 'boolean');
-      return {
-        id: q.id,
-        title: q.name,
-        description: q.condition,
-        rewardMcPoints: q.rewardMcPoints,
-        status: completed
-          ? ('COMPLETED' as QuestStatus)
-          : active
-            ? ('ACTIVE' as QuestStatus)
-            : ('AVAILABLE' as QuestStatus),
-      };
-    });
+      return completed ? 'COMPLETED' : active ? 'ACTIVE' : 'AVAILABLE';
+    }
+
+    const quests: Quest[] = QUEST_DATABASE.map(q => ({
+      id: q.id,
+      title: q.name,
+      description: q.condition,
+      rewardMcPoints: q.rewardMcPoints,
+      status: resolveStatus(q.name, q.id),
+    }));
+
+    // Merge custom quests
+    for (const [cid, cq] of Object.entries(store.customQuests ?? {})) {
+      quests.push({
+        id: cid,
+        title: cq.name,
+        description: cq.condition,
+        rewardMcPoints: cq.rewardMcPoints,
+        status: resolveStatus(cq.name, cid),
+        isCustom: true,
+      });
+    }
 
     const order: Record<QuestStatus, number> = { COMPLETED: 0, ACTIVE: 1, AVAILABLE: 2, CLAIMED: 3 };
     quests.sort((a, b) => order[a.status] - order[b.status]);
@@ -1200,12 +1232,12 @@ export const DataService = {
   },
 
   acceptQuest: async (id: string): Promise<{ success: boolean; message?: string }> => {
-    const def = QUEST_DATABASE.find(q => q.id === id);
+    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
+    const def = findQuestDef(id, store);
     if (!def) return { success: false, message: '未知任务' };
     if (def.name.includes('.')) return { success: false, message: '任务名不能包含“.”' };
 
-    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
-    if (store.quests?.[def.id] === 'CLAIMED') return { success: false, message: '该任务已完成并锁定' };
+    if (store.quests?.[id] === 'CLAIMED') return { success: false, message: '该任务已完成并锁定' };
 
     const tasks = await MvuBridge.getTasks();
     if (!tasks) return { success: false, message: 'MVU 未就绪，无法接取任务' };
@@ -1230,12 +1262,12 @@ export const DataService = {
   },
 
   cancelQuest: async (id: string): Promise<{ success: boolean; message?: string }> => {
-    const def = QUEST_DATABASE.find(q => q.id === id);
+    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
+    const def = findQuestDef(id, store);
     if (!def) return { success: false, message: '未知任务' };
     if (def.name.includes('.')) return { success: false, message: '任务名不能包含“.”' };
 
-    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
-    if (store.quests?.[def.id] === 'CLAIMED') return { success: false, message: '该任务已完成并锁定' };
+    if (store.quests?.[id] === 'CLAIMED') return { success: false, message: '该任务已完成并锁定' };
 
     const tasks = await MvuBridge.getTasks();
     if (!tasks) return { success: false, message: 'MVU 未就绪，无法取消任务' };
@@ -1254,7 +1286,8 @@ export const DataService = {
   },
 
   claimQuest: async (id: string, currentPoints: number): Promise<{ success: boolean; newPoints: number }> => {
-    const def = QUEST_DATABASE.find(q => q.id === id);
+    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
+    const def = findQuestDef(id, store);
     if (!def) return { success: false, newPoints: currentPoints };
     if (def.name.includes('.')) return { success: false, newPoints: currentPoints };
 
@@ -1269,5 +1302,78 @@ export const DataService = {
     await updateStoreWith(s => ({ ...s, quests: { ...s.quests, [id]: 'CLAIMED' } }));
     await MvuBridge.deleteTask(def.name);
     return { success: true, newPoints };
+  },
+
+  publishCustomQuest: async (params: {
+    name: string;
+    condition: string;
+    rewardMcPoints: number;
+  }): Promise<{ ok: boolean; message?: string }> => {
+    const { name, condition, rewardMcPoints } = params;
+
+    const trimmedName = name.trim();
+    if (!trimmedName) return { ok: false, message: '名称不能为空' };
+    if (trimmedName.includes('.')) return { ok: false, message: '名称不能包含"."' };
+    if (!Number.isFinite(rewardMcPoints) || rewardMcPoints <= 0 || !Number.isInteger(rewardMcPoints))
+      return { ok: false, message: '奖励必须为正整数' };
+    if (!condition.trim()) return { ok: false, message: '完成条件不能为空' };
+
+    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
+    const predefinedNameExists = QUEST_DATABASE.some(q => q.name === trimmedName);
+    const customNameExists = Object.values(store.customQuests ?? {}).some(q => q.name === trimmedName);
+    if (predefinedNameExists || customNameExists) return { ok: false, message: '已存在同名任务' };
+
+    const cost = rewardMcPoints * 800;
+    const user = await DataService.getUserData();
+    if (user.money < cost) return { ok: false, message: `零花钱不足：需要 ¥${cost}，当前 ¥${user.money}` };
+
+    await DataService.updateResources({ money: user.money - cost });
+
+    const questId = `custom_quest_${Date.now()}`;
+    await updateStoreWith(s => ({
+      ...s,
+      customQuests: {
+        ...s.customQuests,
+        [questId]: {
+          name: trimmedName,
+          condition: condition.trim(),
+          rewardMcPoints,
+          createdAt: Date.now(),
+        },
+      },
+    }));
+
+    console.info(`[HypnoOS] 发布自定义任务「${trimmedName}」(¥${cost})`);
+    return { ok: true };
+  },
+
+  deleteCustomQuest: async (id: string): Promise<{ ok: boolean; message?: string }> => {
+    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
+    const cq = store.customQuests?.[id];
+    if (!cq) return { ok: false, message: '未找到该自定义任务' };
+
+    try {
+      const tasks = await MvuBridge.getTasks();
+      if (tasks && cq.name in (tasks as any)) {
+        await MvuBridge.deleteTask(cq.name);
+      }
+    } catch (err) {
+      console.warn('[HypnoOS] 清理 MVU 任务失败', err);
+    }
+
+    const refund = cq.rewardMcPoints * 800;
+    const user = await DataService.getUserData();
+    await DataService.updateResources({ money: user.money + refund });
+
+    await updateStoreWith(s => {
+      const nextCustom = { ...s.customQuests };
+      delete nextCustom[id];
+      const nextQuests = { ...s.quests };
+      delete nextQuests[id];
+      return { ...s, customQuests: nextCustom, quests: nextQuests };
+    });
+
+    console.info(`[HypnoOS] 删除自定义任务「${cq.name}」(退款 ¥${refund})`);
+    return { ok: true };
   },
 };

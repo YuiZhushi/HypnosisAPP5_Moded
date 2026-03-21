@@ -14,6 +14,8 @@ import {
   Star,
   ChevronRight,
   AlertCircle,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 
 interface AchievementAppProps {
@@ -29,6 +31,13 @@ export const AchievementApp: React.FC<AchievementAppProps> = ({ userData, onUpda
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
   const refreshTimerRef = useRef<number | null>(null);
+
+  // Custom quest form state
+  const [showPublishForm, setShowPublishForm] = useState(false);
+  const [newQuestName, setNewQuestName] = useState('');
+  const [newQuestCondition, setNewQuestCondition] = useState('');
+  const [newQuestReward, setNewQuestReward] = useState<number>(1);
+  const [publishing, setPublishing] = useState(false);
 
   const refreshCurrentTab = async () => {
     try {
@@ -135,6 +144,48 @@ export const AchievementApp: React.FC<AchievementAppProps> = ({ userData, onUpda
     onUpdateUser({ ...userData, mcPoints: result.newPoints });
     setNotice(`任务完成：+${quest.rewardMcPoints} PT`);
     setTimeout(() => setNotice(null), 2000);
+    requestRefresh();
+  };
+
+  const handlePublishQuest = async () => {
+    setPublishing(true);
+    try {
+      const result = await DataService.publishCustomQuest({
+        name: newQuestName,
+        condition: newQuestCondition,
+        rewardMcPoints: newQuestReward,
+      });
+      if (!result.ok) {
+        setNotice(`发布失败：${result.message || '未知原因'}`);
+        setTimeout(() => setNotice(null), 3000);
+        return;
+      }
+      // Update local userData money
+      const cost = newQuestReward * 800;
+      onUpdateUser({ ...userData, money: userData.money - cost });
+      setNotice(`任务发布成功！花费 ¥${cost}`);
+      setTimeout(() => setNotice(null), 2500);
+      setShowPublishForm(false);
+      setNewQuestName('');
+      setNewQuestCondition('');
+      setNewQuestReward(1);
+      requestRefresh();
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handleDeleteCustomQuest = async (quest: Quest) => {
+    const result = await DataService.deleteCustomQuest(quest.id);
+    if (!result.ok) {
+      setNotice(`删除失败：${result.message || '未知原因'}`);
+      setTimeout(() => setNotice(null), 2500);
+      return;
+    }
+    const refund = quest.rewardMcPoints * 800;
+    onUpdateUser({ ...userData, money: userData.money + refund });
+    setNotice(`已删除任务「${quest.title}」，退款 ¥${refund}`);
+    setTimeout(() => setNotice(null), 2500);
     requestRefresh();
   };
 
@@ -282,6 +333,84 @@ export const AchievementApp: React.FC<AchievementAppProps> = ({ userData, onUpda
               </div>
             </div>
 
+            {/* Publish Quest Button */}
+            <button
+              onClick={() => setShowPublishForm(v => !v)}
+              className={`w-full py-2.5 rounded-xl font-medium text-sm transition-all duration-300 flex items-center justify-center gap-2 border ${
+                showPublishForm
+                  ? 'bg-amber-600/20 border-amber-500/30 text-amber-200'
+                  : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
+              }`}
+            >
+              <Plus size={16} /> {showPublishForm ? '收起' : '发布自定义任务'}
+            </button>
+
+            {/* Publish Form */}
+            {showPublishForm && (
+              <div className="p-4 rounded-2xl border border-amber-500/20 bg-amber-900/10 space-y-3 animate-fade-in">
+                <div>
+                  <label className="text-[11px] text-white/60 mb-1 block">任务名称</label>
+                  <input
+                    type="text"
+                    value={newQuestName}
+                    onChange={e => setNewQuestName(e.target.value)}
+                    placeholder="输入任务名称..."
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-amber-500/50"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] text-white/60 mb-1 block">完成条件</label>
+                  <input
+                    type="text"
+                    value={newQuestCondition}
+                    onChange={e => setNewQuestCondition(e.target.value)}
+                    placeholder="输入完成条件..."
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-amber-500/50"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] text-white/60 mb-1 block">奖励 MC 点数</label>
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={newQuestReward}
+                    onChange={e => setNewQuestReward(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className={`text-xs font-bold ${userData.money < newQuestReward * 800 ? 'text-red-400' : 'text-amber-200/80'}`}>
+                    花费：¥{newQuestReward * 800}
+                    {userData.money < newQuestReward * 800 && (
+                      <span className="ml-2 text-red-400/80 font-normal">（零花钱不足，当前 ¥{userData.money}）</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => void handlePublishQuest()}
+                    disabled={
+                      publishing ||
+                      !newQuestName.trim() ||
+                      !newQuestCondition.trim() ||
+                      newQuestReward <= 0 ||
+                      userData.money < newQuestReward * 800
+                    }
+                    className="flex-1 py-2 rounded-lg font-bold text-sm transition-all duration-200 bg-gradient-to-r from-amber-600 to-orange-600 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110"
+                  >
+                    {publishing ? '发布中...' : '发布任务'}
+                  </button>
+                  <button
+                    onClick={() => setShowPublishForm(false)}
+                    className="px-4 py-2 rounded-lg text-sm text-white/60 bg-white/5 border border-white/10 hover:bg-white/10"
+                  >
+                    取消
+                  </button>
+                </div>
+              </div>
+            )}
+
             {quests.map(q => {
               const statusLabel =
                 q.status === 'COMPLETED'
@@ -328,6 +457,11 @@ export const AchievementApp: React.FC<AchievementAppProps> = ({ userData, onUpda
                       <div>
                         <h3 className="font-bold text-sm text-white flex items-center gap-2">
                           {q.title}
+                          {q.isCustom && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold">
+                              自定义
+                            </span>
+                          )}
                           <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 border border-white/10 text-white/70">
                             {statusLabel}
                           </span>
@@ -366,6 +500,14 @@ export const AchievementApp: React.FC<AchievementAppProps> = ({ userData, onUpda
                         </button>
                       )}
                       {q.status === 'CLAIMED' && <span className="text-[10px] text-white/50">锁定</span>}
+                      {q.isCustom && q.status === 'AVAILABLE' && (
+                        <button
+                          onClick={() => void handleDeleteCustomQuest(q)}
+                          className="bg-red-500/10 hover:bg-red-500/20 text-red-300 text-[11px] font-semibold py-1 px-2 rounded-lg border border-red-500/20 flex items-center gap-1"
+                        >
+                          <Trash2 size={11} /> 删除(退款)
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
