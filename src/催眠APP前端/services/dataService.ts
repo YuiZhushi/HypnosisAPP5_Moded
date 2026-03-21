@@ -444,6 +444,14 @@ type CustomQuestDef = {
   createdAt: number;
 };
 
+export type CustomCalendarEvent = {
+  id: string;
+  month: number;
+  day: number;
+  title: string;
+  description?: string;
+};
+
 type PersistedStore = {
   version: number;
   debugEnabled: boolean;
@@ -460,6 +468,7 @@ type PersistedStore = {
   achievements: Record<string, boolean>;
   quests: Record<string, QuestStatus>;
   customQuests: Record<string, CustomQuestDef>;
+  calendarEvents: Record<string, CustomCalendarEvent>;
 };
 
 const STORE_SCHEMA: z.ZodType<PersistedStore> = z
@@ -502,6 +511,18 @@ const STORE_SCHEMA: z.ZodType<PersistedStore> = z
         }),
       )
       .default({}),
+    calendarEvents: z
+      .record(
+        z.string(),
+        z.object({
+          id: z.string(),
+          month: z.coerce.number(),
+          day: z.coerce.number(),
+          title: z.string(),
+          description: z.string().optional(),
+        }),
+      )
+      .default({}),
   })
   .default({
     version: 1,
@@ -512,6 +533,7 @@ const STORE_SCHEMA: z.ZodType<PersistedStore> = z
     achievements: {},
     quests: {},
     customQuests: {},
+    calendarEvents: {},
   });
 
 function toFiniteNumber(value: unknown): number | null {
@@ -1375,5 +1397,99 @@ export const DataService = {
 
     console.info(`[HypnoOS] 删除自定义任务「${cq.name}」(退款 ¥${refund})`);
     return { ok: true };
+  },
+
+  // ─── Calendar Events ────────────────────────────────────────
+
+  getCalendarEvents: (): CustomCalendarEvent[] => {
+    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
+    return Object.values(store.calendarEvents ?? {});
+  },
+
+  addCalendarEvent: async (params: {
+    month: number;
+    day: number;
+    title: string;
+    description?: string;
+  }): Promise<{ ok: boolean; id?: string; message?: string }> => {
+    const trimmedTitle = params.title.trim();
+    if (!trimmedTitle) return { ok: false, message: '标题不能为空' };
+
+    // 同月同日同標題去重
+    const existing = DataService.findCalendarEventByTitleAndDate(trimmedTitle, params.month, params.day);
+    if (existing) {
+      console.info(`[HypnoOS] 日历事件「${trimmedTitle}」(${params.month}月${params.day}日) 已存在，跳过新增`);
+      return { ok: true, id: existing.id };
+    }
+
+    const id = `cal_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const evt: CustomCalendarEvent = {
+      id,
+      month: params.month,
+      day: params.day,
+      title: trimmedTitle,
+      description: params.description?.trim() || undefined,
+    };
+
+    await updateStoreWith(s => ({
+      ...s,
+      calendarEvents: { ...s.calendarEvents, [id]: evt },
+    }));
+
+    console.info(`[HypnoOS] 新增日历事件「${trimmedTitle}」(${params.month}月${params.day}日)`);
+    return { ok: true, id };
+  },
+
+  updateCalendarEvent: async (
+    id: string,
+    patch: { title?: string; description?: string; month?: number; day?: number },
+  ): Promise<{ ok: boolean; message?: string }> => {
+    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
+    const existing = store.calendarEvents?.[id];
+    if (!existing) return { ok: false, message: '未找到该事件' };
+
+    const updated: CustomCalendarEvent = {
+      ...existing,
+      ...(patch.title !== undefined ? { title: patch.title.trim() } : {}),
+      ...(patch.description !== undefined ? { description: patch.description.trim() || undefined } : {}),
+      ...(patch.month !== undefined ? { month: patch.month } : {}),
+      ...(patch.day !== undefined ? { day: patch.day } : {}),
+    };
+
+    if (!updated.title) return { ok: false, message: '标题不能为空' };
+
+    await updateStoreWith(s => ({
+      ...s,
+      calendarEvents: { ...s.calendarEvents, [id]: updated },
+    }));
+
+    console.info(`[HypnoOS] 修改日历事件「${updated.title}」`);
+    return { ok: true };
+  },
+
+  deleteCalendarEvent: async (id: string): Promise<{ ok: boolean; message?: string }> => {
+    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
+    const existing = store.calendarEvents?.[id];
+    if (!existing) return { ok: false, message: '未找到该事件' };
+
+    await updateStoreWith(s => {
+      const next = { ...s.calendarEvents };
+      delete next[id];
+      return { ...s, calendarEvents: next };
+    });
+
+    console.info(`[HypnoOS] 删除日历事件「${existing.title}」`);
+    return { ok: true };
+  },
+
+  findCalendarEventByTitleAndDate: (
+    title: string,
+    month: number,
+    day: number,
+  ): CustomCalendarEvent | undefined => {
+    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
+    return Object.values(store.calendarEvents ?? {}).find(
+      e => e.title === title && e.month === month && e.day === day,
+    );
   },
 };
