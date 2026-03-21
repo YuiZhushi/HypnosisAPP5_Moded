@@ -3,7 +3,9 @@ import {
   Activity,
   AlertTriangle,
   ArrowLeft,
+  BookOpen,
   Calendar as CalendarIcon,
+  CheckCircle,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -15,6 +17,7 @@ import {
 } from 'lucide-react';
 import { DataService } from '../services/dataService';
 import { MvuBridge, waitForMvuReady } from '../services/mvuBridge';
+import { WorldBookService, type WbCheckResult } from '../services/worldBookService';
 
 // Wrapper for standard pages
 const PageLayout = ({ title, children, onBack, color = 'bg-gray-100' }: any) => (
@@ -92,6 +95,10 @@ const BodyScanApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // World book check state
+  const [wbStatus, setWbStatus] = useState<'idle' | 'checking' | 'pass' | 'created' | 'error'>('idle');
+  const [wbMessage, setWbMessage] = useState('');
 
   const refreshRef = useRef<() => void>(() => {});
   const selectorRef = useRef<HTMLDivElement | null>(null);
@@ -179,6 +186,23 @@ const BodyScanApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       setError('读取失败：请稍后重试');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Reset wb check when role changes
+  useEffect(() => {
+    setWbStatus('idle');
+    setWbMessage('');
+  }, [selectedRole]);
+
+  const handleCheckWorldBook = async () => {
+    if (!selectedRole) return;
+    setWbStatus('checking');
+    setWbMessage('');
+    const result = await WorldBookService.checkAndEnsureEntry(selectedRole);
+    setWbStatus(result.status);
+    if (result.status === 'error') {
+      setWbMessage(result.message);
     }
   };
 
@@ -381,6 +405,27 @@ const BodyScanApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <div className="p-4 rounded-2xl border border-white/10 bg-white/5">
               <div className="text-xs text-white/50 mb-2">目标</div>
               <div className="text-base font-bold truncate">{selectedRole}</div>
+            </div>
+
+            {/* World Book Check */}
+            <div className="p-3 rounded-2xl border border-white/10 bg-white/5 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <BookOpen size={16} className="text-cyan-300 shrink-0" />
+                <div className="text-xs text-white/70 truncate">
+                  世界书变量条目
+                  {wbStatus === 'pass' && <span className="ml-2 text-emerald-400">✔ 已存在</span>}
+                  {wbStatus === 'created' && <span className="ml-2 text-amber-300">✔ 已补入</span>}
+                  {wbStatus === 'error' && <span className="ml-2 text-red-400">✖ {wbMessage}</span>}
+                  {wbStatus === 'checking' && <span className="ml-2 text-white/50">检查中…</span>}
+                </div>
+              </div>
+              <button
+                onClick={() => void handleCheckWorldBook()}
+                disabled={wbStatus === 'checking'}
+                className="shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-bold bg-cyan-500/15 border border-cyan-500/25 text-cyan-200 hover:bg-cyan-500/25 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {wbStatus === 'checking' ? '检查中' : '检查'}
+              </button>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
