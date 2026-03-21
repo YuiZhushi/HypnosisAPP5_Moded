@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { UserResources, HypnosisFeature, VIP_LEVELS } from '../types';
+import { UserResources, HypnosisFeature, CustomHypnosisDef, VIP_LEVELS } from '../types';
 import { DataService, SUBSCRIPTION_PRICES } from '../services/dataService';
 import { MvuBridge } from '../services/mvuBridge';
 import { buildHypnosisSendMessage } from '../prompts/hypnosisSend';
@@ -16,6 +16,8 @@ import {
   StopCircle,
   RefreshCcw,
   ArrowLeft,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 
 interface HypnosisAppProps {
@@ -357,6 +359,17 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showLowEnergyModal, setShowLowEnergyModal] = useState(false);
 
+  // Custom Hypnosis Create Form State
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [customFormName, setCustomFormName] = useState('');
+  const [customFormDesc, setCustomFormDesc] = useState('');
+  const [customFormTier, setCustomFormTier] = useState<HypnosisFeature['tier']>('TRIAL');
+  const [customFormCostType, setCustomFormCostType] = useState<'ONE_TIME' | 'PER_MINUTE'>('PER_MINUTE');
+  const [customFormCostValue, setCustomFormCostValue] = useState('10');
+  const [customFormNotePlaceholder, setCustomFormNotePlaceholder] = useState('');
+  const [customFormError, setCustomFormError] = useState<string | null>(null);
+  const [customHypnosisList, setCustomHypnosisList] = useState<CustomHypnosisDef[]>([]);
+
   // Load Features on Mount
   useEffect(() => {
     let stopped = false;
@@ -370,6 +383,7 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
       setFeatures(nextFeatures);
       setDebugEnabled(nextDebug);
       setSubscription(nextSub as any);
+      setCustomHypnosisList(DataService.getCustomHypnosis());
     })();
     return () => {
       stopped = true;
@@ -959,6 +973,88 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
     void MvuBridge.appendThisTurnAppOperationLog(`充值点数 +${amount} PT（-¥${costMoney.toLocaleString()}）`);
   };
 
+  // --- Custom Hypnosis Helpers ---
+
+  const isCustomFeature = (featureId: string): boolean => featureId.startsWith('custom_hyp_');
+
+  const customFormCostValueNum = useMemo(() => {
+    const n = Number(customFormCostValue);
+    if (!Number.isFinite(n) || n < 1) return 1;
+    return Math.min(200, Math.floor(n));
+  }, [customFormCostValue]);
+
+  const customFormResearchCost = useMemo(
+    () => DataService.calculateCustomHypnosisCost(customFormTier, customFormCostType, customFormCostValueNum),
+    [customFormTier, customFormCostType, customFormCostValueNum],
+  );
+
+  const handleCreateCustomHypnosis = async () => {
+    const name = customFormName.trim();
+    if (!name) { setCustomFormError('请输入催眠名称'); return; }
+    const desc = customFormDesc.trim();
+    if (!desc) { setCustomFormError('请输入催眠说明'); return; }
+    setCustomFormError(null);
+
+    const result = await DataService.addCustomHypnosis({
+      title: name,
+      description: desc,
+      tier: customFormTier,
+      costType: customFormCostType,
+      costValue: customFormCostValueNum,
+      notePlaceholder: customFormNotePlaceholder.trim() || undefined,
+    });
+
+    if (!result.ok) {
+      setCustomFormError(result.message || '创建失败');
+      return;
+    }
+
+    // Refresh
+    const refreshedUser = await DataService.getUserData();
+    onUpdateUser(refreshedUser);
+    const refreshedFeatures = await DataService.getFeatures();
+    setFeatures(refreshedFeatures);
+    setCustomHypnosisList(DataService.getCustomHypnosis());
+    void MvuBridge.appendThisTurnAppOperationLog(`研发自定义催眠「${name}」（-¥${customFormResearchCost.toLocaleString()}）`);
+
+    // Reset form
+    setShowCustomForm(false);
+    setCustomFormName('');
+    setCustomFormDesc('');
+    setCustomFormTier('TRIAL');
+    setCustomFormCostType('PER_MINUTE');
+    setCustomFormCostValue('10');
+    setCustomFormNotePlaceholder('');
+    setCustomFormError(null);
+  };
+
+  const handleDeleteCustomHypnosis = async (id: string) => {
+    const entry = customHypnosisList.find(e => e.id === id);
+    if (!entry) return;
+    const refundAmount = Math.floor(entry.researchCost * 0.5);
+    if (!window.confirm(`确定删除「${entry.title}」？\n将退还 ¥${refundAmount.toLocaleString()} 研发费用。`)) return;
+
+    const result = await DataService.deleteCustomHypnosis(id);
+    if (!result.ok) {
+      window.alert(result.message || '删除失败');
+      return;
+    }
+
+    const refreshedUser = await DataService.getUserData();
+    onUpdateUser(refreshedUser);
+    const refreshedFeatures = await DataService.getFeatures();
+    setFeatures(refreshedFeatures);
+    setCustomHypnosisList(DataService.getCustomHypnosis());
+    void MvuBridge.appendThisTurnAppOperationLog(`删除自定义催眠「${entry.title}」（退款 +¥${(result.refund ?? 0).toLocaleString()}）`);
+  };
+
+  const canUseCustomHypnosisFeature = useMemo(() => {
+    if (debugEnabled) return true;
+    if (!subscription) return false;
+    const tierNum = Number(subscription.tier.replace('VIP', ''));
+    return tierNum >= 4;
+  }, [debugEnabled, subscription]);
+
   // --- Render Helpers ---
 
   const renderTierSection = (tierConfig: (typeof VIP_LEVELS)[0]) => {
@@ -1052,6 +1148,11 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
                   <div>
                     <div className="font-medium text-gray-100 flex items-center gap-2">
                       <span>{feature.title}</span>
+                      {isCustomFeature(feature.id) && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-500/30 text-cyan-300">
+                          自訂
+                        </span>
+                      )}
                       {!isLocked && lockedByPurchase && (
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 border border-white/10 text-gray-200 flex items-center gap-1">
                           <Lock size={10} className="text-gray-300" /> 未购买
@@ -1093,6 +1194,18 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
                         ].join(' ')}
                       >
                         购买 {purchasePricePoints} PT
+                      </button>
+                    )}
+                    {isCustomFeature(feature.id) && (
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          void handleDeleteCustomHypnosis(feature.id);
+                        }}
+                        className="p-1.5 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                        title="删除自定义催眠"
+                      >
+                        <Trash2 size={14} />
                       </button>
                     )}
                     <div
@@ -1455,7 +1568,156 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
       </div>
 
       {/* --- Main Content (Scrollable) --- */}
-      <div className="flex-1 overflow-y-auto p-4 no-scrollbar">{VIP_LEVELS.map(tier => renderTierSection(tier))}</div>
+      <div className="flex-1 overflow-y-auto p-4 no-scrollbar">
+        {VIP_LEVELS.map(tier => renderTierSection(tier))}
+
+        {/* --- 自訂催眠研發區 --- */}
+        <div className="mb-6 relative">
+          <div className="flex justify-between items-center mb-2 px-1">
+            <h3 className="text-cyan-300 font-bold text-sm tracking-wider uppercase">自訂催眠研發</h3>
+            <span className="text-xs text-gray-400 bg-gray-800 px-2 py-0.5 rounded-full">
+              {customHypnosisList.length} / 10
+            </span>
+          </div>
+
+          {/* VIP4 Lock Overlay */}
+          {!canUseCustomHypnosisFeature && (
+            <div className="absolute inset-0 z-10 bg-hypno-dark/60 backdrop-blur-sm rounded-xl border border-white/5 flex flex-col items-center justify-center text-center p-4">
+              <Lock className="w-8 h-8 text-gray-400 mb-2" />
+              <p className="text-sm text-gray-300 font-medium">需要 VIP4 订阅</p>
+              <p className="text-xs text-gray-500 mt-1">订阅 VIP4 后解锁自定义催眠研发功能</p>
+            </div>
+          )}
+
+          <div className={!canUseCustomHypnosisFeature ? 'opacity-30 pointer-events-none select-none filter blur-[2px]' : ''}>
+            {/* Create Button */}
+            {!showCustomForm && customHypnosisList.length < 10 && (
+              <button
+                onClick={() => setShowCustomForm(true)}
+                className="w-full py-3 rounded-xl border-2 border-dashed border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 transition-colors flex items-center justify-center gap-2 mb-3 text-sm font-medium"
+              >
+                <Plus size={18} /> 研发新催眠
+              </button>
+            )}
+
+            {/* Create Form */}
+            {showCustomForm && (
+              <div className="bg-white/5 border border-cyan-500/30 rounded-xl p-4 mb-3 space-y-3 animate-slide-down">
+                <div className="text-sm font-bold text-cyan-300 mb-2">研发自定义催眠</div>
+
+                {/* Name */}
+                <input
+                  type="text"
+                  placeholder="催眠名称"
+                  value={customFormName}
+                  onChange={e => setCustomFormName(e.target.value)}
+                  maxLength={30}
+                  className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500/50 transition-colors"
+                />
+
+                {/* Description */}
+                <textarea
+                  placeholder="催眠效果说明（发送给AI的描述）"
+                  value={customFormDesc}
+                  onChange={e => setCustomFormDesc(e.target.value)}
+                  maxLength={200}
+                  className="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500/50 transition-colors resize-none h-16"
+                />
+
+                {/* Tier + Cost Type Row */}
+                <div className="grid grid-cols-2 gap-2">
+                  <label>
+                    <span className="text-[10px] text-gray-400 mb-1 block">VIP 等级</span>
+                    <select
+                      value={customFormTier}
+                      onChange={e => setCustomFormTier(e.target.value as HypnosisFeature['tier'])}
+                      className="w-full bg-black/30 border border-white/10 rounded-lg px-2 py-2 text-xs text-white focus:outline-none focus:border-cyan-500/50"
+                    >
+                      {VIP_LEVELS.filter(v => v.tier !== 'VIP6').map(v => (
+                        <option key={v.tier} value={v.tier}>{v.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span className="text-[10px] text-gray-400 mb-1 block">消耗类型</span>
+                    <select
+                      value={customFormCostType}
+                      onChange={e => setCustomFormCostType(e.target.value as 'ONE_TIME' | 'PER_MINUTE')}
+                      className="w-full bg-black/30 border border-white/10 rounded-lg px-2 py-2 text-xs text-white focus:outline-none focus:border-cyan-500/50"
+                    >
+                      <option value="PER_MINUTE">每分钟消耗</option>
+                      <option value="ONE_TIME">单次消耗</option>
+                    </select>
+                  </label>
+                </div>
+
+                {/* Cost Value */}
+                <label>
+                  <span className="text-[10px] text-gray-400 mb-1 block">
+                    {customFormCostType === 'ONE_TIME' ? '单次消耗 MC 能量' : '每分钟消耗 MC 能量'}
+                  </span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={200}
+                    value={customFormCostValue}
+                    onChange={e => setCustomFormCostValue(e.target.value)}
+                    onBlur={() => setCustomFormCostValue(String(customFormCostValueNum))}
+                    className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500/50 transition-colors"
+                  />
+                </label>
+
+                {/* Note Placeholder (optional) */}
+                <input
+                  type="text"
+                  placeholder="备注栏提示（可选，如：输入目标部位...）"
+                  value={customFormNotePlaceholder}
+                  onChange={e => setCustomFormNotePlaceholder(e.target.value)}
+                  maxLength={50}
+                  className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500/50 transition-colors"
+                />
+
+                {/* Cost Preview */}
+                <div className="flex items-center justify-between bg-black/20 rounded-lg p-2">
+                  <span className="text-[10px] text-gray-400">研发费用</span>
+                  <span className={`text-sm font-bold ${userData.money < customFormResearchCost ? 'text-red-400' : 'text-yellow-300'}`}>
+                    ¥{customFormResearchCost.toLocaleString()}
+                  </span>
+                </div>
+
+                {/* Error */}
+                {customFormError && (
+                  <div className="text-xs text-red-400 flex items-center gap-1">
+                    <AlertTriangle size={12} /> {customFormError}
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setShowCustomForm(false); setCustomFormError(null); }}
+                    className="flex-1 py-2 rounded-lg border border-white/10 text-gray-300 text-xs hover:bg-white/5 transition-colors"
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={() => void handleCreateCustomHypnosis()}
+                    disabled={userData.money < customFormResearchCost || !customFormName.trim() || !customFormDesc.trim()}
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+                      userData.money >= customFormResearchCost && customFormName.trim() && customFormDesc.trim()
+                        ? 'bg-cyan-600 hover:bg-cyan-500 text-white'
+                        : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                    }`}
+                  >
+                    确认研发
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* --- Footer Controls --- */}
       <div

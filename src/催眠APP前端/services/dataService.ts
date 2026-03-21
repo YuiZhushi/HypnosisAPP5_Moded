@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { QUEST_DB, type QuestDefinition } from '../data/questDb';
-import { Achievement, HypnosisFeature, Quest, QuestStatus, UserResources } from '../types';
+import { Achievement, CustomHypnosisDef, HypnosisFeature, Quest, QuestStatus, UserResources } from '../types';
 import {
   canSubscribeTier,
   canUseFeature as canUseFeatureBySubscription,
@@ -469,6 +469,7 @@ type PersistedStore = {
   quests: Record<string, QuestStatus>;
   customQuests: Record<string, CustomQuestDef>;
   calendarEvents: Record<string, CustomCalendarEvent>;
+  customHypnosis: Record<string, CustomHypnosisDef>;
 };
 
 const STORE_SCHEMA: z.ZodType<PersistedStore> = z
@@ -523,6 +524,22 @@ const STORE_SCHEMA: z.ZodType<PersistedStore> = z
         }),
       )
       .default({}),
+    customHypnosis: z
+      .record(
+        z.string(),
+        z.object({
+          id: z.string(),
+          title: z.string(),
+          description: z.string(),
+          tier: z.enum(['TRIAL', 'VIP1', 'VIP2', 'VIP3', 'VIP4', 'VIP5', 'VIP6']),
+          costType: z.enum(['ONE_TIME', 'PER_MINUTE']),
+          costValue: z.coerce.number(),
+          notePlaceholder: z.string().optional(),
+          createdAt: z.coerce.number(),
+          researchCost: z.coerce.number(),
+        }),
+      )
+      .default({}),
   })
   .default({
     version: 1,
@@ -534,6 +551,7 @@ const STORE_SCHEMA: z.ZodType<PersistedStore> = z
     quests: {},
     customQuests: {},
     calendarEvents: {},
+    customHypnosis: {},
   });
 
 function toFiniteNumber(value: unknown): number | null {
@@ -1106,7 +1124,7 @@ export const DataService = {
 
   getFeatures: async (): Promise<HypnosisFeature[]> => {
     const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
-    return FEATURES.map(f => ({
+    const predefined = FEATURES.map(f => ({
       ...f,
       isEnabled: store.features?.[f.id]?.isEnabled ?? f.isEnabled,
       userNote: store.features?.[f.id]?.userNote ?? f.userNote,
@@ -1115,6 +1133,25 @@ export const DataService = {
       purchasePricePoints: getPurchasePricePoints(f) ?? undefined,
       isPurchased: !isPurchaseRequired(f) || Boolean(store.purchases?.[f.id]),
     }));
+
+    // Merge custom hypnosis as HypnosisFeature[]
+    const custom: HypnosisFeature[] = Object.values(store.customHypnosis ?? {}).map(ch => ({
+      id: ch.id,
+      title: ch.title,
+      description: ch.description,
+      tier: ch.tier,
+      costType: ch.costType,
+      costValue: ch.costValue,
+      costCurrency: 'MC_ENERGY' as const,
+      notePlaceholder: ch.notePlaceholder,
+      isEnabled: store.features?.[ch.id]?.isEnabled ?? false,
+      userNote: store.features?.[ch.id]?.userNote,
+      userNumber: store.features?.[ch.id]?.userNumber,
+      purchaseRequired: false,
+      isPurchased: true,
+    }));
+
+    return [...predefined, ...custom];
   },
 
   purchaseFeature: async (id: string): Promise<{ ok: boolean; message?: string; user?: UserResources }> => {
@@ -1491,5 +1528,92 @@ export const DataService = {
     return Object.values(store.calendarEvents ?? {}).find(
       e => e.title === title && e.month === month && e.day === day,
     );
+  },
+
+  // --- Custom Hypnosis ---
+
+  CUSTOM_HYPNOSIS_TIER_BASE: {
+    TRIAL: 500,
+    VIP1: 1000,
+    VIP2: 3000,
+    VIP3: 8000,
+    VIP4: 20000,
+    VIP5: 50000,
+    VIP6: 50000,
+  } as Record<string, number>,
+
+  calculateCustomHypnosisCost: (
+    tier: HypnosisFeature['tier'],
+    costType: 'ONE_TIME' | 'PER_MINUTE',
+    costValue: number,
+  ): number => {
+    const base = DataService.CUSTOM_HYPNOSIS_TIER_BASE[tier] ?? 500;
+    let easeMultiplier: number;
+    if (costType === 'ONE_TIME') {
+      easeMultiplier = 2.0;
+    } else if (costValue <= 5) {
+      easeMultiplier = 1.8;
+    } else if (costValue <= 20) {
+      easeMultiplier = 1.2;
+    } else if (costValue <= 50) {
+      easeMultiplier = 1.0;
+    } else {
+      easeMultiplier = 0.8;
+    }
+    return Math.floor(base * easeMultiplier);
+  },
+
+  getCustomHypnosis: (): CustomHypnosisDef[] => {
+    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
+    return Object.values(store.customHypnosis ?? {});
+  },
+
+  addCustomHypnosis: async (def: Omit<CustomHypnosisDef, 'id' | 'createdAt' | 'researchCost'>): Promise<{ ok: boolean; message?: string; id?: string }> => {
+    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
+    const existing = Object.keys(store.customHypnosis ?? {});
+    if (existing.length >= 10) return { ok: false, message: '自定义催眠已达上限（10个）' };
+
+    const cost = DataService.calculateCustomHypnosisCost(def.tier, def.costType, def.costValue);
+    const user = await DataService.getUserData();
+    if (user.money < cost) return { ok: false, message: `金钱不足：需要 ¥${cost.toLocaleString()}` };
+
+    const id = `custom_hyp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const entry: CustomHypnosisDef = {
+      ...def,
+      id,
+      createdAt: Date.now(),
+      researchCost: cost,
+    };
+
+    await updateStoreWith(s => ({ ...s, customHypnosis: { ...s.customHypnosis, [id]: entry } }));
+    await DataService.updateResources({ money: user.money - cost });
+
+    console.info(`[HypnoOS] 创建自定义催眠「${def.title}」(¥${cost.toLocaleString()})`);
+    return { ok: true, id };
+  },
+
+  deleteCustomHypnosis: async (id: string): Promise<{ ok: boolean; message?: string; refund?: number }> => {
+    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
+    const entry = store.customHypnosis?.[id];
+    if (!entry) return { ok: false, message: '未找到该催眠' };
+
+    const refund = Math.floor(entry.researchCost * 0.5);
+
+    await updateStoreWith(s => {
+      const next = { ...s.customHypnosis };
+      delete next[id];
+      // Also clean up feature state
+      const nextFeatures = { ...s.features };
+      delete nextFeatures[id];
+      return { ...s, customHypnosis: next, features: nextFeatures };
+    });
+
+    if (refund > 0) {
+      const user = await DataService.getUserData();
+      await DataService.updateResources({ money: user.money + refund });
+    }
+
+    console.info(`[HypnoOS] 删除自定义催眠「${entry.title}」(退款 ¥${refund.toLocaleString()})`);
+    return { ok: true, refund };
   },
 };

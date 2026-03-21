@@ -61,6 +61,19 @@ export interface Quest {
   isCustom?: boolean;
 }
 
+// Custom Hypnosis Definition (player-created)
+export interface CustomHypnosisDef {
+  id: string;
+  title: string;
+  description: string;
+  tier: HypnosisFeature['tier'];
+  costType: 'ONE_TIME' | 'PER_MINUTE';
+  costValue: number;          // energy cost per use (ONE_TIME) or per minute (PER_MINUTE)
+  notePlaceholder?: string;   // optional note prompt
+  createdAt: number;          // timestamp
+  researchCost: number;       // money spent to create (for refund calc)
+}
+
 // Data payload for backend submission
 export interface SessionStartPayload {
   startTime: number;
