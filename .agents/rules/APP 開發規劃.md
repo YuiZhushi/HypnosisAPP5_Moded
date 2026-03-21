@@ -1,5 +1,5 @@
 ---
-trigger: model_decision
+trigger: always_on
 description: 規劃新 APP 開發任務。管理用戶需求的迭代收集、開發指南的撰寫/拆分/修改，以及指南驅動的代碼開發流程。當用戶提出新功能開發需求時使用本 skill。
 ---
 
