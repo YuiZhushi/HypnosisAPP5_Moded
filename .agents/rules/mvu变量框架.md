@@ -1,7 +1,8 @@
 ---
+trigger: model_decision
 description: 当用户输入中明确提及 MVU 时, 你应该参考本文件
-alwaysApply: false
 ---
+
 # MVU 变量框架
 
 MVU 变量框架是一个独立的酒馆助手脚本. 它作用于消息楼层变量, 允许酒馆角色卡作者在世界书中设置消息楼层变量, 在世界书或聊天记录中初始化消息楼层变量, 及用 AI 输出更新消息楼层变量.
