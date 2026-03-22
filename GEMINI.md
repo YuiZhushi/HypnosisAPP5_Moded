@@ -10,3 +10,4 @@
 @.agents/rules/mvu角色卡.md
 @.agents/rules/frontend-design.md
 @.agents/rules/MVU交互參考.md
+@.agents/rules/新APP開發規劃.md
