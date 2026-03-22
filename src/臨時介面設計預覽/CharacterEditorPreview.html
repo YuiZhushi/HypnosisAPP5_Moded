@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>HypnoOS 角色編輯器 UI 完整預覽 (V7-最終修訂版)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 引入 Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- 引入 SortableJS 用於簡單的拖曳排序 -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+    body { font-family: 'Noto Sans TC', sans-serif; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .ghost-sortable { opacity: 0.5; background: #1f2937; transform: scale(0.98); border: 1px dashed #6366f1; }
+  </style>
+</head>
+<body class="bg-[#0f0f0f] min-h-screen flex items-center justify-center p-4">
+
+  <!-- 模擬手機 / 獨立視窗的容器 -->
+  <div x-data="editorApp()" x-init="$watch('showPromptSettings', val => { if(val) setTimeout(initSortable, 100) }); $watch('currentPromptContext', val => { setTimeout(initSortable, 100) })" class="w-full max-w-[420px] h-[850px] bg-[#0c0c0c] border border-neutral-800 shadow-2xl overflow-hidden flex flex-col relative text-neutral-200">
+
+    <!-- 頂部 Header -->
+    <div class="h-14 bg-neutral-900/80 backdrop-blur-md flex flex-col justify-end px-4 pb-2 border-b border-neutral-800 z-10 shrink-0 select-none transition-colors duration-300" :class="showPromptSettings ? 'bg-indigo-900/50' : ''">
+      <div class="flex items-center justify-between">
+        <h1 class="text-sm font-bold bg-clip-text text-transparent" :class="showPromptSettings ? 'bg-gradient-to-r from-blue-400 to-indigo-400' : 'bg-gradient-to-r from-pink-400 to-indigo-400'" x-text="showPromptSettings ? '提示詞管理 (Prompts)' : 'Character Editor'">
+        </h1>
+        <div class="flex items-center gap-2">
+          <!-- 提示詞設定切換鈕 -->
+          <button @click="showPromptSettings = !showPromptSettings" class="text-neutral-400 hover:text-white transition" title="AI 提示詞設定">
+            <svg x-show="!showPromptSettings" class="w-5 h-5 drop-shadow-[0_0_5px_rgba(99,102,241,0.5)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            <svg x-show="showPromptSettings" class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+
+          <select x-show="!showPromptSettings" class="bg-neutral-800 text-[11px] px-2 py-1 rounded text-neutral-300 border-none outline-none cursor-pointer hover:bg-neutral-700 transition">
+            <option>白鸟爱丽莎</option>
+            <option>西园寺爱丽莎</option>
+            <option value="new">+ 新增角色</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==============================================
+         畫面 A: 角色編輯器主畫面
+         ============================================== -->
+    <div x-show="!showPromptSettings" class="flex flex-col h-full overflow-hidden">
+
+      <!-- 編輯器工具列 -->
+      <div class="bg-neutral-900 px-3 py-2 flex items-center justify-between shadow-sm shrink-0 border-b border-neutral-800/50">
+        <div class="flex gap-1.5 relative">
+          <!-- AI 填寫下拉 -->
+          <div class="relative" @click.outside="aiDropdown = false">
+            <button @click="aiDropdown = !aiDropdown" class="flex items-center gap-1 bg-pink-500/10 hover:bg-pink-500/20 shadow-[0_0_10px_rgba(236,72,153,0.1)] text-pink-400 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-colors">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              AI 填寫 ▾
+            </button>
+            <div x-show="aiDropdown" x-transition.opacity class="absolute top-10 left-0 bg-neutral-800 border border-neutral-700 shadow-xl rounded-lg py-1 w-32 z-50 text-xs">
+              <button @click="triggerAiFill('all')" class="w-full text-left px-3 py-1.5 hover:bg-neutral-700 text-neutral-200">全部填寫 (Full)</button>
+              <button @click="triggerAiFill('section')" class="w-full text-left px-3 py-1.5 hover:bg-neutral-700 text-neutral-200">填寫當前分區</button>
+            </div>
+          </div>
+
+          <!-- 檢查世界書按鈕 (New Feature) -->
+          <button @click="alert('系統已檢查：目前有匹配的【角色世界書】綁定！');" class="flex items-center gap-1 bg-indigo-500/10 hover:bg-indigo-500/20 shadow-[0_0_8px_rgba(99,102,241,0.1)] text-indigo-400 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-colors" title="檢查關聯的世界書條目狀態">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            檢查角色世界書條目
+          </button>
+
+          <button class="flex items-center p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors" title="自動排版"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg></button>
+          <button class="flex items-center p-1.5 rounded-lg text-neutral-400 hover:text-red-400 hover:bg-red-900/30 transition-colors" title="重置本區 (還原)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg></button>
+        </div>
+        <!-- Diff 切換按鈕 -->
+        <button @click="diffMode = !diffMode" :class="diffMode ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/50' : 'bg-neutral-800 text-neutral-400 border-transparent'" class="flex items-center gap-1 px-2.5 py-1 rounded border text-[11px] font-medium transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg> Diff
+        </button>
+      </div>
+
+      <!-- 主分類 Tabs (橫向滾動) -->
+      <div class="flex overflow-x-auto gap-2 px-3 py-2 bg-neutral-900/80 shrink-0 border-b border-neutral-800 hide-scrollbar shadow-inner">
+        <template x-for="tab in tabs">
+          <button @click="activeTab = tab.id"
+                  :class="activeTab === tab.id ? 'bg-neutral-700 text-white shadow-sm ring-1 ring-neutral-500' : 'bg-neutral-800/50 text-neutral-500 hover:bg-neutral-700/80 hover:text-neutral-300'"
+                  class="whitespace-nowrap px-3 py-1.5 rounded-full text-[11px] font-medium transition-all duration-200" x-text="tab.name"></button>
+        </template>
+      </div>
+
+      <!-- 樹狀結構內容區 -->
+      <div class="flex-grow overflow-y-auto p-4 space-y-4 pb-20">
+
+        <!-- 一般資料區塊 -->
+        <div x-show="['info', 'appearance', 'personality', 'social', 'fetish'].includes(activeTab)" class="space-y-4">
+
+          <p class="text-[10px] text-neutral-500 mb-2 leading-relaxed">
+            此區為動態樹狀結構。頂層「預設欄位 (帶有🔒)」無法修改 Key 和刪除，但內部子欄位可以自由新增、更改類型(T)。滑鼠移至每一行右側即可顯示操作面板。
+          </p>
+
+          <div class="bg-neutral-800/40 border-l-[3px] border-l-indigo-500 border-y border-r border-neutral-800 rounded-r-xl rounded-l-sm overflow-hidden mb-4">
+            <div class="bg-neutral-800/60 px-3 py-2 flex justify-between items-center group relative">
+              <span class="text-xs font-semibold text-neutral-300 flex items-center gap-1"><span class="text-indigo-400">🔒</span> <span x-text="activeTab"></span> <span class="text-[9px] bg-neutral-700 text-neutral-400 px-1 rounded">Object</span></span>
+
+              <div class="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+                 <button onclick="alert('靜態預覽按鈕：實裝時將新增子欄位！')" class="text-[9px] px-1.5 py-0.5 text-neutral-300 hover:text-white bg-neutral-700 rounded shadow hover:bg-indigo-600 transition" title="新增子欄位">+ Sub</button>
+              </div>
+            </div>
+
+            <div class="p-3 bg-[#0f0f0f] space-y-2 relative">
+
+              <!-- 節點 1: String type (Key-Value) -->
+              <div class="group flex items-start gap-2 relative py-1 rounded hover:bg-neutral-800/50 -m-1 p-1 transition-colors">
+                <input type="text" class="bg-neutral-800 text-pink-300 text-[11px] px-2 py-1 rounded w-24 font-mono border border-neutral-700 focus:border-indigo-500 outline-none placeholder-neutral-600" value="height">
+                <span class="text-neutral-500 text-xs mt-1">:</span>
+
+                <template x-if="!diffMode">
+                  <input type="text" class="bg-neutral-900 border border-neutral-700 rounded text-xs px-2 py-1 text-neutral-300 flex-grow focus:border-indigo-500 outline-none" value="168cm">
+                </template>
+                <template x-if="diffMode">
+                   <div class="bg-neutral-900/50 border border-neutral-800 rounded text-xs px-2 py-1 flex-grow font-mono">
+                      <span class="text-red-400 line-through bg-red-400/10 px-[2px] rounded mr-1">165</span><span class="text-green-400 bg-green-400/10 px-[2px] rounded">168</span>cm
+                   </div>
+                </template>
+
+                <div class="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 absolute right-2 top-1.5 bg-neutral-800 p-0.5 border border-neutral-700 shadow-xl rounded z-10">
+                   <!-- 切換型別選單 -->
+                   <div class="relative" x-data="{ openTypeDropdown: false }" @click.outside="openTypeDropdown = false">
+                     <button @click="openTypeDropdown = !openTypeDropdown" class="text-[10px] w-5 h-5 flex items-center justify-center text-neutral-400 hover:text-white bg-neutral-700 hover:bg-neutral-600 rounded" title="修改類型 (String/List/Object)">T</button>
+                     <div x-show="openTypeDropdown" class="absolute right-0 top-6 bg-neutral-800 border border-neutral-700 shadow-2xl rounded py-1 z-50 w-24 flex flex-col" style="display: none;">
+                        <button class="text-left px-2 py-1.5 text-[10px] text-neutral-300 hover:bg-indigo-600 hover:text-white transition">⇋ 轉換為 String</button>
+                        <button class="text-left px-2 py-1.5 text-[10px] text-neutral-300 hover:bg-indigo-600 hover:text-white transition">⇋ 轉換為 List</button>
+                        <button class="text-left px-2 py-1.5 text-[10px] text-neutral-300 hover:bg-indigo-600 hover:text-white transition">⇋ 轉換為 Object</button>
+                     </div>
+                   </div>
+                   <button onclick="alert('靜態預覽按鈕：實裝時觸發新增兄弟欄位！');" class="text-[10px] w-5 h-5 flex items-center justify-center text-neutral-400 hover:text-white bg-neutral-700 hover:bg-neutral-600 rounded" title="新增兄弟欄位 (Sibling)">+</button>
+                   <button onclick="alert('靜態預覽按鈕：實裝時觸發刪除');" class="text-[10px] w-5 h-5 flex items-center justify-center text-red-400 hover:text-white hover:bg-red-600 bg-neutral-700 rounded" title="刪除本欄目">✖</button>
+                </div>
+              </div>
+
+              <!-- 節點 2: Nested Object (attire) -->
+              <div class="group flex flex-col gap-1 relative py-1 rounded hover:bg-neutral-800/50 -m-1 p-1 transition-colors pl-2 mt-2">
+                <div class="flex items-center gap-2">
+                  <input type="text" class="bg-neutral-800 text-pink-300 text-[11px] px-2 py-1 rounded w-24 font-mono border border-neutral-700 focus:border-indigo-500 outline-none" value="attire">
+                  <span class="text-[9px] bg-neutral-700 text-neutral-400 px-1 rounded">Object</span>
+
+                  <div class="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 ml-auto">
+                     <!-- 切換型別選單 -->
+                     <div class="relative" x-data="{ openTypeDropdown: false }" @click.outside="openTypeDropdown = false">
+                       <button @click="openTypeDropdown = !openTypeDropdown" class="text-[10px] px-1.5 py-0.5 text-neutral-400 hover:text-white bg-neutral-700 hover:bg-neutral-600 rounded h-5">T</button>
+                       <div x-show="openTypeDropdown" class="absolute right-0 top-6 bg-neutral-800 border border-neutral-700 shadow-2xl rounded py-1 z-50 w-24 flex flex-col" style="display: none;">
+                          <button class="text-left px-2 py-1.5 text-[10px] text-neutral-300 hover:bg-indigo-600 hover:text-white transition">⇋ 轉換為 String</button>
+                          <button class="text-left px-2 py-1.5 text-[10px] text-neutral-300 hover:bg-indigo-600 hover:text-white transition">⇋ 轉換為 List</button>
+                          <button class="text-left px-2 py-1.5 text-[10px] text-neutral-300 hover:bg-indigo-600 hover:text-white transition">⇋ 轉換為 Object</button>
+                       </div>
+                     </div>
+                     <button onclick="alert('靜態預覽按鈕：實裝時觸發新增兄弟欄位！');" class="text-[10px] px-1.5 py-0.5 text-neutral-400 hover:text-white bg-neutral-700 hover:bg-neutral-600 rounded h-5">+ 兄弟</button>
+                     <button onclick="alert('靜態預覽按鈕：實裝時觸發新增巢狀子欄位！');" class="text-[10px] px-1.5 py-0.5 text-neutral-300 hover:text-white bg-indigo-600 hover:bg-indigo-500 rounded shadow h-5">+ 子級</button>
+                     <button onclick="alert('靜態預覽按鈕：實裝時觸發刪除');" class="text-[10px] px-1.5 py-0.5 text-red-400 hover:text-white hover:bg-red-600 bg-neutral-700 rounded h-5">✖</button>
+                  </div>
+                </div>
+
+                <div class="pl-4 border-l border-neutral-700/50 ml-2 mt-1 space-y-1">
+                  <div class="flex items-start gap-2 relative group/sub hover:bg-neutral-800/80 p-1 -m-1 rounded">
+                     <input type="text" class="bg-neutral-800 text-pink-300 text-[11px] px-1 py-1 rounded w-16 font-mono border border-transparent outline-none" value="school">
+                     <span class="text-neutral-500 text-xs mt-1">:</span>
+                     <textarea class="bg-neutral-900 border border-neutral-700 rounded text-[11px] px-2 py-1 text-neutral-300 flex-grow min-h-[40px] focus:border-indigo-500 outline-none">經過私自剪裁的制服，裙子很短。</textarea>
+                     <div class="opacity-0 group-hover/sub:opacity-100 absolute right-1 top-1 flex gap-0.5 bg-neutral-800 p-0.5 rounded shadow z-10">
+                       <button onclick="alert('靜態預覽按鈕：實裝時觸發刪除');" class="text-[10px] w-4 h-4 text-red-400 hover:bg-red-600 hover:text-white rounded bg-neutral-700">✖</button>
+                     </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- 條件邏輯行為區塊 -->
+        <div x-show="['arousal', 'alert', 'affection', 'obedience', 'global'].includes(activeTab)" x-transition class="space-y-4">
+
+          <p class="text-[10px] text-neutral-500 mb-2 leading-relaxed" x-show="activeTab !== 'global'">
+            此區為隱藏的 EJS `<%_ if _%>` 邏輯區域，透過切換階段按鈕，快速建立與編輯角色各種數值的各階層反應。
+          </p>
+
+          <div class="flex gap-[2px] bg-neutral-800 p-[2px] rounded border border-neutral-700 shadow-inner" x-show="activeTab !== 'global'">
+            <button @click="innerTab = 20" :class="innerTab === 20 ? 'bg-neutral-600 text-white shadow' : 'text-neutral-400 hover:bg-neutral-700'" class="flex-1 py-1 text-[9px] rounded transition-colors font-medium">< 20</button>
+            <button @click="innerTab = 40" :class="innerTab === 40 ? 'bg-neutral-600 text-white shadow' : 'text-neutral-400 hover:bg-neutral-700'" class="flex-1 py-1 text-[9px] rounded transition-colors font-medium">< 40</button>
+            <button @click="innerTab = 60" :class="innerTab === 60 ? 'bg-neutral-600 text-white shadow' : 'text-neutral-400 hover:bg-neutral-700'" class="flex-1 py-1 text-[9px] rounded transition-colors font-medium">< 60</button>
+            <button @click="innerTab = 80" :class="innerTab === 80 ? 'bg-neutral-600 text-white shadow' : 'text-neutral-400 hover:bg-neutral-700'" class="flex-1 py-1 text-[9px] rounded transition-colors font-medium">< 80</button>
+            <button @click="innerTab = 100" :class="innerTab === 100 ? 'bg-neutral-600 text-white shadow' : 'text-neutral-400 hover:bg-neutral-700'" class="flex-1 py-1 text-[9px] rounded transition-colors font-medium">< 100</button>
+            <button @click="innerTab = 999" :class="innerTab === 999 ? 'bg-pink-600 text-white shadow shadow-pink-500/30' : 'text-neutral-400 hover:bg-neutral-700'" class="flex-1 py-1 text-[9px] rounded transition-colors font-medium">>= 100</button>
+          </div>
+
+          <div class="bg-[#0f0f0f] border border-neutral-800 rounded-xl overflow-hidden shadow-inner p-3 space-y-3 relative">
+            <div class="absolute right-2 top-2 text-[40px] font-bold text-neutral-800/30 pointer-events-none z-0" x-show="activeTab !== 'global'">
+              <span x-show="innerTab === 20">&lt; 20</span>
+              <span x-show="innerTab === 40">20 ~ 39</span>
+              <span x-show="innerTab === 60">40 ~ 59</span>
+              <span x-show="innerTab === 80">60 ~ 79</span>
+              <span x-show="innerTab === 100">80 ~ 99</span>
+              <span x-show="innerTab === 999">&ge; 100</span>
+            </div>
+
+            <div class="relative z-10 w-full">
+              <div class="flex items-center gap-2 mb-2 group">
+                <input type="text" class="bg-neutral-800 text-pink-300 text-[11px] px-2 py-1 rounded w-24 border border-transparent font-bold" :value="activeTab === 'global' ? '全局逻辑' : '当前状态'">
+                <span class="text-[9px] bg-neutral-700 text-neutral-400 px-1 rounded">Object</span>
+                <button onclick="alert('靜態預覽按鈕：實裝時觸發新增')" class="opacity-0 group-hover:opacity-100 text-[10px] px-1.5 py-0.5 text-neutral-300 bg-neutral-700 hover:bg-neutral-600 rounded ml-auto transition">+ 子級</button>
+              </div>
+
+              <div class="pl-4 border-l border-neutral-700/50 ml-2 space-y-2">
+                <div class="group flex flex-col gap-1 relative">
+                  <div class="flex items-center gap-2">
+                    <input type="text" class="bg-transparent text-pink-300 text-[11px] border-b border-dashed border-neutral-600 focus:border-indigo-500 outline-none w-12" value="表现">
+                    <span class="text-[9px] bg-neutral-700 text-neutral-400 px-1 rounded">List</span>
+                    <div class="opacity-0 group-hover:opacity-100 flex items-center gap-1 ml-auto">
+                       <button onclick="alert('靜態預覽按鈕：實裝時觸發刪除')" class="text-[9px] px-1 bg-neutral-700 text-red-400 hover:bg-red-500 hover:text-white rounded">✖</button>
+                       <button onclick="alert('靜態預覽按鈕：實裝時觸發新增')" class="text-[9px] px-1 bg-indigo-600 text-white hover:bg-indigo-500 rounded">+</button>
+                    </div>
+                  </div>
+                  <div class="pl-2 border-l border-neutral-800 ml-1">
+                    <div class="flex gap-2">
+                      <span class="text-neutral-500 text-xs">-</span>
+                      <textarea class="w-full bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-[11px] text-neutral-300 min-h-[40px] focus:outline-none focus:border-indigo-500">主動抱住玩家撒嬌，即使在公眾場合也會脫掉衣服要求交配。</textarea>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 底部動作按鈕 -->
+      <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-[#0c0c0c]/90 to-transparent pointer-events-none flex justify-end">
+        <button class="pointer-events-auto bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_15px_rgba(79,70,229,0.4)] rounded-full px-5 py-2 text-xs font-bold flex items-center gap-2 transition-transform active:scale-95 border border-indigo-400/50">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          產生 / 儲存世界書
+        </button>
+      </div>
+    </div>
+
+
+    <!-- ==============================================
+         畫面 B: 提示詞模板管理 (Prompt Settings)
+         ============================================== -->
+    <div x-show="showPromptSettings" style="display: none;" x-transition.opacity class="flex flex-col h-full overflow-hidden bg-neutral-900/40 relative">
+
+      <div class="px-3 py-2 border-b border-neutral-800 bg-neutral-900 shrink-0 flex items-center gap-2 overflow-x-auto hide-scrollbar text-xs">
+         <span class="text-neutral-400 font-bold whitespace-nowrap shrink-0 ml-1">針對：</span>
+         <select x-model="currentPromptContext" class="bg-neutral-800 text-indigo-300 font-bold px-3 py-1.5 rounded-lg border border-neutral-700 outline-none cursor-pointer w-full text-[11px] shadow-sm tracking-wide focus:border-indigo-500">
+           <option value="global_output">全局要求：輸出結構與解析規範</option>
+           <option disabled>─────────────</option>
+           <option value="full_fill">模式：全部填寫 (Full Fill)</option>
+           <option value="sec_info">分區：基本資訊</option>
+           <option value="sec_social">分區：社交網絡</option>
+           <option value="sec_personality">分區：性格與興趣</option>
+         </select>
+      </div>
+
+      <div class="flex-grow overflow-y-auto p-4 space-y-4 pb-24">
+
+        <p class="text-[10px] text-neutral-400 bg-neutral-800/50 p-2.5 rounded-lg border border-neutral-700/50 leading-relaxed shadow-inner">
+          <span x-show="currentPromptContext === 'global_output'"><b>輸出規範</b>：強制墊底的 AI 回應格式限制。這是最重要的設定。拖曳 ☰ 來決定各指令先後順序。發送時，這份規範會加在個別分區指令的最後面。</span>
+          <span x-show="currentPromptContext !== 'global_output'"><b>模板清單</b>：在執行「<span x-text="currentPromptContext" class="text-indigo-400"></span>」時會發送的組合提示詞。支援拖曳排序、下方的 Macro 按鈕可快速引用變數。</span>
+        </p>
+
+        <div id="prompts-list" class="space-y-3 pb-2">
+          <template x-for="(prompt, index) in getCurrentPrompts()" :key="prompt.id">
+
+            <div class="bg-[#141414] border rounded-lg overflow-hidden group/prompt flex flex-col shadow transition-all" :class="prompt.isSystem ? 'border-pink-900/50' : 'border-neutral-700'">
+
+               <div class="px-2 py-1.5 flex items-center gap-2 border-b" :class="prompt.isSystem ? 'bg-pink-900/20 border-pink-900/40' : 'bg-[#1e1e1e] border-neutral-800'">
+                 <div class="prompt-drag-handle cursor-move p-0.5 rounded" :class="prompt.isSystem ? 'text-pink-500 hover:bg-pink-900/50' : 'text-neutral-500 hover:bg-neutral-700 hover:text-white'">
+                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
+                 </div>
+
+                 <input type="text" x-model="prompt.title" :disabled="prompt.isSystem" class="text-[11px] font-semibold bg-transparent border-none outline-none w-full placeholder-neutral-600 focus:ring-0" :class="prompt.isSystem ? 'text-pink-300' : 'text-neutral-200 focus:text-white'">
+
+                 <button x-show="!prompt.isSystem" @click="deletePrompt(index)" class="text-neutral-500 hover:text-red-400 bg-neutral-800/50 hover:bg-neutral-700 px-1 py-1 rounded transition">
+                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                 </button>
+               </div>
+
+               <div x-show="!prompt.isSystem" class="px-2 py-1 bg-neutral-800/60 flex items-center gap-1.5 overflow-x-auto hide-scrollbar border-b border-neutral-800">
+                  <span class="text-[9px] text-neutral-500 tracking-wider">插入：</span>
+                  <button @click="insertMacro(index, '{{裝配角色名字}}')" class="text-[9px] px-1.5 py-0.5 rounded bg-neutral-700 text-neutral-300 hover:text-white hover:bg-indigo-600 transition">角色名稱</button>
+                  <button @click="insertMacro(index, '{{當前狀態與內容}}')" class="text-[9px] px-1.5 py-0.5 rounded bg-neutral-700 text-neutral-300 hover:text-white hover:bg-indigo-600 transition">前置資料</button>
+
+                  <div class="relative group/wb">
+                    <button class="text-[9px] px-1.5 py-0.5 rounded border border-indigo-500/50 text-indigo-300 bg-indigo-900/30 hover:bg-indigo-600 hover:text-white transition flex items-center gap-1">
+                      <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                      自世界書引入選項 ▾
+                    </button>
+                    <div class="hidden group-hover/wb:flex absolute top-full left-0 mt-1 flex-col bg-neutral-800 border border-indigo-500/50 rounded shadow-xl z-20 w-32 overflow-hidden">
+                       <button @click="insertMacro(index, '{{WI:學校背景與規則}}')" class="text-[10px] text-left px-2 py-1.5 text-neutral-300 hover:bg-indigo-600 hover:text-white">引入: 學校背景</button>
+                       <button @click="insertMacro(index, '{{WI:催眠等級常識}}')" class="text-[10px] text-left px-2 py-1.5 text-neutral-300 hover:bg-indigo-600 hover:text-white">引入: 催眠等級</button>
+                       <button @click="insertMacro(index, '{{WI:請輸入條目}}')" class="text-[10px] text-left px-2 py-1.5 text-indigo-300 hover:bg-indigo-600 hover:text-white border-t border-neutral-700 bg-neutral-800">手動輸入...</button>
+                    </div>
+                  </div>
+               </div>
+
+               <div class="p-2 relative">
+                 <textarea id="'prompt-txt-'+index" x-model="prompt.content" :disabled="prompt.isSystem"
+                    class="w-full bg-transparent border-none p-1 text-[11px] font-mono focus:outline-none focus:ring-0 min-h-[60px] resize-y leading-relaxed"
+                    :class="prompt.isSystem ? 'text-neutral-500 cursor-not-allowed' : 'text-indigo-200 focus:bg-neutral-900/50 placeholder-neutral-700'"></textarea>
+               </div>
+            </div>
+
+          </template>
+        </div>
+
+        <button @click="addPrompt()" class="w-full py-2 mb-2 border border-dashed border-indigo-700/50 rounded-lg text-xs font-bold text-indigo-400 hover:text-indigo-300 hover:bg-indigo-900/20 hover:border-indigo-500 transition-colors flex items-center justify-center gap-1 shadow-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+          新增提示詞卡片
+        </button>
+
+      </div>
+
+      <div class="absolute bottom-0 left-0 right-0 z-30">
+         <div x-show="showPreview" x-transition.origin.bottom class="bg-black/95 border-t border-indigo-500/50 shadow-[0_-10px_20px_rgba(0,0,0,0.5)] p-4 max-h-[400px] overflow-y-auto flex flex-col">
+            <h3 class="text-xs font-bold text-indigo-400 mb-2 flex items-center justify-between">
+              最終發送組裝預覽
+              <button @click="showPreview = false" class="text-neutral-500 hover:text-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            </h3>
+            <textarea readonly class="w-full bg-transparent text-neutral-400 font-mono text-[10px] leading-relaxed resize-none focus:outline-none flex-grow min-h-[250px] hide-scrollbar" :value="generatePreviewString()"></textarea>
+         </div>
+
+         <div class="bg-neutral-900/90 backdrop-blur border-t border-neutral-800 p-3 pt-2 flex justify-between items-center px-4">
+            <span class="text-[10px] text-neutral-500">組合順序自動整合了全域與分區規範</span>
+            <button @click="showPreview = !showPreview" class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/40 border border-indigo-500/30 rounded-lg text-[11px] font-bold shadow-sm transition">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+              <span x-text="showPreview ? '收起預覽' : '預覽結合結果'"></span>
+            </button>
+         </div>
+      </div>
+
+    </div>
+
+    <!-- ==============================================
+         彈出視窗 Modal: AI 填寫方向
+         ============================================== -->
+    <div x-show="showAiModal" x-transition.opacity class="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" style="display: none;">
+      <div @click.outside="showAiModal = false" x-show="showAiModal" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-4 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100" class="w-full max-w-sm bg-[#16161a] border border-neutral-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border-t-pink-500 border-t-[3px]">
+        <div class="px-4 py-3 border-b border-neutral-800 flex justify-between items-center">
+          <h2 class="text-sm font-bold text-neutral-200 flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-pink-400" fill="currentColor" viewBox="0 0 20 20"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path></svg>
+            <span x-text="fillMode === 'all' ? 'AI 全部填寫 (Full Fill)' : 'AI 分區填寫 (' + activeTab + ')'"></span>
+          </h2>
+          <button @click="showAiModal = false" class="text-neutral-500 hover:text-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        </div>
+        <div class="p-4 space-y-3">
+          <p class="text-[11px] text-neutral-400">
+            請輸入希望 AI 發展或修改的方向。留空則使用預設規則。<br>
+            <span class="text-indigo-400">當前將調用 [<span x-text="activeTab"></span>] 分區之提示詞。</span>
+          </p>
+          <textarea x-model="aiPromptInput" class="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-neutral-200 focus:outline-none focus:border-pink-500 min-h-[80px] resize-none" placeholder="例如：變得更傲嬌... (選填)"></textarea>
+        </div>
+        <div class="px-4 py-3 bg-neutral-800/50 flex justify-end gap-2 border-t border-neutral-800">
+          <button @click="showAiModal = false" class="px-4 py-1.5 text-xs text-neutral-400 hover:bg-neutral-800 rounded-lg">取消</button>
+          <button @click="submitAiFill()" class="px-4 py-1.5 text-xs font-bold bg-pink-600 hover:bg-pink-500 text-white rounded-lg transition-all">送出至 AI</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function editorApp() {
+      return {
+        diffMode: false,
+        aiDropdown: false,
+        showPromptSettings: false,
+        activeTab: 'info',
+        innerTab: 999,
+        showPreview: false,
+        showAiModal: false,
+        fillMode: '',
+        aiPromptInput: '',
+        currentPromptContext: 'sec_social',
+
+        promptsDb: {
+          'global_output': [
+             { id: 1, title: 'AI 輸出嚴格格式限制', content: '所有的回復絕對不能包含 markdown code block (如 ```yaml)。必須以純 JSON/YAML 格式返回。', isSystem: false },
+             { id: 2, title: '插入或替換規則', content: '請只針對新增刪除的節點輸出，若陣列原本就有值，請保留它們並接續補寫。不要輸出無關內容。', isSystem: false }
+          ],
+          'full_fill': [
+             { id: 3, title: '擴增空白屬性指令', content: '這是自動全部填寫模式。你將發想所有的空白值。', isSystem: false },
+             { id: 4, title: '玩家自訂方向 (系統保留)', content: '[將自動插入玩家要求：{{玩家輸入}}]', isSystem: true }
+          ],
+          'sec_personality': [
+             { id: 5, title: '性格撰寫前提', content: '此分區負責「性格與興趣」。必須遵循她的基本資料。', isSystem: false },
+             { id: 6, title: '玩家自訂方向 (系統保留)', content: '[系統將自動插入玩家要求：{{玩家輸入}}]', isSystem: true }
+          ],
+          'sec_social': [
+             { id: 7, title: '角色與背景傳入', content: '當前角色名稱: {{裝配角色名字}}\n本遊戲世界的學校文化請參考: \n{{WI:學校背景與規則}}', isSystem: false },
+             { id: 8, title: '社交互動邏輯', content: '這名角色的人際網路非常複雜，請根據設定擴充兩名潛在的朋友或是對手關係。', isSystem: false },
+             { id: 9, title: '玩家自訂方向 (系統保留)', content: '如果有玩家特殊指示，請優先執行：\n{{玩家特殊指示}}', isSystem: true }
+          ],
+          'sec_info': [
+             { id: 10, title: '基本資料擴充要求', content: '在姓名、身高、體重以外，發想符合設定的額外小標籤，例如三圍、罩杯等資訊。', isSystem: false },
+             { id: 11, title: '玩家自訂方向 (系統保留)', content: '如果有玩家特殊指示，請優先執行：\n{{玩家特殊指示}}', isSystem: true }
+          ]
+        },
+
+        tabs: [
+          { id: 'info', name: '基本資訊' },
+          { id: 'social', name: '社交網絡' },
+          { id: 'personality', name: '性格與興趣' },
+          { id: 'appearance', name: '外觀特點' },
+          { id: 'fetish', name: '性癖與弱點' },
+          { id: 'arousal', name: '發情行為' },
+          { id: 'alert', name: '警戒行為' },
+          { id: 'affection', name: '好感行為' },
+          { id: 'obedience', name: '服從行為' },
+          { id: 'global', name: '全局行為' }
+        ],
+
+        getCurrentPrompts() {
+           if(!this.promptsDb[this.currentPromptContext]) {
+             this.promptsDb[this.currentPromptContext] = [
+               { id: Date.now(), title: '自訂指令', content: '針對此區域發想。', isSystem: false },
+               { id: Date.now() + 1, title: '玩家自訂方向 (系統)', content: '{{玩家輸入}}', isSystem: true }
+             ];
+           }
+           return this.promptsDb[this.currentPromptContext];
+        },
+
+        addPrompt() {
+           this.promptsDb[this.currentPromptContext].push({
+             id: Date.now(),
+             title: '新建模板',
+             content: '',
+             isSystem: false
+           });
+        },
+
+        deletePrompt(index) {
+           this.promptsDb[this.currentPromptContext].splice(index, 1);
+        },
+
+        insertMacro(index, macroText) {
+           let prompt = this.promptsDb[this.currentPromptContext][index];
+           if (prompt && !prompt.isSystem) {
+             prompt.content += (prompt.content.length > 0 && !prompt.content.endsWith('\n') ? ' ' : '') + macroText;
+           }
+        },
+
+        generatePreviewString() {
+           let str = "";
+           let contextList = this.promptsDb[this.currentPromptContext] || [];
+           str += `// ======= [發送給 AI 的主要指令序列] =======\n\n`;
+           contextList.forEach(p => {
+              str += `--- [ 區塊: ${p.title} ] ---\n${p.content}\n\n`;
+           });
+           if (this.currentPromptContext !== 'global_output' && this.promptsDb['global_output']) {
+              str += `\n// ======= [全局輸出與解析強制規範 (底層)] =======\n\n`;
+              this.promptsDb['global_output'].forEach(p => {
+                 str += `--- [ 區塊: ${p.title} ] ---\n${p.content}\n\n`;
+              });
+           }
+           return str.trim();
+        },
+
+        triggerAiFill(mode) {
+           this.aiDropdown = false;
+           this.fillMode = mode;
+           this.aiPromptInput = '';
+           this.showAiModal = true;
+        },
+
+        submitAiFill() {
+           alert("發送成功！模式: " + this.fillMode);
+           this.showAiModal = false;
+        },
+
+        initSortable() {
+           var el = document.getElementById('prompts-list');
+           var self = this;
+           if (el) {
+             if (el.sortableInst) el.sortableInst.destroy();
+             el.sortableInst = new Sortable(el, {
+               animation: 150,
+               handle: '.prompt-drag-handle',
+               ghostClass: 'ghost-sortable',
+               onStart: function (evt) {
+                 evt.item.oldNextSibling = evt.item.nextSibling;
+               },
+               onEnd: function (evt) {
+                 if (evt.oldIndex === evt.newIndex) return;
+                 // 1. 強制復原 SortableJS 的 DOM 移動，避免干擾 Alpine 渲染迴圈
+                 if (evt.item.oldNextSibling) {
+                   evt.item.parentNode.insertBefore(evt.item, evt.item.oldNextSibling);
+                 } else {
+                   evt.item.parentNode.appendChild(evt.item);
+                 }
+                 // 2. 更新底群陣列，由 Alpine 自動重繪 (這樣就能綁定最新的陣列順序)
+                 let arr = self.promptsDb[self.currentPromptContext];
+                 let item = arr.splice(evt.oldIndex, 1)[0];
+                 arr.splice(evt.newIndex, 0, item);
+               }
+             });
+           }
+        }
+      }
+    }
+  </script>
+</body>
+</html>
