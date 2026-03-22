@@ -470,6 +470,17 @@ type PersistedStore = {
   customQuests: Record<string, CustomQuestDef>;
   calendarEvents: Record<string, CustomCalendarEvent>;
   customHypnosis: Record<string, CustomHypnosisDef>;
+  apiSettings?: {
+    apiKey: string;
+    apiEndpoint: string;
+    modelName: string;
+    temperature: number;
+    maxTokens: number;
+    topP: number;
+    presencePenalty: number;
+    frequencyPenalty: number;
+    streamMode?: 'streaming' | 'fake_streaming' | 'non_streaming';
+  };
 };
 
 const STORE_SCHEMA: z.ZodType<PersistedStore> = z
@@ -540,6 +551,19 @@ const STORE_SCHEMA: z.ZodType<PersistedStore> = z
         }),
       )
       .default({}),
+    apiSettings: z
+      .object({
+        apiKey: z.string().default(''),
+        apiEndpoint: z.string().default(''),
+        modelName: z.string().default(''),
+        temperature: z.coerce.number().min(0).max(2).default(0.7),
+        maxTokens: z.coerce.number().int().min(1).default(2048),
+        topP: z.coerce.number().min(0).max(1).default(1),
+        presencePenalty: z.coerce.number().min(-2).max(2).default(0),
+        frequencyPenalty: z.coerce.number().min(-2).max(2).default(0),
+        streamMode: z.enum(['streaming', 'fake_streaming', 'non_streaming']).default('non_streaming'),
+      })
+      .optional(),
   })
   .default({
     version: 1,
@@ -1615,5 +1639,47 @@ export const DataService = {
 
     console.info(`[HypnoOS] 删除自定义催眠「${entry.title}」(退款 ¥${refund.toLocaleString()})`);
     return { ok: true, refund };
+  },
+
+  // --- API Settings (shared across all apps) ---
+
+  getApiSettings: (): PersistedStore['apiSettings'] => {
+    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
+    return store.apiSettings;
+  },
+
+  updateApiSettings: async (patch: Partial<NonNullable<PersistedStore['apiSettings']>>): Promise<void> => {
+    await updateStoreWith(s => {
+      const current = s.apiSettings ?? {
+        apiKey: '',
+        apiEndpoint: '',
+        modelName: '',
+        temperature: 0.7,
+        maxTokens: 2048,
+        topP: 1,
+        presencePenalty: 0,
+        frequencyPenalty: 0,
+        streamMode: 'non_streaming' as const,
+      };
+      return { ...s, apiSettings: { ...current, ...patch } };
+    });
+    console.info('[HypnoOS] API 设置已更新');
+  },
+
+  fetchAvailableModels: async (endpoint: string, apiKey: string): Promise<string[]> => {
+    const url = endpoint.replace(/\/$/, '') + '/v1/models';
+    try {
+      const resp = await fetch(url, {
+        headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const json = await resp.json() as { data?: Array<{ id: string }> };
+      const ids = (json.data ?? []).map(m => m.id).filter(Boolean);
+      console.info(`[HypnoOS] 获取到 ${ids.length} 个可用模型`);
+      return ids;
+    } catch (err) {
+      console.warn('[HypnoOS] 获取模型列表失败', err);
+      return [];
+    }
   },
 };

@@ -6,6 +6,7 @@ export enum AppMode {
   CALENDAR = 'CALENDAR',
   HELP = 'HELP',
   ACHIEVEMENTS = 'ACHIEVEMENTS', // Replaces Ghost/WIP
+  SETTINGS = 'SETTINGS', // System-wide settings
   WIP = 'WIP',
 }
 
@@ -17,6 +18,19 @@ export interface UserResources {
   totalConsumedMc: number; // Used for VIP progress
   money: number; // Yen
   suspicion: number; // 0-100
+}
+
+// AI API Settings (shared across all apps that use AI generation)
+export interface ApiSettings {
+  apiKey: string;
+  apiEndpoint: string;
+  modelName: string;
+  temperature: number;        // 0.0 - 2.0
+  maxTokens: number;
+  topP: number;               // 0.0 - 1.0
+  presencePenalty: number;    // -2.0 - 2.0
+  frequencyPenalty: number;   // -2.0 - 2.0
+  streamMode?: 'streaming' | 'fake_streaming' | 'non_streaming';
 }
 
 // Hypnosis Feature Definition
