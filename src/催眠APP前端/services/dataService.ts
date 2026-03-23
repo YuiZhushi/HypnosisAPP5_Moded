@@ -666,9 +666,10 @@ async function getRolesAndSystemSnapshot(): Promise<{ system: Record<string, any
 
   const vars = getVariables(CHAT_OPTION);
   const normalized = normalizeChatVariables(vars);
-  system ??= normalized.system as any;
-  roles ??= (vars as any)?.角色 ?? {};
-  return { system, roles };
+  return {
+    system: system ?? (normalized.system as any),
+    roles: roles ?? ((vars as any)?.角色 ?? {})
+  };
 }
 
 type SystemWithStore = {
@@ -977,12 +978,12 @@ export const DataService = {
     if (user) {
       updateVariablesWith(vars => {
         const { system, store } = normalizeChatVariables(vars);
-        system._MC能量 = user.mcEnergy;
-        system._MC能量上限 = user.mcEnergyMax;
-        system.当前MC点 = user.mcPoints;
-        system._累计消耗MC点 = user.totalConsumedMc;
-        system.持有零花钱 = user.money;
-        system.主角可疑度 = user.suspicion;
+        system._MC能量 = user!.mcEnergy;
+        system._MC能量上限 = user!.mcEnergyMax;
+        system.当前MC点 = user!.mcPoints;
+        system._累计消耗MC点 = user!.totalConsumedMc;
+        system.持有零花钱 = user!.money;
+        system.主角可疑度 = user!.suspicion;
         system._hypnoos = store;
         vars.系统 = system;
         return vars;
@@ -1680,6 +1681,27 @@ export const DataService = {
     } catch (err) {
       console.warn('[HypnoOS] 获取模型列表失败', err);
       return [];
+    }
+  },
+
+  // ======== 角色編輯器提示詞持久化 ========
+
+  getEditorPrompts: (): Record<string, unknown> | undefined => {
+    try {
+      const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
+      return (store as any).characterEditorPrompts;
+    } catch (err) {
+      console.warn('[HypnoOS] DataService.getEditorPrompts 失敗', err);
+      return undefined;
+    }
+  },
+
+  saveEditorPrompts: async (prompts: Record<string, unknown>): Promise<void> => {
+    try {
+      await updateStoreWith(s => ({ ...s, characterEditorPrompts: prompts } as any));
+      console.info('[HypnoOS] DataService.saveEditorPrompts 成功');
+    } catch (err) {
+      console.error('[HypnoOS] DataService.saveEditorPrompts 失敗', err);
     }
   },
 };

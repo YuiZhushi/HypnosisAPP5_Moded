@@ -1,5 +1,5 @@
 ---
-trigger: always_on
+trigger: model_decision
 description: 當需要規劃或開發新的前端 APP 功能時，必須參考的注意事項與架構設計指南。
 ---
 

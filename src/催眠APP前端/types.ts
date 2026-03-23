@@ -8,6 +8,7 @@ export enum AppMode {
   ACHIEVEMENTS = 'ACHIEVEMENTS', // Replaces Ghost/WIP
   SETTINGS = 'SETTINGS', // System-wide settings
   WIP = 'WIP',
+  CHARACTER_EDITOR = 'CHARACTER_EDITOR',
 }
 
 // User Resources Data Structure
@@ -114,4 +115,54 @@ export const VIP_LEVELS: VipTierConfig[] = [
   { tier: 'VIP4', unlockThreshold: 500, label: 'VIP 4 (深度)' },
   { tier: 'VIP5', unlockThreshold: 1000, label: 'VIP 5 (永久)' },
   { tier: 'VIP6', unlockThreshold: 2500, label: 'VIP 6 (完全控制)' },
+];
+
+// ====== Character Editor 相關 ======
+
+/** 樹狀節點的三種型別 */
+export type NodeType = 'string' | 'list' | 'object';
+
+/** 遞迴樹節點 */
+export interface EditorNode {
+  id: string;
+  key: string;
+  type: NodeType;
+  value: string;           // type='string' 時的值
+  children: EditorNode[];  // type='object'/'list' 時的子項
+  isLocked: boolean;       // 頂層預設欄位不可刪除/改 key
+}
+
+/** 提示詞模板卡片 */
+export interface PromptTemplate {
+  id: string;
+  title: string;
+  content: string;
+  isSystem: boolean;
+}
+
+/** 提示詞情境 key */
+export type PromptContextKey =
+  | 'global_output'
+  | 'full_fill'
+  | `sec_${string}`;
+
+/** 角色編輯器的分區定義 */
+export interface EditorSection {
+  id: string;
+  name: string;
+  category: 'data' | 'behavior';
+}
+
+/** 編輯器 Tab 常量 */
+export const EDITOR_SECTIONS: EditorSection[] = [
+  { id: 'info',        name: '基本資訊',   category: 'data'     },
+  { id: 'social',      name: '社交網絡',   category: 'data'     },
+  { id: 'personality', name: '性格與興趣', category: 'data'     },
+  { id: 'appearance',  name: '外觀特點',   category: 'data'     },
+  { id: 'fetish',      name: '性癖與弱點', category: 'data'     },
+  { id: 'arousal',     name: '發情行為',   category: 'behavior' },
+  { id: 'alert',       name: '警戒行為',   category: 'behavior' },
+  { id: 'affection',   name: '好感行為',   category: 'behavior' },
+  { id: 'obedience',   name: '服從行為',   category: 'behavior' },
+  { id: 'global',      name: '全局行為',   category: 'behavior' },
 ];
