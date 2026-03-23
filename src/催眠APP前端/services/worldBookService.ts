@@ -96,4 +96,185 @@ export const WorldBookService = {
       };
     }
   },
+
+  /**
+   * 檢查角色的 [mvu_plot] 人設條目，缺失則自動補入
+   */
+  checkAndEnsurePlotEntry: async (roleName: string): Promise<WbCheckResult> => {
+    const PLOT_PREFIX = '[mvu_plot]';
+    const entryName = `${PLOT_PREFIX}${roleName}人设`;
+    const DEFAULT_PLOT_ORDER = 75;
+
+    try {
+      const charWb = getCharWorldbookNames('current');
+      const wbName = charWb.primary;
+      if (!wbName) {
+        return { status: 'error', message: '角色卡未绑定世界书' };
+      }
+
+      console.info(`[HypnoOS] WorldBookService: 檢查 [mvu_plot] 條目「${entryName}」`);
+
+      const entries = await getWorldbook(wbName);
+
+      // 繁簡體相容搜尋
+      const existing = entries.find(
+        (e: any) => e.name === entryName || e.name === `${PLOT_PREFIX}${roleName}人設`,
+      );
+
+      if (existing) {
+        console.info(`[HypnoOS] WorldBookService: 條目已存在`);
+        return { status: 'pass' };
+      }
+
+      // 計算 order：找上一個 [mvu_plot]xxx人设 的最大 order + 1
+      let maxOrder = -1;
+      for (const e of entries) {
+        const name = (e as any).name ?? '';
+        if (name.startsWith(PLOT_PREFIX) && (name.endsWith('人设') || name.endsWith('人設'))) {
+          const order = (e as any).position?.order;
+          if (typeof order === 'number' && order > maxOrder) maxOrder = order;
+        }
+      }
+      const order = maxOrder >= 0 ? maxOrder + 1 : DEFAULT_PLOT_ORDER;
+
+      // 建立預設模板內容
+      const defaultContent = buildDefaultPlotContent(roleName);
+
+      await createWorldbookEntries(wbName, [
+        {
+          name: entryName,
+          enabled: true,
+          strategy: {
+            type: 'selective',
+            keys: [roleName],
+          },
+          position: {
+            type: 'before_character_definition',
+            order,
+          },
+          content: defaultContent,
+          probability: 100,
+          recursion: {
+            prevent_incoming: true,
+            prevent_outgoing: true,
+          },
+        },
+      ]);
+
+      console.info(`[HypnoOS] WorldBookService: 已建立 [mvu_plot] 條目「${entryName}」(order=${order})`);
+      return { status: 'created' };
+    } catch (err) {
+      console.error('[HypnoOS] WorldBookService: [mvu_plot] 檢查失敗', err);
+      return {
+        status: 'error',
+        message: err instanceof Error ? err.message : '未知错误',
+      };
+    }
+  },
 };
+
+/**
+ * 建立角色人設的預設模板內容
+ */
+function buildDefaultPlotContent(name: string): string {
+  return `<${name}人设>
+\`\`\`yaml
+${name}:
+  title: ""
+  gender: ""
+  age: 0
+  identity:
+    public: ""
+    hidden: ""
+  social_connection: {}
+  personality:
+    core: {}
+    conditional: {}
+    hidden: {}
+  habit: []
+  hidden_behavior: []
+  appearance:
+    height: ""
+    weight: ""
+    measurement: ""
+    style: ""
+    overview: ""
+    attire:
+      school: ""
+      casual: ""
+    feature: []
+  sexual_preference:
+    masturbation_frequency: ""
+    orgasm_response: ""
+    sensitive_spot: {}
+    hidden_fetish: {}
+    special_trait: []
+  weakness: []
+\`\`\`
+</${name}人设>
+
+<${name}行为指导>
+\`\`\`yaml
+### 当前状态
+Variables:
+  性欲: {{get_message_variable::stat_data.角色.${name}.发情值}}
+  警戒度: {{get_message_variable::stat_data.角色.${name}.警戒度}}
+  好感度: {{get_message_variable::stat_data.角色.${name}.好感度}}
+  服从度: {{get_message_variable::stat_data.角色.${name}.服从度}}
+
+### 发情状态指导
+<%_ if (getvar('stat_data.角色.${name}.发情值') < 20) { _%>
+发情状态:
+  表现:
+    - ""
+<%_ } else if (getvar('stat_data.角色.${name}.发情值') >= 20) { _%>
+发情状态:
+  表现:
+    - ""
+<%_ } _%>
+
+### 警戒度指导
+<%_ if (getvar('stat_data.角色.${name}.警戒度') < 20) { _%>
+对{{user}}的态度:
+  状态: "無警戒"
+  行为指导:
+    - ""
+<%_ } else if (getvar('stat_data.角色.${name}.警戒度') >= 20) { _%>
+对{{user}}的态度:
+  状态: "警戒"
+  行为指导:
+    - ""
+<%_ } _%>
+
+### 好感度指导
+<%_ if (getvar('stat_data.角色.${name}.好感度') < 20) { _%>
+好感表现:
+  状态: "無好感"
+  表现:
+    - ""
+<%_ } else if (getvar('stat_data.角色.${name}.好感度') >= 20) { _%>
+好感表现:
+  状态: "好感"
+  表现:
+    - ""
+<%_ } _%>
+
+### 服从度指导
+<%_ if (getvar('stat_data.角色.${name}.服从度') < 20) { _%>
+服从表现:
+  状态: "不服從"
+  表现:
+    - ""
+<%_ } else if (getvar('stat_data.角色.${name}.服从度') >= 20) { _%>
+服从表现:
+  状态: "服從"
+  表现:
+    - ""
+<%_ } _%>
+
+### 全局行为规则
+rules:
+  - ""
+\`\`\`
+</${name}行为指导>`;
+}

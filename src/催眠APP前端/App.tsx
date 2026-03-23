@@ -4,10 +4,11 @@ import { HypnosisApp, HypnoLogoSVG } from './components/HypnosisApp';
 import { AchievementApp } from './components/AchievementApp';
 import { BodyStatsApp, CalendarApp, HelpApp, WipApp } from './components/CommonApps';
 import { SettingsApp } from './components/SettingsApp';
+import { CharacterEditorApp } from './components/CharacterEditor/CharacterEditorApp';
 import { DataService } from './services/dataService';
 import { waitForMvuReady } from './services/mvuBridge';
 import { UserResources, AppMode } from './types';
-import { Activity, Calendar, HelpCircle, Trophy, Globe, Settings } from 'lucide-react';
+import { Activity, Calendar, HelpCircle, Trophy, Globe, Settings, PenSquare } from 'lucide-react';
 
 const FALLBACK_USER_DATA: UserResources = {
   mcEnergy: 25,
@@ -198,6 +199,8 @@ const App = () => {
         );
       case AppMode.SETTINGS:
         return <SettingsApp onBack={() => setCurrentApp(AppMode.HOME)} />;
+      case AppMode.CHARACTER_EDITOR:
+        return <CharacterEditorApp onBack={() => setCurrentApp(AppMode.HOME)} />;
       case AppMode.WIP:
         return <WipApp name="Unknown App" onBack={() => setCurrentApp(AppMode.HOME)} />;
       case AppMode.HOME:
@@ -335,6 +338,14 @@ const HomeScreen = ({
       mode: AppMode.HOME,
       disabled: false,
       action: appendMcAnonTagToThisFloor,
+    },
+    {
+      id: 'char-editor',
+      name: '角色編輯',
+      icon: PenSquare,
+      color: 'bg-gradient-to-br from-pink-500 to-indigo-600',
+      mode: AppMode.CHARACTER_EDITOR,
+      disabled: false,
     },
     {
       id: 'settings',
