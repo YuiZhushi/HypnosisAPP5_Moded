@@ -3,7 +3,18 @@ import { EDITOR_SECTIONS, EditorNode, PromptTemplate } from '../../types';
 import { MvuBridge } from '../../services/mvuBridge';
 import { WorldBookService } from '../../services/worldBookService';
 import type { BehaviorBranch } from '../../services/characterDataService';
-import { loadCharacter, saveCharacter, sortBehaviorBranches, treeToYaml, validateBehaviorBranches } from '../../services/characterDataService';
+import {
+  buildDefaultBehaviorBranchNodes,
+  loadCharacter,
+  parseBehaviorBranchesFromRaw,
+  parseSectionYamlToNodes,
+  saveCharacter,
+  serializeBehaviorBranches,
+  serializeSectionNodesToYaml,
+  sortBehaviorBranches,
+  treeToYaml,
+  validateBehaviorBranches,
+} from '../../services/characterDataService';
 import { buildEditorPrompt, sendEditorPrompt } from '../../prompts/characterEditorSend';
 import { ArrowLeft, Zap, CheckCircle, RotateCcw, Save, X, Loader2, Settings as SettingsIcon, RefreshCw } from 'lucide-react';
 import { NodeTree, treeReducer, TreeAction } from './NodeTree';
@@ -108,6 +119,7 @@ const Toast: React.FC<{ message: string; type: 'success' | 'error' | 'info'; onD
 export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const BEHAVIOR_TABS = new Set(['arousal', 'alert', 'affection', 'obedience']);
   const CONDITION_OPERATORS: Array<'<' | '<=' | '>' | '>=' | '=='> = ['<', '<=', '>', '>=', '=='];
+  type EditMode = 'parsed' | 'raw';
 
   const buildBranchLabel = useCallback((branch: BehaviorBranch, idx: number): string => {
     if (branch.kind === 'else') return 'else';
@@ -143,6 +155,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
 
   // ----- UI State -----
   const [activeTab, setActiveTab] = useState<string>('info');
+  const [editModeBySection, setEditModeBySection] = useState<Record<string, EditMode>>({});
   const [showPromptSettings, setShowPromptSettings] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
   const [aiDropdownOpen, setAiDropdownOpen] = useState(false);
@@ -166,6 +179,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
     return { ...SECTION_DEFAULT_PROMPTS };
   });
   const [rawFallbacks, setRawFallbacks] = useState<Record<string, string>>({});
+  const [rawDraftBySection, setRawDraftBySection] = useState<Record<string, string>>({});
   const [behaviorData, setBehaviorData] = useState<Record<string, BehaviorBranch[]>>({});
   const [activeBehaviorBranchBySection, setActiveBehaviorBranchBySection] = useState<Record<string, string>>({});
   const [entryUid, setEntryUid] = useState<string | null>(null);
@@ -219,6 +233,90 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
     () => EDITOR_SECTIONS.find(s => s.id === activeTab) ?? EDITOR_SECTIONS[0],
     [activeTab],
   );
+  const currentEditMode = editModeBySection[activeTab] ?? 'parsed';
+
+  const buildCanonicalSectionRaw = useCallback((sectionId: string): string => {
+    const rawFallback = rawFallbacks[sectionId];
+    if (rawFallback !== undefined) return rawFallback;
+
+    if (BEHAVIOR_TABS.has(sectionId)) {
+      const branches = behaviorData[sectionId] ?? [];
+      if (branches.length === 0) return '';
+      return serializeBehaviorBranches(sectionId, branches, selectedCharacter);
+    }
+
+    const nodes = sectionData[sectionId] ?? [];
+    if (nodes.length === 0) return '';
+    return serializeSectionNodesToYaml(nodes);
+  }, [BEHAVIOR_TABS, rawFallbacks, behaviorData, sectionData, selectedCharacter]);
+
+  const getSectionRawText = useCallback((sectionId: string): string => {
+    if (rawDraftBySection[sectionId] !== undefined) {
+      return rawDraftBySection[sectionId] ?? '';
+    }
+    return buildCanonicalSectionRaw(sectionId);
+  }, [rawDraftBySection, buildCanonicalSectionRaw]);
+
+  const applyRawSectionToParsed = useCallback((sectionId: string): { ok: true } | { ok: false; message: string } => {
+    const raw = getSectionRawText(sectionId).trim();
+
+    try {
+      if (BEHAVIOR_TABS.has(sectionId)) {
+        const parsedBranches = parseBehaviorBranchesFromRaw(raw);
+        if (parsedBranches.length === 0) {
+          return { ok: false, message: '未解析出任何 EJS 分支，請檢查 if / else if / else 區塊格式' };
+        }
+        setBehaviorData(prev => {
+          const nextList = sortBehaviorBranches(parsedBranches).map((b, idx) => normalizeBranchForUi(b, idx));
+          return { ...prev, [sectionId]: nextList };
+        });
+        setActiveBehaviorBranchBySection(prev => {
+          const current = behaviorData[sectionId] ?? [];
+          const next = sortBehaviorBranches(parsedBranches);
+          const prevId = prev[sectionId];
+          const keep = prevId && next.some(b => b.branchId === prevId) ? prevId : next[0]?.branchId ?? '';
+          return { ...prev, [sectionId]: keep };
+        });
+      } else {
+        const parsedNodes = parseSectionYamlToNodes(sectionId, raw);
+        setSectionData(prev => ({ ...prev, [sectionId]: parsedNodes }));
+      }
+
+      setRawFallbacks(prev => {
+        if (!(sectionId in prev)) return prev;
+        const next = { ...prev };
+        delete next[sectionId];
+        return next;
+      });
+
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, message: err instanceof Error ? err.message : '解析失敗' };
+    }
+  }, [BEHAVIOR_TABS, behaviorData, getSectionRawText, normalizeBranchForUi]);
+
+  const toggleCurrentSectionEditMode = useCallback((mode: EditMode) => {
+    if (mode === currentEditMode) return;
+
+    if (mode === 'raw') {
+      // 切到原始碼模式時，優先以「當前解析資料」重建 raw，確保已改動內容被繼承
+      const raw = buildCanonicalSectionRaw(activeTab);
+      setRawDraftBySection(prev => ({ ...prev, [activeTab]: raw }));
+      setEditModeBySection(prev => ({ ...prev, [activeTab]: 'raw' }));
+      return;
+    }
+
+    const result = applyRawSectionToParsed(activeTab);
+    if (!result.ok) {
+      setToast({ message: `✗ 解析失敗：${result.message}`, type: 'error' });
+      return;
+    }
+
+    // 套用成功後保留最新 raw draft，避免再次切換時內容回退
+    setRawDraftBySection(prev => ({ ...prev, [activeTab]: getSectionRawText(activeTab) }));
+    setEditModeBySection(prev => ({ ...prev, [activeTab]: 'parsed' }));
+    setToast({ message: '✓ 已套用原始碼並切回解析模式', type: 'success' });
+  }, [activeTab, applyRawSectionToParsed, buildCanonicalSectionRaw, currentEditMode, getSectionRawText]);
 
   const updateBehaviorBranches = useCallback((sectionId: string, updater: (list: BehaviorBranch[]) => BehaviorBranch[]) => {
     setBehaviorData(prev => {
@@ -267,6 +365,8 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
     const result = await loadCharacter(charName);
     setSectionData(result.sectionData);
     setRawFallbacks(result.rawFallbacks);
+    setRawDraftBySection({});
+    setEditModeBySection({});
     setBehaviorData(result.behaviorData);
     setActiveBehaviorBranchBySection(() => {
       const next: Record<string, string> = {};
@@ -457,6 +557,16 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
         }
       }
 
+      for (const [secId, mode] of Object.entries(editModeBySection)) {
+        if (mode !== 'raw') continue;
+        const parsed = applyRawSectionToParsed(secId);
+        if (!parsed.ok) {
+          setToast({ message: `✗ ${EDITOR_SECTIONS.find(s => s.id === secId)?.name ?? secId} 原始碼解析失敗：${parsed.message}`, type: 'error' });
+          setSaving(false);
+          return;
+        }
+      }
+
       const ok = await saveCharacter(selectedCharacter, sectionData, rawFallbacks, behaviorData, entryUid);
       if (ok) {
         console.info('[HypnoOS] CharacterEditor: 儲存成功，開始重新解析最新資料');
@@ -485,6 +595,10 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
 
   const handleAddBehaviorBranch = () => {
     if (!isBehaviorTab || !activeTab) return;
+    if (currentEditMode === 'raw' || rawFallbacks[activeTab]) {
+      setToast({ message: '原始碼模式下不可新增分支', type: 'info' });
+      return;
+    }
     const currentList = behaviorData[activeTab] ?? [];
     if (currentList.length === 0) {
       setToast({ message: '此分區目前無可新增的分支鏈', type: 'error' });
@@ -501,6 +615,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
       }
 
       const branchId = `branch_${Date.now()}`;
+      const defaultBranch = buildDefaultBehaviorBranchNodes(activeTab, 'else');
 
       const newBranch: BehaviorBranch = {
         branchId,
@@ -508,8 +623,8 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
         kind: 'else',
         conditionRaw: '',
         openTagRaw: '',
-        yamlRaw: '',
-        nodes: [],
+        yamlRaw: defaultBranch.yamlRaw,
+        nodes: defaultBranch.nodes,
       };
 
       const insertIndex = currentList.length;
@@ -543,6 +658,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
 
     const subjectExpr = getDefaultSubjectExpr(activeTab);
     const branchId = `branch_${Date.now()}`;
+    const defaultBranch = buildDefaultBehaviorBranchNodes(activeTab, 'else_if', opInput, threshold);
     const newBranch: BehaviorBranch = {
       branchId,
       label: '',
@@ -552,8 +668,8 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
       subjectExpr,
       conditionRaw: `${subjectExpr} ${opInput} ${threshold}`,
       openTagRaw: '',
-      yamlRaw: '',
-      nodes: [],
+      yamlRaw: defaultBranch.yamlRaw,
+      nodes: defaultBranch.nodes,
     };
 
     updateBehaviorBranches(activeTab, list => {
@@ -569,6 +685,10 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
 
   const handleEditBehaviorBranchCondition = () => {
     if (!isBehaviorTab || !activeBranch) return;
+    if (currentEditMode === 'raw' || rawFallbacks[activeTab]) {
+      setToast({ message: '原始碼模式下不可編輯分支條件', type: 'info' });
+      return;
+    }
     if (activeBranch.kind === 'else') {
       setToast({ message: 'else 分支沒有條件可編輯', type: 'info' });
       return;
@@ -607,6 +727,10 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
 
   const handleDeleteBehaviorBranch = () => {
     if (!isBehaviorTab || !activeBranch) return;
+    if (currentEditMode === 'raw' || rawFallbacks[activeTab]) {
+      setToast({ message: '原始碼模式下不可刪除分支', type: 'info' });
+      return;
+    }
     const currentList = behaviorData[activeTab] ?? [];
     if (currentList.length <= 1) {
       setToast({ message: '至少需保留 1 條分支，無法刪除', type: 'error' });
@@ -710,6 +834,8 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
     });
     setToast({ message: `已重置「${activeSection.name}」`, type: 'info' });
   };
+
+  const isRawEditingActive = currentEditMode === 'raw' || Boolean(rawFallbacks[activeTab]);
 
   // ========= Render =========
   if (loading) {
@@ -817,6 +943,30 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
                 <RotateCcw size={16} />
               </button>
             </div>
+            <div className="flex items-center gap-1 rounded-lg border border-neutral-700 bg-neutral-800/80 p-0.5">
+              <button
+                onClick={() => toggleCurrentSectionEditMode('parsed')}
+                className={`px-2 py-1 text-[10px] rounded transition ${
+                  currentEditMode === 'parsed'
+                    ? 'bg-indigo-600/40 text-indigo-200'
+                    : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700/70'
+                }`}
+                title="使用解析後的樹狀資料編輯"
+              >
+                解析模式
+              </button>
+              <button
+                onClick={() => toggleCurrentSectionEditMode('raw')}
+                className={`px-2 py-1 text-[10px] rounded transition ${
+                  currentEditMode === 'raw'
+                    ? 'bg-amber-600/35 text-amber-200'
+                    : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700/70'
+                }`}
+                title="直接編輯分區原始碼"
+              >
+                原始碼模式
+              </button>
+            </div>
           </div>
 
           {/* Tab Bar */}
@@ -846,14 +996,15 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={handleAddBehaviorBranch}
-                    className="px-2.5 py-1 rounded-lg text-[11px] border border-emerald-500/50 text-emerald-300 bg-emerald-900/20 hover:bg-emerald-800/30 transition"
+                    disabled={isRawEditingActive}
+                    className="px-2.5 py-1 rounded-lg text-[11px] border border-emerald-500/50 text-emerald-300 bg-emerald-900/20 hover:bg-emerald-800/30 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-emerald-900/20 transition"
                     title="新增 else if / else 分支"
                   >
                     + 分支
                   </button>
                   <button
                     onClick={handleEditBehaviorBranchCondition}
-                    disabled={!activeBranch || activeBranch.kind === 'else'}
+                    disabled={isRawEditingActive || !activeBranch || activeBranch.kind === 'else'}
                     className="px-2.5 py-1 rounded-lg text-[11px] border border-cyan-500/50 text-cyan-300 bg-cyan-900/20 hover:bg-cyan-800/30 disabled:opacity-40 disabled:cursor-not-allowed transition"
                     title="修改目前分支條件"
                   >
@@ -861,7 +1012,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
                   </button>
                   <button
                     onClick={handleDeleteBehaviorBranch}
-                    disabled={!activeBranch}
+                    disabled={isRawEditingActive || !activeBranch}
                     className="px-2.5 py-1 rounded-lg text-[11px] border border-red-500/50 text-red-300 bg-red-900/20 hover:bg-red-800/30 disabled:opacity-40 disabled:cursor-not-allowed transition"
                     title="刪除目前分支"
                   >
@@ -890,16 +1041,16 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
               </div>
             )}
 
-            {rawFallbacks[activeTab] ? (
+            {(currentEditMode === 'raw' || rawFallbacks[activeTab]) ? (
               <div className="space-y-2">
                 <p className="text-[10px] text-amber-400/80 bg-amber-900/20 p-2 rounded border border-amber-700/30">
-                  ⚠ 此分區包含 EJS 條件邏輯（動態行為區），以原始文字模式編輯。請直接修改下方內容。
+                  ⚠ 目前為原始碼模式。你可以直接編輯本分區的 YAML / EJS 內容，切回解析模式時會重新解析。
                 </p>
                 <textarea
                   className="w-full bg-neutral-900 border border-neutral-700 rounded-lg text-xs font-mono text-neutral-300 p-3 focus:outline-none focus:border-indigo-500 resize-y dark-scrollbar"
                   style={{ minHeight: '300px' }}
-                  value={rawFallbacks[activeTab]}
-                  onChange={e => setRawFallbacks(prev => ({ ...prev, [activeTab]: e.target.value }))}
+                  value={getSectionRawText(activeTab)}
+                  onChange={e => setRawDraftBySection(prev => ({ ...prev, [activeTab]: e.target.value }))}
                 />
               </div>
             ) : isBehaviorTab && activeBranch && !activeBranch.nodes ? (
