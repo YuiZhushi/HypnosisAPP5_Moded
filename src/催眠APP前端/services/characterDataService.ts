@@ -368,9 +368,9 @@ function buildDefaultStatusText(
   if (sectionId === 'alert') {
     const labels = [
       '無警戒',
-      '低警戒',
       '微弱的違和感',
-      '普通好感度警戒',
+      '低警戒',
+      '普通警戒',
       '高警戒',
       '極高警戒',
     ];
