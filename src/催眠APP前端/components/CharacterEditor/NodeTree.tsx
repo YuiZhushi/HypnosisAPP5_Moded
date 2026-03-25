@@ -22,36 +22,82 @@ function makeEmptyNode(key = '', type: NodeType = 'string'): EditorNode {
   return { id: nextNodeId(), key, type, value: '', children: [], isLocked: false };
 }
 
+type ContainerType = 'root' | 'object' | 'list';
+
+function makeNodeForContainer(containerType: ContainerType): EditorNode {
+  if (containerType === 'list') {
+    return makeEmptyNode('', 'string');
+  }
+  return makeEmptyNode('new_key', 'string');
+}
+
+function cloneNodeWith(node: EditorNode, patch: Partial<EditorNode>): EditorNode {
+  return {
+    id: patch.id ?? node.id,
+    key: patch.key ?? node.key,
+    type: patch.type ?? node.type,
+    value: patch.value ?? node.value,
+    children: patch.children ?? node.children,
+    isLocked: patch.isLocked ?? node.isLocked,
+  };
+}
+
+function stringifyNodePreview(node: EditorNode): string {
+  if (node.type === 'string') return node.value ?? '';
+  if (node.children.length === 0) return '';
+  return stringifyNodePreview(node.children[0]);
+}
+
 function convertNodeType(node: EditorNode, newType: NodeType): EditorNode {
   if (node.type === newType) return node;
 
-  const next: EditorNode = { ...node, type: newType };
-
   if (node.type === 'string' && newType === 'list') {
-    next.children = node.value
-      ? [{ id: nextNodeId(), key: '', type: 'string', value: node.value, children: [], isLocked: false }]
+    const children = node.value.trim().length > 0
+      ? [makeEmptyNode('', 'string')]
       : [];
-    next.value = '';
-  } else if (node.type === 'string' && newType === 'object') {
-    next.children = node.value
-      ? [{ id: nextNodeId(), key: '', type: 'string', value: node.value, children: [], isLocked: false }]
-      : [];
-    next.value = '';
-  } else if (node.type === 'list' && newType === 'string') {
-    next.value = node.children[0]?.value ?? '';
-    next.children = [];
-  } else if (node.type === 'list' && newType === 'object') {
-    next.children = node.children.map((c, i) => ({ ...c, key: c.key || `item_${i}` }));
-    next.value = '';
-  } else if (node.type === 'object' && newType === 'string') {
-    next.value = node.children[0]?.value ?? '';
-    next.children = [];
-  } else if (node.type === 'object' && newType === 'list') {
-    next.children = node.children.map(c => ({ ...c, key: '' }));
-    next.value = '';
+    if (children[0]) {
+      children[0] = cloneNodeWith(children[0], { value: node.value });
+    }
+    return cloneNodeWith(node, { type: 'list', value: '', children });
   }
 
-  return next;
+  if (node.type === 'string' && newType === 'object') {
+    const children = node.value.trim().length > 0
+      ? [makeEmptyNode('value', 'string')]
+      : [];
+    if (children[0]) {
+      children[0] = cloneNodeWith(children[0], { value: node.value });
+    }
+    return cloneNodeWith(node, { type: 'object', value: '', children });
+  }
+
+  if (node.type === 'list' && newType === 'string') {
+    return cloneNodeWith(node, {
+      type: 'string',
+      value: stringifyNodePreview(node),
+      children: [],
+    });
+  }
+
+  if (node.type === 'object' && newType === 'string') {
+    return cloneNodeWith(node, {
+      type: 'string',
+      value: stringifyNodePreview(node),
+      children: [],
+    });
+  }
+
+  if (node.type === 'list' && newType === 'object') {
+    const children = node.children.map((c, i) => cloneNodeWith(c, { key: c.key?.trim() ? c.key : `item_${i + 1}` }));
+    return cloneNodeWith(node, { type: 'object', value: '', children });
+  }
+
+  if (node.type === 'object' && newType === 'list') {
+    const children = node.children.map(c => cloneNodeWith(c, { key: '' }));
+    return cloneNodeWith(node, { type: 'list', value: '', children });
+  }
+
+  return cloneNodeWith(node, { type: newType });
 }
 
 function applyToTree(nodes: EditorNode[], nodeId: string, fn: (n: EditorNode) => EditorNode | null): EditorNode[] {
@@ -68,22 +114,33 @@ function applyToTree(nodes: EditorNode[], nodeId: string, fn: (n: EditorNode) =>
   return result;
 }
 
-function addSiblingAfter(nodes: EditorNode[], afterId: string): EditorNode[] {
+function addSiblingAfter(
+  nodes: EditorNode[],
+  afterId: string,
+  containerType: ContainerType = 'root',
+): { nodes: EditorNode[]; changed: boolean } {
+  let changed = false;
   const result: EditorNode[] = [];
+
   for (const node of nodes) {
     result.push(node);
+
     if (node.id === afterId) {
-      result.push(makeEmptyNode());
+      result.push(makeNodeForContainer(containerType));
+      changed = true;
+      continue;
     }
-    // recurse into children
+
     if (node.children.length > 0) {
-      const updated = addSiblingAfter(node.children, afterId);
-      if (updated !== node.children) {
-        result[result.length - 1] = { ...result[result.length - 1], children: updated };
+      const sub = addSiblingAfter(node.children, afterId, node.type);
+      if (sub.changed) {
+        result[result.length - 1] = { ...result[result.length - 1], children: sub.nodes };
+        changed = true;
       }
     }
   }
-  return result;
+
+  return { nodes: result, changed };
 }
 
 export function treeReducer(state: EditorNode[], action: TreeAction): EditorNode[] {
@@ -92,13 +149,17 @@ export function treeReducer(state: EditorNode[], action: TreeAction): EditorNode
       return action.nodes;
 
     case 'ADD_SIBLING':
-      return addSiblingAfter(state, action.afterId);
+      return addSiblingAfter(state, action.afterId).nodes;
 
     case 'ADD_CHILD':
-      return applyToTree(state, action.nodeId, n => ({
-        ...n,
-        children: [...n.children, makeEmptyNode()],
-      }));
+      return applyToTree(state, action.nodeId, n => {
+        if (n.type === 'string') return n;
+        const child = makeNodeForContainer(n.type);
+        return {
+          ...n,
+          children: [...n.children, child],
+        };
+      });
 
     case 'DELETE_NODE':
       return applyToTree(state, action.nodeId, n => (n.isLocked ? n : null));
@@ -137,11 +198,12 @@ const NodeRow: React.FC<{
   node: EditorNode;
   dispatch: (action: TreeAction) => void;
   depth: number;
-}> = ({ node, dispatch, depth }) => {
+  parentType?: NodeType | 'root';
+}> = ({ node, dispatch, depth, parentType = 'root' }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
   const hasChildren = node.type !== 'string';
-  const isListItem = node.key === '' && depth > 0;
+  const isListItem = parentType === 'list';
 
   return (
     <div className="relative">
@@ -200,6 +262,13 @@ const NodeRow: React.FC<{
                   <button
                     key={opt.value}
                     onClick={() => {
+                      if (opt.value === 'string' && (node.type === 'list' || node.type === 'object')) {
+                        const ok = window.confirm('轉換為 String 會只保留第一個子項內容，其餘資料可能遺失。確定繼續嗎？');
+                        if (!ok) {
+                          setTypeDropdownOpen(false);
+                          return;
+                        }
+                      }
                       dispatch({ type: 'CHANGE_TYPE', nodeId: node.id, newType: opt.value });
                       setTypeDropdownOpen(false);
                     }}
@@ -241,7 +310,7 @@ const NodeRow: React.FC<{
       {hasChildren && !collapsed && node.children.length > 0 && (
         <div className="pl-4 border-l border-neutral-700/50 ml-3 mt-1 space-y-1">
           {node.children.map(child => (
-            <NodeRow key={child.id} node={child} dispatch={dispatch} depth={depth + 1} />
+            <NodeRow key={child.id} node={child} dispatch={dispatch} depth={depth + 1} parentType={node.type} />
           ))}
         </div>
       )}
@@ -273,7 +342,7 @@ export const NodeTree: React.FC<{
   return (
     <div className="space-y-1">
       {nodes.map(node => (
-        <NodeRow key={node.id} node={node} dispatch={dispatch} depth={depth} />
+        <NodeRow key={node.id} node={node} dispatch={dispatch} depth={depth} parentType="root" />
       ))}
     </div>
   );
