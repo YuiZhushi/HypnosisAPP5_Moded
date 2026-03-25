@@ -1,6 +1,18 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { EditorNode, NodeType } from '../../types';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import { LongTextEditorModal } from './LongTextEditorModal';
+
+const STRING_TEXTAREA_MIN_HEIGHT = 36;
+const STRING_TEXTAREA_MAX_HEIGHT = 220;
+const LONG_TEXT_SUGGEST_THRESHOLD = 2000;
+
+function autoResizeTextarea(el: HTMLTextAreaElement): void {
+  el.style.height = 'auto';
+  const nextHeight = Math.min(Math.max(el.scrollHeight, STRING_TEXTAREA_MIN_HEIGHT), STRING_TEXTAREA_MAX_HEIGHT);
+  el.style.height = `${nextHeight}px`;
+  el.style.overflowY = el.scrollHeight > STRING_TEXTAREA_MAX_HEIGHT ? 'auto' : 'hidden';
+}
 
 // ========= Tree Reducer =========
 
@@ -202,8 +214,20 @@ const NodeRow: React.FC<{
 }> = ({ node, dispatch, depth, parentType = 'root' }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
+  const [longEditorOpen, setLongEditorOpen] = useState(false);
+  const valueTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const hasChildren = node.type !== 'string';
   const isListItem = parentType === 'list';
+
+  const resizeValueTextarea = useCallback(() => {
+    if (!valueTextareaRef.current) return;
+    autoResizeTextarea(valueTextareaRef.current);
+  }, []);
+
+  useEffect(() => {
+    if (node.type !== 'string') return;
+    resizeValueTextarea();
+  }, [node.type, node.value, resizeValueTextarea]);
 
   return (
     <div className="relative">
@@ -228,7 +252,7 @@ const NodeRow: React.FC<{
               value={node.key}
               disabled={node.isLocked}
               onChange={e => dispatch({ type: 'UPDATE_KEY', nodeId: node.id, newKey: e.target.value })}
-              className="bg-neutral-800 text-pink-300 text-[11px] px-2 py-1 rounded w-20 font-mono border border-neutral-700 focus:border-indigo-500 outline-none placeholder-neutral-600 shrink-0 disabled:opacity-60"
+              className="bg-neutral-800 text-pink-300 text-[11px] px-2 py-1 rounded w-20 font-mono border border-neutral-700 focus:border-indigo-500 outline-none placeholder-neutral-600 shrink-0 disabled:opacity-60 select-text"
               placeholder="key"
             />
             <span className="text-neutral-500 text-xs mt-1 shrink-0">:</span>
@@ -240,10 +264,16 @@ const NodeRow: React.FC<{
         {/* Value (string only) */}
         {node.type === 'string' && (
           <textarea
+            ref={valueTextareaRef}
             value={node.value}
-            onChange={e => dispatch({ type: 'UPDATE_VALUE', nodeId: node.id, newValue: e.target.value })}
-            className="bg-neutral-900 border border-neutral-700 rounded text-[11px] px-2 py-1 text-neutral-300 flex-1 min-h-[28px] max-h-[120px] focus:border-indigo-500 outline-none resize-y"
+            onDoubleClick={() => setLongEditorOpen(true)}
+            onChange={e => {
+              autoResizeTextarea(e.currentTarget);
+              dispatch({ type: 'UPDATE_VALUE', nodeId: node.id, newValue: e.target.value });
+            }}
+            className="bg-neutral-900 border border-neutral-700 rounded text-[11px] px-2 py-1 text-neutral-300 flex-1 min-h-[36px] focus:border-indigo-500 outline-none resize-none select-text leading-4"
             rows={1}
+            title={node.value.length >= LONG_TEXT_SUGGEST_THRESHOLD ? '內容較長，建議使用右側展開編輯（⤢）' : undefined}
           />
         )}
 
@@ -286,6 +316,15 @@ const NodeRow: React.FC<{
             title="新增兄弟欄位"
           >+</button>
 
+          {/* Expand editor (string only) */}
+          {node.type === 'string' && (
+            <button
+              onClick={() => setLongEditorOpen(true)}
+              className="text-[10px] w-5 h-5 flex items-center justify-center text-cyan-300 hover:text-white bg-neutral-700 hover:bg-cyan-700/70 rounded"
+              title={node.value.length >= LONG_TEXT_SUGGEST_THRESHOLD ? '長文本建議使用展開編輯' : '展開編輯'}
+            >⤢</button>
+          )}
+
           {/* Add child (only for object/list) */}
           {hasChildren && (
             <button
@@ -313,6 +352,20 @@ const NodeRow: React.FC<{
             <NodeRow key={child.id} node={child} dispatch={dispatch} depth={depth + 1} parentType={node.type} />
           ))}
         </div>
+      )}
+
+      {node.type === 'string' && (
+        <LongTextEditorModal
+          open={longEditorOpen}
+          title="長文本編輯"
+          keyName={isListItem ? '(list item)' : node.key}
+          value={node.value}
+          onCancel={() => setLongEditorOpen(false)}
+          onSave={nextValue => {
+            dispatch({ type: 'UPDATE_VALUE', nodeId: node.id, newValue: nextValue });
+            setLongEditorOpen(false);
+          }}
+        />
       )}
     </div>
   );

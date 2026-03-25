@@ -847,7 +847,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
   }
 
   return (
-    <div className="h-full w-full bg-[#0c0c0c] flex flex-col overflow-hidden text-neutral-200 select-none relative">
+    <div className="h-full w-full bg-[#0c0c0c] flex flex-col overflow-hidden text-neutral-200 relative">
 
       {/* Toast */}
       {toast && <Toast message={toast.message} type={toast.type} onDone={() => setToast(null)} />}
@@ -1047,7 +1047,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
                   ⚠ 目前為原始碼模式。你可以直接編輯本分區的 YAML / EJS 內容，切回解析模式時會重新解析。
                 </p>
                 <textarea
-                  className="w-full bg-neutral-900 border border-neutral-700 rounded-lg text-xs font-mono text-neutral-300 p-3 focus:outline-none focus:border-indigo-500 resize-y dark-scrollbar"
+                  className="w-full bg-neutral-900 border border-neutral-700 rounded-lg text-xs font-mono text-neutral-300 p-3 focus:outline-none focus:border-indigo-500 resize-y dark-scrollbar select-text"
                   style={{ minHeight: '300px' }}
                   value={getSectionRawText(activeTab)}
                   onChange={e => setRawDraftBySection(prev => ({ ...prev, [activeTab]: e.target.value }))}
@@ -1059,7 +1059,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
                   ⚠ 分支 YAML 解析失敗（{activeBranch.label}），目前使用原始文字模式編輯。
                 </p>
                 <textarea
-                  className="w-full bg-neutral-900 border border-neutral-700 rounded-lg text-xs font-mono text-neutral-300 p-3 focus:outline-none focus:border-indigo-500 resize-y dark-scrollbar"
+                  className="w-full bg-neutral-900 border border-neutral-700 rounded-lg text-xs font-mono text-neutral-300 p-3 focus:outline-none focus:border-indigo-500 resize-y dark-scrollbar select-text"
                   style={{ minHeight: '300px' }}
                   value={activeBranch.yamlRaw}
                   onChange={e => {
@@ -1139,7 +1139,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
               <textarea
                 value={aiPromptInput}
                 onChange={e => setAiPromptInput(e.target.value)}
-                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-neutral-200 focus:outline-none focus:border-pink-500 resize-none dark-scrollbar"
+                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-neutral-200 focus:outline-none focus:border-pink-500 resize-none dark-scrollbar select-text"
                 style={{ minHeight: '80px' }}
                 placeholder="例如：變得更傲嬌... (選填)"
               />
