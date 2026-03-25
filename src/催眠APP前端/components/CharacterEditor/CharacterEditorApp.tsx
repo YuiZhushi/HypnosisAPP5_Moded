@@ -2,9 +2,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { EDITOR_SECTIONS, EditorNode, PromptTemplate } from '../../types';
 import { MvuBridge } from '../../services/mvuBridge';
 import { WorldBookService } from '../../services/worldBookService';
-import { loadCharacter, saveCharacter, treeToYaml } from '../../services/characterDataService';
+import type { BehaviorBranch } from '../../services/characterDataService';
+import { loadCharacter, saveCharacter, sortBehaviorBranches, treeToYaml, validateBehaviorBranches } from '../../services/characterDataService';
 import { buildEditorPrompt, sendEditorPrompt } from '../../prompts/characterEditorSend';
-import { ArrowLeft, Zap, CheckCircle, RotateCcw, Save, X, Loader2, Settings as SettingsIcon } from 'lucide-react';
+import { ArrowLeft, Zap, CheckCircle, RotateCcw, Save, X, Loader2, Settings as SettingsIcon, RefreshCw } from 'lucide-react';
 import { NodeTree, treeReducer, TreeAction } from './NodeTree';
 import { PromptManager } from './PromptManager';
 import { DataService } from '../../services/dataService';
@@ -105,11 +106,40 @@ const Toast: React.FC<{ message: string; type: 'success' | 'error' | 'info'; onD
 // ========= Main CharacterEditorApp =========
 
 export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const BEHAVIOR_TABS = new Set(['arousal', 'alert', 'affection', 'obedience']);
+  const CONDITION_OPERATORS: Array<'<' | '<=' | '>' | '>=' | '=='> = ['<', '<=', '>', '>=', '=='];
+
+  const buildBranchLabel = useCallback((branch: BehaviorBranch, idx: number): string => {
+    if (branch.kind === 'else') return 'else';
+    if (branch.operator && typeof branch.threshold === 'number' && Number.isFinite(branch.threshold)) {
+      const op = branch.operator === '==' ? '=' : branch.operator;
+      return `${op}${branch.threshold}`;
+    }
+    return branch.kind === 'if' ? `if_${idx + 1}` : `elseif_${idx + 1}`;
+  }, []);
+
+  const normalizeBranchForUi = useCallback((branch: BehaviorBranch, idx: number): BehaviorBranch => ({
+    ...branch,
+    label: buildBranchLabel(branch, idx),
+  }), [buildBranchLabel]);
+
   // ----- Character List -----
   const [characters, setCharacters] = useState<string[]>([]);
   const [selectedCharacter, setSelectedCharacter] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const getDefaultSubjectExpr = useCallback((sectionId: string): string => {
+    const safeName = selectedCharacter || '角色名';
+    const map: Record<string, string> = {
+      arousal: `getvar('stat_data.角色.${safeName}.发情值')`,
+      alert: `getvar('stat_data.角色.${safeName}.警戒度')`,
+      affection: `getvar('stat_data.角色.${safeName}.好感度')`,
+      obedience: `getvar('stat_data.角色.${safeName}.服从度')`,
+    };
+    return map[sectionId] ?? `getvar('stat_data.角色.${safeName}.数值')`;
+  }, [selectedCharacter]);
 
   // ----- UI State -----
   const [activeTab, setActiveTab] = useState<string>('info');
@@ -136,25 +166,145 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
     return { ...SECTION_DEFAULT_PROMPTS };
   });
   const [rawFallbacks, setRawFallbacks] = useState<Record<string, string>>({});
+  const [behaviorData, setBehaviorData] = useState<Record<string, BehaviorBranch[]>>({});
+  const [activeBehaviorBranchBySection, setActiveBehaviorBranchBySection] = useState<Record<string, string>>({});
   const [entryUid, setEntryUid] = useState<string | null>(null);
 
   // ----- Snapshot for reset -----
-  const snapshotRef = useRef<{ sectionData: Record<string, EditorNode[]>; rawFallbacks: Record<string, string> } | null>(null);
+  const snapshotRef = useRef<{
+    sectionData: Record<string, EditorNode[]>;
+    rawFallbacks: Record<string, string>;
+    behaviorData: Record<string, BehaviorBranch[]>;
+  } | null>(null);
 
   // ----- Tree reducer for current section -----
-  const currentNodes = useMemo(() => sectionData[activeTab] ?? [], [sectionData, activeTab]);
+  const isBehaviorTab = BEHAVIOR_TABS.has(activeTab);
+  const currentBranches = useMemo(() => behaviorData[activeTab] ?? [], [behaviorData, activeTab]);
+  const activeBranchId = activeBehaviorBranchBySection[activeTab] ?? currentBranches[0]?.branchId ?? '';
+  const activeBranch = useMemo(
+    () => currentBranches.find(b => b.branchId === activeBranchId) ?? currentBranches[0] ?? null,
+    [currentBranches, activeBranchId],
+  );
+
+  const currentNodes = useMemo(() => {
+    if (isBehaviorTab) return activeBranch?.nodes ?? [];
+    return sectionData[activeTab] ?? [];
+  }, [isBehaviorTab, activeBranch, sectionData, activeTab]);
+
   const dispatchTree = useCallback((action: TreeAction) => {
+    if (isBehaviorTab) {
+      if (!activeBranch) return;
+      setBehaviorData(prev => {
+        const list = prev[activeTab] ?? [];
+        const idx = list.findIndex(b => b.branchId === activeBranch.branchId);
+        if (idx < 0) return prev;
+        const target = list[idx];
+        if (!target.nodes) return prev;
+        const nextNodes = treeReducer(target.nodes, action);
+        const nextList = [...list];
+        nextList[idx] = { ...target, nodes: nextNodes, yamlRaw: '' };
+        return { ...prev, [activeTab]: nextList };
+      });
+      return;
+    }
+
     setSectionData(prev => {
       const nodes = prev[activeTab] ?? [];
       const next = treeReducer(nodes, action);
       return { ...prev, [activeTab]: next };
     });
-  }, [activeTab]);
+  }, [isBehaviorTab, activeBranch, activeTab]);
 
   const activeSection = useMemo(
     () => EDITOR_SECTIONS.find(s => s.id === activeTab) ?? EDITOR_SECTIONS[0],
     [activeTab],
   );
+
+  const updateBehaviorBranches = useCallback((sectionId: string, updater: (list: BehaviorBranch[]) => BehaviorBranch[]) => {
+    setBehaviorData(prev => {
+      const oldList = prev[sectionId] ?? [];
+      const nextList = sortBehaviorBranches(updater(oldList)).map((b, idx) => normalizeBranchForUi(b, idx));
+      return { ...prev, [sectionId]: nextList };
+    });
+  }, [normalizeBranchForUi]);
+
+  const deepClone = <T,>(val: T): T => JSON.parse(JSON.stringify(val));
+
+  const hasUnsavedChanges = useMemo(() => {
+    if (!snapshotRef.current) return false;
+    return (
+      JSON.stringify(sectionData) !== JSON.stringify(snapshotRef.current.sectionData)
+      || JSON.stringify(rawFallbacks) !== JSON.stringify(snapshotRef.current.rawFallbacks)
+      || JSON.stringify(behaviorData) !== JSON.stringify(snapshotRef.current.behaviorData)
+    );
+  }, [sectionData, rawFallbacks, behaviorData]);
+
+  const reloadCharacterData = useCallback(async (
+    charName: string,
+    options?: {
+      setGlobalLoading?: boolean;
+      preserveActiveBehaviorBranch?: boolean;
+      refreshSnapshot?: boolean;
+      showNotFoundToast?: boolean;
+    },
+  ) => {
+    const {
+      setGlobalLoading = false,
+      preserveActiveBehaviorBranch = true,
+      refreshSnapshot = true,
+      showNotFoundToast = true,
+    } = options ?? {};
+
+    const prevActiveBranchBySection = activeBehaviorBranchBySection;
+
+    if (setGlobalLoading) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
+    }
+
+    console.info(`[HypnoOS] CharacterEditor: 重新載入角色「${charName}」資料`);
+    const result = await loadCharacter(charName);
+    setSectionData(result.sectionData);
+    setRawFallbacks(result.rawFallbacks);
+    setBehaviorData(result.behaviorData);
+    setActiveBehaviorBranchBySection(() => {
+      const next: Record<string, string> = {};
+      for (const [secId, branches] of Object.entries(result.behaviorData)) {
+        if (branches.length === 0) continue;
+        const prevBranchId = preserveActiveBehaviorBranch ? prevActiveBranchBySection[secId] : undefined;
+        const keep = prevBranchId && branches.some(b => b.branchId === prevBranchId)
+          ? prevBranchId
+          : branches[0].branchId;
+        next[secId] = keep;
+      }
+      return next;
+    });
+    setEntryUid(result.entryUid);
+
+    if (refreshSnapshot) {
+      snapshotRef.current = {
+        sectionData: deepClone(result.sectionData),
+        rawFallbacks: { ...result.rawFallbacks },
+        behaviorData: deepClone(result.behaviorData),
+      };
+    }
+
+    const secCount = Object.keys(result.sectionData).length;
+    const rawCount = Object.keys(result.rawFallbacks).length;
+    const branchCount = Object.values(result.behaviorData).reduce((sum, arr) => sum + arr.length, 0);
+    console.info(`[HypnoOS] CharacterEditor: 重新載入完成 - ${secCount} 個分區有樹資料, ${rawCount} 個分區有原始文字, 行為分支=${branchCount}`);
+
+    if (showNotFoundToast && secCount === 0 && rawCount === 0 && !result.entryUid) {
+      setToast({ message: `未找到「${charName}」的世界書條目`, type: 'info' });
+    }
+
+    if (setGlobalLoading) {
+      setLoading(false);
+    } else {
+      setRefreshing(false);
+    }
+  }, [activeBehaviorBranchBySection]);
 
   // ----- Persist prompts on change (debounced) -----
   const promptsSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -196,30 +346,17 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
     let cancelled = false;
 
     const loadData = async () => {
-      setLoading(true);
-      console.info(`[HypnoOS] CharacterEditor: 載入角色「${selectedCharacter}」的世界書資料`);
       try {
-        const result = await loadCharacter(selectedCharacter);
+        await reloadCharacterData(selectedCharacter, {
+          setGlobalLoading: true,
+          preserveActiveBehaviorBranch: false,
+          refreshSnapshot: true,
+          showNotFoundToast: true,
+        });
         if (cancelled) return;
-        setSectionData(result.sectionData);
-        setRawFallbacks(result.rawFallbacks);
-        setEntryUid(result.entryUid);
-        // Save snapshot for reset
-        snapshotRef.current = {
-          sectionData: JSON.parse(JSON.stringify(result.sectionData)),
-          rawFallbacks: { ...result.rawFallbacks },
-        };
-        const secCount = Object.keys(result.sectionData).length;
-        const rawCount = Object.keys(result.rawFallbacks).length;
-        console.info(`[HypnoOS] CharacterEditor: 載入完成 - ${secCount} 個分區有樹資料, ${rawCount} 個分區有原始文字`);
-        if (secCount === 0 && rawCount === 0 && !result.entryUid) {
-          setToast({ message: `未找到「${selectedCharacter}」的世界書條目`, type: 'info' });
-        }
       } catch (err) {
         console.error('[HypnoOS] CharacterEditor: 載入角色資料失敗', err);
         setToast({ message: '載入失敗: ' + (err instanceof Error ? err.message : '未知錯誤'), type: 'error' });
-      } finally {
-        if (!cancelled) setLoading(false);
       }
     };
 
@@ -246,7 +383,9 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
       // Build current section data as YAML string
       const currentData = currentNodes.length > 0
         ? JSON.stringify(treeToYaml(currentNodes), null, 2)
-        : rawFallbacks[activeTab] ?? '';
+        : (isBehaviorTab
+          ? (activeBranch?.yamlRaw ?? '')
+          : (rawFallbacks[activeTab] ?? ''));
 
       console.info(`[HypnoOS] CharacterEditor: 使用 ${templates.length} 個分區模板 + ${globalRules.length} 個全局規則`);
 
@@ -287,15 +426,12 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
         setToast({ message: `✓ 條目已存在`, type: 'success' });
       } else if (result.status === 'created') {
         setToast({ message: `✓ 已自動建立條目`, type: 'success' });
-        // Reload data
-        const data = await loadCharacter(selectedCharacter);
-        setSectionData(data.sectionData);
-        setRawFallbacks(data.rawFallbacks);
-        setEntryUid(data.entryUid);
-        snapshotRef.current = {
-          sectionData: JSON.parse(JSON.stringify(data.sectionData)),
-          rawFallbacks: { ...data.rawFallbacks },
-        };
+        await reloadCharacterData(selectedCharacter, {
+          setGlobalLoading: false,
+          preserveActiveBehaviorBranch: true,
+          refreshSnapshot: true,
+          showNotFoundToast: false,
+        });
       } else {
         setToast({ message: `✗ ${result.message}`, type: 'error' });
       }
@@ -310,15 +446,32 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
     setSaving(true);
     console.info(`[HypnoOS] CharacterEditor: 儲存世界書條目「${selectedCharacter}」`);
     try {
-      const ok = await saveCharacter(selectedCharacter, sectionData, rawFallbacks, entryUid);
+      for (const secId of ['arousal', 'alert', 'affection', 'obedience']) {
+        const list = behaviorData[secId] ?? [];
+        if (list.length === 0) continue;
+        const validation = validateBehaviorBranches(secId, list, selectedCharacter);
+        if (!validation.ok) {
+          setToast({ message: `✗ ${validation.message}`, type: 'error' });
+          setSaving(false);
+          return;
+        }
+      }
+
+      const ok = await saveCharacter(selectedCharacter, sectionData, rawFallbacks, behaviorData, entryUid);
       if (ok) {
-        setToast({ message: '✓ 已儲存至世界書', type: 'success' });
-        console.info('[HypnoOS] CharacterEditor: 儲存成功');
-        // Update snapshot after successful save
-        snapshotRef.current = {
-          sectionData: JSON.parse(JSON.stringify(sectionData)),
-          rawFallbacks: { ...rawFallbacks },
-        };
+        console.info('[HypnoOS] CharacterEditor: 儲存成功，開始重新解析最新資料');
+        try {
+          await reloadCharacterData(selectedCharacter, {
+            setGlobalLoading: false,
+            preserveActiveBehaviorBranch: true,
+            refreshSnapshot: true,
+            showNotFoundToast: false,
+          });
+          setToast({ message: '✓ 已儲存並重新解析', type: 'success' });
+        } catch (reloadErr) {
+          console.error('[HypnoOS] CharacterEditor: 儲存後重新解析失敗', reloadErr);
+          setToast({ message: '已儲存，但重新解析失敗', type: 'error' });
+        }
       } else {
         setToast({ message: '儲存失敗：條目不存在，請先檢查世界書', type: 'error' });
       }
@@ -330,6 +483,195 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
     }
   };
 
+  const handleAddBehaviorBranch = () => {
+    if (!isBehaviorTab || !activeTab) return;
+    const currentList = behaviorData[activeTab] ?? [];
+    if (currentList.length === 0) {
+      setToast({ message: '此分區目前無可新增的分支鏈', type: 'error' });
+      return;
+    }
+
+    const typeInput = window.prompt('新增分支類型：1=else if, 2=else', '1')?.trim();
+    if (!typeInput) return;
+
+    if (typeInput === '2') {
+      if (currentList.some(b => b.kind === 'else')) {
+        setToast({ message: '此分區已存在 else 分支', type: 'error' });
+        return;
+      }
+
+      const branchId = `branch_${Date.now()}`;
+
+      const newBranch: BehaviorBranch = {
+        branchId,
+        label: 'else',
+        kind: 'else',
+        conditionRaw: '',
+        openTagRaw: '',
+        yamlRaw: '',
+        nodes: [],
+      };
+
+      const insertIndex = currentList.length;
+      updateBehaviorBranches(activeTab, list => {
+        const next = [...list, newBranch];
+        return next;
+      });
+      setActiveBehaviorBranchBySection(prev => ({ ...prev, [activeTab]: branchId }));
+      setToast({ message: `已新增 else 分支（位置 ${insertIndex + 1}）`, type: 'success' });
+      return;
+    }
+
+    if (typeInput !== '1') {
+      setToast({ message: '輸入無效，請輸入 1 或 2', type: 'error' });
+      return;
+    }
+
+    const opInput = window.prompt('請輸入比較符（<, <=, >, >=, ==）', '<')?.trim() as BehaviorBranch['operator'];
+    if (!opInput) return;
+    if (!CONDITION_OPERATORS.includes(opInput)) {
+      setToast({ message: '比較符不合法', type: 'error' });
+      return;
+    }
+    const thresholdInput = window.prompt('請輸入閾值（數字）', '50')?.trim();
+    if (!thresholdInput) return;
+    const threshold = Number(thresholdInput);
+    if (!Number.isFinite(threshold)) {
+      setToast({ message: '閾值必須是數字', type: 'error' });
+      return;
+    }
+
+    const subjectExpr = getDefaultSubjectExpr(activeTab);
+    const branchId = `branch_${Date.now()}`;
+    const newBranch: BehaviorBranch = {
+      branchId,
+      label: '',
+      kind: 'else_if',
+      operator: opInput,
+      threshold,
+      subjectExpr,
+      conditionRaw: `${subjectExpr} ${opInput} ${threshold}`,
+      openTagRaw: '',
+      yamlRaw: '',
+      nodes: [],
+    };
+
+    updateBehaviorBranches(activeTab, list => {
+      const elseIdx = list.findIndex(b => b.kind === 'else');
+      if (elseIdx >= 0) {
+        return [...list.slice(0, elseIdx), newBranch, ...list.slice(elseIdx)];
+      }
+      return [...list, newBranch];
+    });
+    setActiveBehaviorBranchBySection(prev => ({ ...prev, [activeTab]: branchId }));
+    setToast({ message: '已新增 else if 分支', type: 'success' });
+  };
+
+  const handleEditBehaviorBranchCondition = () => {
+    if (!isBehaviorTab || !activeBranch) return;
+    if (activeBranch.kind === 'else') {
+      setToast({ message: 'else 分支沒有條件可編輯', type: 'info' });
+      return;
+    }
+
+    const defaultOp = activeBranch.operator ?? '<';
+    const opInput = window.prompt('請輸入比較符（<, <=, >, >=, ==）', defaultOp)?.trim() as BehaviorBranch['operator'];
+    if (!opInput) return;
+    if (!CONDITION_OPERATORS.includes(opInput)) {
+      setToast({ message: '比較符不合法', type: 'error' });
+      return;
+    }
+
+    const thresholdDefault = typeof activeBranch.threshold === 'number' ? String(activeBranch.threshold) : '50';
+    const thresholdInput = window.prompt('請輸入閾值（數字）', thresholdDefault)?.trim();
+    if (!thresholdInput) return;
+    const threshold = Number(thresholdInput);
+    if (!Number.isFinite(threshold)) {
+      setToast({ message: '閾值必須是數字', type: 'error' });
+      return;
+    }
+
+    const subjectExpr = activeBranch.subjectExpr ?? getDefaultSubjectExpr(activeTab);
+    updateBehaviorBranches(activeTab, list => list.map(b => {
+      if (b.branchId !== activeBranch.branchId) return b;
+      return {
+        ...b,
+        operator: opInput,
+        threshold,
+        subjectExpr,
+        conditionRaw: `${subjectExpr} ${opInput} ${threshold}`,
+      };
+    }));
+    setToast({ message: '已更新分支條件', type: 'success' });
+  };
+
+  const handleDeleteBehaviorBranch = () => {
+    if (!isBehaviorTab || !activeBranch) return;
+    const currentList = behaviorData[activeTab] ?? [];
+    if (currentList.length <= 1) {
+      setToast({ message: '至少需保留 1 條分支，無法刪除', type: 'error' });
+      return;
+    }
+
+    const idx = currentList.findIndex(b => b.branchId === activeBranch.branchId);
+    if (idx < 0) return;
+
+    const ok = window.confirm(`確定刪除分支「${activeBranch.label}」？`);
+    if (!ok) return;
+
+    const next = [...currentList];
+    const removing = next[idx];
+    next.splice(idx, 1);
+
+    if (idx === 0) {
+      if (next[0]?.kind === 'else') {
+        setToast({ message: '第一條分支後方為 else，無法刪除首個 if', type: 'error' });
+        return;
+      }
+      if (next[0]) {
+        next[0] = { ...next[0], kind: 'if' };
+      }
+    }
+
+    const elseCount = next.filter(b => b.kind === 'else').length;
+    if (elseCount > 1) {
+      setToast({ message: '刪除後產生多個 else，操作已取消', type: 'error' });
+      return;
+    }
+
+    updateBehaviorBranches(activeTab, () => next);
+
+    const fallback = next[Math.max(0, idx - 1)] ?? next[0];
+    if (fallback) {
+      setActiveBehaviorBranchBySection(prev => ({ ...prev, [activeTab]: fallback.branchId }));
+    }
+
+    setToast({ message: `已刪除分支「${removing.label}」`, type: 'info' });
+  };
+
+  const handleRefreshParse = async () => {
+    if (!selectedCharacter || selectedCharacter === '__new__') return;
+    if (saving || refreshing) return;
+
+    if (hasUnsavedChanges) {
+      const ok = window.confirm('重新解析將丟失未儲存修改，是否繼續？');
+      if (!ok) return;
+    }
+
+    try {
+      await reloadCharacterData(selectedCharacter, {
+        setGlobalLoading: false,
+        preserveActiveBehaviorBranch: true,
+        refreshSnapshot: true,
+        showNotFoundToast: true,
+      });
+      setToast({ message: '✓ 已重新解析最新資料', type: 'success' });
+    } catch (err) {
+      console.error('[HypnoOS] CharacterEditor: 手動刷新解析失敗', err);
+      setToast({ message: '✗ 重新解析失敗', type: 'error' });
+    }
+  };
+
   // F4: 重置本區
   const handleResetSection = () => {
     if (!snapshotRef.current) {
@@ -338,10 +680,25 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
       return;
     }
     console.info(`[HypnoOS] CharacterEditor: 重置分區「${activeTab}」`);
-    setSectionData(prev => ({
-      ...prev,
-      [activeTab]: snapshotRef.current!.sectionData[activeTab] ?? [],
-    }));
+    if (isBehaviorTab) {
+      setBehaviorData(prev => ({
+        ...prev,
+        [activeTab]: snapshotRef.current!.behaviorData[activeTab]
+          ? JSON.parse(JSON.stringify(snapshotRef.current!.behaviorData[activeTab]))
+          : [],
+      }));
+      const resetBranches = snapshotRef.current!.behaviorData[activeTab] ?? [];
+      setActiveBehaviorBranchBySection(prev => ({
+        ...prev,
+        [activeTab]: resetBranches[0]?.branchId ?? '',
+      }));
+    } else {
+      setSectionData(prev => ({
+        ...prev,
+        [activeTab]: snapshotRef.current!.sectionData[activeTab] ?? [],
+      }));
+    }
+
     setRawFallbacks(prev => {
       const next = { ...prev };
       if (snapshotRef.current!.rawFallbacks[activeTab]) {
@@ -444,6 +801,15 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
                 <CheckCircle size={12} /> 檢查世界書
               </button>
               <button
+                onClick={() => void handleRefreshParse()}
+                disabled={saving || refreshing}
+                className="flex items-center gap-1 bg-cyan-500/10 hover:bg-cyan-500/20 disabled:bg-neutral-800/60 disabled:text-neutral-500 shadow-[0_0_8px_rgba(34,211,238,0.1)] text-cyan-400 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-colors"
+                title="從世界書重新讀取並解析當前角色資料"
+              >
+                <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
+                {refreshing ? '刷新中...' : '重新解析'}
+              </button>
+              <button
                 onClick={handleResetSection}
                 className="flex items-center p-1.5 rounded-lg text-neutral-400 hover:text-red-400 hover:bg-red-900/30 transition-colors"
                 title="重置本分區（還原到上次載入）"
@@ -472,6 +838,58 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
 
           {/* Content Area */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-20 dark-scrollbar">
+            {isBehaviorTab && currentBranches.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[10px] text-indigo-300/80 bg-indigo-900/20 p-2 rounded border border-indigo-700/30">
+                  已解析 EJS 分支，請切換條件節點進行編輯。
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={handleAddBehaviorBranch}
+                    className="px-2.5 py-1 rounded-lg text-[11px] border border-emerald-500/50 text-emerald-300 bg-emerald-900/20 hover:bg-emerald-800/30 transition"
+                    title="新增 else if / else 分支"
+                  >
+                    + 分支
+                  </button>
+                  <button
+                    onClick={handleEditBehaviorBranchCondition}
+                    disabled={!activeBranch || activeBranch.kind === 'else'}
+                    className="px-2.5 py-1 rounded-lg text-[11px] border border-cyan-500/50 text-cyan-300 bg-cyan-900/20 hover:bg-cyan-800/30 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                    title="修改目前分支條件"
+                  >
+                    編輯條件
+                  </button>
+                  <button
+                    onClick={handleDeleteBehaviorBranch}
+                    disabled={!activeBranch}
+                    className="px-2.5 py-1 rounded-lg text-[11px] border border-red-500/50 text-red-300 bg-red-900/20 hover:bg-red-800/30 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                    title="刪除目前分支"
+                  >
+                    刪除分支
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {currentBranches.map(branch => {
+                    const active = (activeBehaviorBranchBySection[activeTab] ?? currentBranches[0]?.branchId) === branch.branchId;
+                    return (
+                      <button
+                        key={branch.branchId}
+                        onClick={() => setActiveBehaviorBranchBySection(prev => ({ ...prev, [activeTab]: branch.branchId }))}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] border transition ${
+                          active
+                            ? 'bg-indigo-600/30 text-indigo-200 border-indigo-500/60'
+                            : 'bg-neutral-800/70 text-neutral-400 border-neutral-700 hover:border-indigo-500/40 hover:text-neutral-200'
+                        }`}
+                        title={branch.conditionRaw || 'else'}
+                      >
+                        {branch.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {rawFallbacks[activeTab] ? (
               <div className="space-y-2">
                 <p className="text-[10px] text-amber-400/80 bg-amber-900/20 p-2 rounded border border-amber-700/30">
@@ -484,6 +902,28 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
                   onChange={e => setRawFallbacks(prev => ({ ...prev, [activeTab]: e.target.value }))}
                 />
               </div>
+            ) : isBehaviorTab && activeBranch && !activeBranch.nodes ? (
+              <div className="space-y-2">
+                <p className="text-[10px] text-amber-400/80 bg-amber-900/20 p-2 rounded border border-amber-700/30">
+                  ⚠ 分支 YAML 解析失敗（{activeBranch.label}），目前使用原始文字模式編輯。
+                </p>
+                <textarea
+                  className="w-full bg-neutral-900 border border-neutral-700 rounded-lg text-xs font-mono text-neutral-300 p-3 focus:outline-none focus:border-indigo-500 resize-y dark-scrollbar"
+                  style={{ minHeight: '300px' }}
+                  value={activeBranch.yamlRaw}
+                  onChange={e => {
+                    const nextRaw = e.target.value;
+                    setBehaviorData(prev => {
+                      const list = prev[activeTab] ?? [];
+                      const idx = list.findIndex(b => b.branchId === activeBranch.branchId);
+                      if (idx < 0) return prev;
+                      const nextList = [...list];
+                      nextList[idx] = { ...nextList[idx], yamlRaw: nextRaw };
+                      return { ...prev, [activeTab]: nextList };
+                    });
+                  }}
+                />
+              </div>
             ) : (
               <>
                 <p className="text-[10px] text-neutral-500 mb-2 leading-relaxed">
@@ -491,7 +931,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
                     ? '此區為動態樹狀結構。🔒 欄位無法修改 Key 和刪除，內部子欄位可自由新增、更改類型(T)。移至每一行右側顯示操作面板。'
                     : activeTab === 'global'
                       ? '此區為全局行為規則（rules 陣列）。'
-                      : '此區為 EJS 行為邏輯區，切換到分區 tab 後以原始文字編輯。'
+                      : '此區為 EJS 行為邏輯分支，已轉換為可編輯樹狀節點。'
                   }
                 </p>
                 <NodeTree
