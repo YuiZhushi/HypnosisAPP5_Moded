@@ -15,7 +15,7 @@ import {
   treeToYaml,
   validateBehaviorBranches,
 } from '../../services/characterDataService';
-import { buildEditorPrompt, sendEditorPrompt } from '../../prompts/characterEditorSend';
+import { AiPromptService } from '../../services/aiPromptService';
 import { ArrowLeft, Zap, CheckCircle, RotateCcw, Save, X, Loader2, Settings as SettingsIcon, RefreshCw } from 'lucide-react';
 import { NodeTree, treeReducer, TreeAction } from './NodeTree';
 import { PromptManager } from './PromptManager';
@@ -167,7 +167,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
   const [sectionData, setSectionData] = useState<Record<string, EditorNode[]>>({});
   const [promptsDb, setPromptsDb] = useState<Record<string, PromptTemplate[]>>(() => {
     try {
-      const stored = DataService.getEditorPrompts() as Record<string, PromptTemplate[]> | undefined;
+      const stored = DataService.getAiPromptProfile('character_editor') as Record<string, PromptTemplate[]> | undefined;
       if (stored && Object.keys(stored).length > 0) {
         console.info('[HypnoOS] CharacterEditor: 從 PersistedStore 讀取提示詞成功');
         return stored;
@@ -430,7 +430,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
   useEffect(() => {
     if (promptsSaveTimerRef.current) clearTimeout(promptsSaveTimerRef.current);
     promptsSaveTimerRef.current = setTimeout(() => {
-      void DataService.saveEditorPrompts(promptsDb);
+      void DataService.saveAiPromptProfile('character_editor', promptsDb);
     }, 1000);
     return () => { if (promptsSaveTimerRef.current) clearTimeout(promptsSaveTimerRef.current); };
   }, [promptsDb]);
@@ -504,7 +504,9 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
 
       console.info(`[HypnoOS] CharacterEditor: 使用 ${templates.length} 個分區模板 + ${globalRules.length} 個全局規則`);
 
-      const prompt = buildEditorPrompt({
+      const request = await AiPromptService.request({
+        appId: 'character_editor',
+        contextId: contextKey,
         mode: fillMode === 'all' ? 'full_fill' : 'section',
         sectionId: activeTab,
         sectionName: activeSection.name,
@@ -513,16 +515,22 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
         currentData,
         characterName: selectedCharacter,
         playerDirection: aiPromptInput,
+        appName: 'Character Editor',
+        xmlTag: '角色編輯',
+        requestSpec: {
+          appId: 'character_editor',
+          contextId: contextKey,
+          mode: fillMode,
+          transport: 'chat_transport',
+        },
       });
 
-      console.info(`[HypnoOS] CharacterEditor: 提示詞構建完成, 長度=${prompt.length}`);
+      console.info(`[HypnoOS] CharacterEditor: 提示詞構建完成, 長度=${request.prompt.length}`);
 
-      // 使用專用的發送函數
-      const ok = await sendEditorPrompt(prompt);
-      if (ok) {
+      if (request.ok) {
         setToast({ message: 'AI 提示詞已發送', type: 'success' });
       } else {
-        setToast({ message: '發送失敗: 未連接酒館', type: 'error' });
+        setToast({ message: request.error ?? '發送失敗: 未連接酒館', type: 'error' });
       }
     } catch (err) {
       console.error('[HypnoOS] CharacterEditor: AI 填寫失敗', err);
@@ -1135,6 +1143,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
       {/* === Screen B: Prompt Manager === */}
       {showPromptSettings && (
         <PromptManager
+          appId="character_editor"
           promptsDb={promptsDb}
           setPromptsDb={setPromptsDb}
           activeTab={activeTab}

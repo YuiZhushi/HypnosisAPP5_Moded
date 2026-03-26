@@ -140,6 +140,48 @@ export interface PromptTemplate {
   isSystem: boolean;
 }
 
+export type AiAppId = 'character_editor' | 'calendar' | 'custom_hypnosis' | 'hypnosis' | 'common';
+
+export type PromptTemplateScope = 'global' | 'app' | 'context';
+
+export type PromptContextId = string;
+
+export interface PromptTemplateV2 {
+  id: string;
+  title: string;
+  content: string;
+  enabled: boolean;
+  isSystem: boolean;
+  tags?: string[];
+  scope: PromptTemplateScope;
+}
+
+export interface PlaceholderDefinition {
+  key: string;
+  source: 'built_in' | 'user' | 'worldbook' | 'runtime';
+  resolverType: 'static' | 'function';
+  value?: string;
+  enabled: boolean;
+  scope: 'global' | 'app';
+}
+
+export interface AiRequestSpec {
+  appId: AiAppId;
+  contextId: PromptContextId;
+  mode: string;
+  parserId?: string;
+  outputSchema?: string;
+  transport?: 'chat_transport' | 'api_transport';
+}
+
+export interface AiResponseEnvelope<T = unknown> {
+  rawText: string;
+  parsed: T | null;
+  result: 'ok' | 'error';
+  error?: string;
+  meta?: Record<string, unknown>;
+}
+
 /** 提示詞情境 key */
 export type PromptContextKey =
   | 'global_output'

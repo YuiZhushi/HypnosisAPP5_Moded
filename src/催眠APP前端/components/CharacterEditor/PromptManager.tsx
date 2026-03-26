@@ -1,19 +1,33 @@
-import React, { useMemo, useState } from 'react';
-import { PromptTemplate } from '../../types';
-import { Plus, Eye, EyeOff, Trash2, GripHorizontal, Book } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { AiAppId, PlaceholderDefinition, PromptTemplate } from '../../types';
+import { Plus, Eye, EyeOff, Trash2, GripHorizontal, Book, DatabaseBackup, RotateCcw, WandSparkles } from 'lucide-react';
+import { DataService } from '../../services/dataService';
+import { AiPlaceholderService } from '../../services/aiPlaceholderService';
+import { AiPromptBackupService } from '../../services/aiPromptBackupService';
 
 // ========= PromptManager =========
 
 export const PromptManager: React.FC<{
+  appId: AiAppId;
   promptsDb: Record<string, PromptTemplate[]>;
   setPromptsDb: React.Dispatch<React.SetStateAction<Record<string, PromptTemplate[]>>>;
   activeTab: string;
   getDefaultPrompts: (ctx: string) => PromptTemplate[];
-}> = ({ promptsDb, setPromptsDb, activeTab, getDefaultPrompts }) => {
+}> = ({ appId, promptsDb, setPromptsDb, activeTab, getDefaultPrompts }) => {
   const [currentContext, setCurrentContext] = useState<string>('sec_' + activeTab);
   const [showPreview, setShowPreview] = useState(false);
+  const [previewMode, setPreviewMode] = useState<'raw' | 'resolved'>('raw');
+  const [resolvedPreviewText, setResolvedPreviewText] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [placeholderInput, setPlaceholderInput] = useState<{ key: string; value: string }>({ key: '', value: '' });
+  const [appPlaceholders, setAppPlaceholders] = useState<PlaceholderDefinition[]>(() => DataService.getAiUserPlaceholders(appId));
+
+  useEffect(() => {
+    setCurrentContext(prev => (prev.startsWith('sec_') ? `sec_${activeTab}` : prev));
+  }, [activeTab]);
 
   const ensureContext = (ctx: string): PromptTemplate[] => {
     if (promptsDb[ctx] && promptsDb[ctx].length > 0) return promptsDb[ctx];
@@ -86,6 +100,36 @@ export const PromptManager: React.FC<{
     setDragOverIdx(null);
   };
 
+  // ----- Placeholder CRUD -----
+  const addAppPlaceholder = async () => {
+    const key = placeholderInput.key.trim();
+    if (!key) return;
+    if (!/^[-_\u4e00-\u9fa5a-zA-Z0-9]+$/.test(key)) {
+      window.alert('Placeholder key 僅允許中英文、數字、底線、連字號');
+      return;
+    }
+    const next = [
+      ...appPlaceholders.filter(p => p.key !== key),
+      {
+        key,
+        value: placeholderInput.value,
+        source: 'user' as const,
+        resolverType: 'static' as const,
+        enabled: true,
+        scope: 'app' as const,
+      },
+    ];
+    setAppPlaceholders(next);
+    await DataService.saveAiUserPlaceholders(appId, next);
+    setPlaceholderInput({ key: '', value: '' });
+  };
+
+  const deleteAppPlaceholder = async (key: string) => {
+    const next = appPlaceholders.filter(p => p.key !== key);
+    setAppPlaceholders(next);
+    await DataService.saveAiUserPlaceholders(appId, next);
+  };
+
   // ----- Preview -----
   const generatePreviewString = (): string => {
     let str = '';
@@ -101,6 +145,53 @@ export const PromptManager: React.FC<{
       });
     }
     return str.trim();
+  };
+
+  useEffect(() => {
+    if (!showPreview || previewMode !== 'resolved') return;
+    let cancelled = false;
+    const run = async () => {
+      setPreviewLoading(true);
+      try {
+        const raw = generatePreviewString();
+        const resolved = await AiPlaceholderService.resolveText(raw, {
+          appId,
+          appName: 'Character Editor',
+          sectionName: currentContext,
+          characterName: '{{裝配角色名字}}',
+          currentData: '{{當前狀態與內容}}',
+          playerDirection: '{{玩家輸入}}',
+        });
+        if (!cancelled) setResolvedPreviewText(resolved);
+      } finally {
+        if (!cancelled) setPreviewLoading(false);
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [showPreview, previewMode, currentContext, promptsDb, appId]);
+
+  const handleBackup = async () => {
+    setBackupLoading(true);
+    const result = await AiPromptBackupService.backupToWorldbook();
+    setBackupLoading(false);
+    window.alert(result.message);
+  };
+
+  const handleRestore = async () => {
+    const ok = window.confirm('確定從世界書還原 AI 提示詞設定？目前本地設定可能被覆蓋。');
+    if (!ok) return;
+    setBackupLoading(true);
+    const result = await AiPromptBackupService.restoreFromWorldbook();
+    setBackupLoading(false);
+    if (result.ok) {
+      const profile = DataService.getAiPromptProfile(appId) ?? {};
+      setPromptsDb(profile);
+      setAppPlaceholders(DataService.getAiUserPlaceholders(appId));
+    }
+    window.alert(result.message);
   };
 
   // ----- Worldbook dropdown state (controlled, not CSS hover) -----
@@ -134,6 +225,35 @@ export const PromptManager: React.FC<{
 
       {/* Prompt List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24 dark-scrollbar">
+        <div className="rounded-lg border border-neutral-700/70 bg-neutral-900/70 p-3 space-y-2">
+          <div className="text-[11px] font-bold text-cyan-300 flex items-center gap-1"><WandSparkles size={12} /> 自訂 Placeholder（APP 層）</div>
+          <div className="flex gap-2">
+            <input
+              value={placeholderInput.key}
+              onChange={e => setPlaceholderInput(v => ({ ...v, key: e.target.value }))}
+              placeholder="key，例如 我的規則"
+              className="flex-1 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-[11px] text-neutral-200"
+            />
+            <input
+              value={placeholderInput.value}
+              onChange={e => setPlaceholderInput(v => ({ ...v, value: e.target.value }))}
+              placeholder="替換內容"
+              className="flex-[2] bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-[11px] text-neutral-200"
+            />
+            <button onClick={() => void addAppPlaceholder()} className="px-2 py-1 rounded bg-cyan-600/20 border border-cyan-500/40 text-cyan-300 text-[11px]">新增</button>
+          </div>
+          {appPlaceholders.length > 0 && (
+            <div className="max-h-28 overflow-y-auto space-y-1 pr-1 dark-scrollbar">
+              {appPlaceholders.map(def => (
+                <div key={def.key} className="flex items-center justify-between text-[10px] bg-neutral-800/70 px-2 py-1 rounded">
+                  <span className="text-neutral-300">{'{{'}{def.key}{'}}'} → <span className="text-cyan-300">{def.value || '(空)'}</span></span>
+                  <button onClick={() => void deleteAppPlaceholder(def.key)} className="text-red-400 hover:text-red-300">刪除</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <p className="text-[10px] text-neutral-400 bg-neutral-800/50 p-2.5 rounded-lg border border-neutral-700/50 leading-relaxed shadow-inner">
           {currentContext === 'global_output'
             ? <><b>輸出規範</b>：強制墊底的 AI 回應格式限制。這是最重要的設定。拖曳 ☰ 來決定各指令先後順序。發送時，這份規範會加在個別分區指令的最後面。</>
@@ -248,29 +368,53 @@ export const PromptManager: React.FC<{
         {showPreview && (
           <div className="bg-black/95 border-t border-indigo-500/50 shadow-[0_-10px_20px_rgba(0,0,0,0.5)] p-4 overflow-y-auto flex flex-col dark-scrollbar" style={{ maxHeight: '400px' }}>
             <h3 className="text-xs font-bold text-indigo-400 mb-2 flex items-center justify-between">
-              最終發送組裝預覽
-              <button onClick={() => setShowPreview(false)} className="text-neutral-500 hover:text-white">
-                <EyeOff size={16} />
-              </button>
+              <span>最終發送組裝預覽</span>
+              <div className="flex items-center gap-2">
+                <div className="flex border border-neutral-700 rounded overflow-hidden text-[10px]">
+                  <button onClick={() => setPreviewMode('raw')} className={`px-2 py-1 ${previewMode === 'raw' ? 'bg-indigo-600/40 text-indigo-200' : 'bg-neutral-900 text-neutral-400'}`}>原始</button>
+                  <button onClick={() => setPreviewMode('resolved')} className={`px-2 py-1 ${previewMode === 'resolved' ? 'bg-indigo-600/40 text-indigo-200' : 'bg-neutral-900 text-neutral-400'}`}>替換後</button>
+                </div>
+                <button onClick={() => setShowPreview(false)} className="text-neutral-500 hover:text-white">
+                  <EyeOff size={16} />
+                </button>
+              </div>
             </h3>
             <textarea
               readOnly
               className="w-full bg-transparent text-neutral-400 font-mono text-[10px] leading-relaxed resize-none focus:outline-none flex-1 dark-scrollbar"
               style={{ minHeight: '250px' }}
-              value={generatePreviewString()}
+              value={previewMode === 'raw' ? generatePreviewString() : (previewLoading ? '替換中...' : resolvedPreviewText)}
             />
           </div>
         )}
 
         <div className="bg-neutral-900/90 backdrop-blur border-t border-neutral-800 p-3 pt-2 flex justify-between items-center px-4">
-          <span className="text-[10px] text-neutral-500">組合順序自動整合了全域與分區規範</span>
-          <button
-            onClick={() => setShowPreview(!showPreview)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/40 border border-indigo-500/30 rounded-lg text-[11px] font-bold shadow-sm transition"
-          >
-            <Eye size={14} />
-            {showPreview ? '收起預覽' : '預覽結合結果'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              disabled={backupLoading}
+              onClick={() => void handleBackup()}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-cyan-600/20 text-cyan-300 hover:bg-cyan-600/40 border border-cyan-500/30 rounded-lg text-[11px] font-bold shadow-sm transition disabled:opacity-40"
+            >
+              <DatabaseBackup size={13} /> 備份
+            </button>
+            <button
+              disabled={backupLoading}
+              onClick={() => void handleRestore()}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-600/20 text-amber-300 hover:bg-amber-600/40 border border-amber-500/30 rounded-lg text-[11px] font-bold shadow-sm transition disabled:opacity-40"
+            >
+              <RotateCcw size={13} /> 還原
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-neutral-500">組合順序自動整合了全域與分區規範</span>
+            <button
+              onClick={() => setShowPreview(!showPreview)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/40 border border-indigo-500/30 rounded-lg text-[11px] font-bold shadow-sm transition"
+            >
+              <Eye size={14} />
+              {showPreview ? '收起預覽' : '預覽結合結果'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
