@@ -497,10 +497,9 @@ type PersistedStore = {
   aiPipelineSettings?: {
     defaultTransport?: 'chat_transport' | 'api_transport';
   };
-  characterEditorPrompts: Record<string, PromptTemplate[]>;
 };
 
-const AI_APP_IDS: AiAppId[] = ['character_editor', 'calendar', 'custom_hypnosis', 'hypnosis', 'common'];
+const AI_APP_IDS: AiAppId[] = ['calendar', 'custom_hypnosis', 'hypnosis', 'common'];
 
 const AI_PROMPT_PROFILE_SCHEMA = z.record(
   z.string(),
@@ -521,7 +520,6 @@ const AI_PROMPT_PROFILE_SCHEMA = z.record(
 
 function createEmptyAiPromptProfiles(): Record<AiAppId, Record<string, PromptTemplateV2[]>> {
   return {
-    character_editor: {},
     calendar: {},
     custom_hypnosis: {},
     hypnosis: {},
@@ -563,14 +561,6 @@ function migrateStore(store: PersistedStore): PersistedStore {
     normalizedProfiles[appId] = Object.fromEntries(
       Object.entries(appProfile).map(([ctx, templates]) => [ctx, (templates ?? []).map(toV2Template)]),
     );
-  }
-
-  const hasCharacterEditorV2 = Object.keys(normalizedProfiles.character_editor ?? {}).length > 0;
-  if (!hasCharacterEditorV2 && next.characterEditorPrompts && Object.keys(next.characterEditorPrompts).length > 0) {
-    normalizedProfiles.character_editor = Object.fromEntries(
-      Object.entries(next.characterEditorPrompts).map(([ctx, templates]) => [ctx, (templates ?? []).map(toV2Template)]),
-    );
-    console.info('[HypnoOS] DataService: 已將舊版 characterEditorPrompts 遷移至 aiPromptProfiles.character_editor');
   }
 
   next.aiPromptProfiles = normalizedProfiles;
@@ -658,24 +648,8 @@ const STORE_SCHEMA: z.ZodType<PersistedStore> = z
         streamMode: z.enum(['streaming', 'fake_streaming', 'non_streaming']).default('non_streaming'),
       })
       .optional(),
-    characterEditorPrompts: z
-      .record(
-        z.string(),
-        z.array(
-          z
-            .object({
-              id: z.string(),
-              title: z.string(),
-              content: z.string(),
-              isSystem: z.coerce.boolean(),
-            })
-            .passthrough(),
-        ),
-      )
-      .default({}),
     aiPromptProfiles: z
       .object({
-        character_editor: AI_PROMPT_PROFILE_SCHEMA.optional(),
         calendar: AI_PROMPT_PROFILE_SCHEMA.optional(),
         custom_hypnosis: AI_PROMPT_PROFILE_SCHEMA.optional(),
         hypnosis: AI_PROMPT_PROFILE_SCHEMA.optional(),
@@ -717,7 +691,6 @@ const STORE_SCHEMA: z.ZodType<PersistedStore> = z
     customHypnosis: {},
     aiPromptProfiles: {},
     aiUserPlaceholders: {},
-    characterEditorPrompts: {},
   });
 
 function toFiniteNumber(value: unknown): number | null {
@@ -1855,7 +1828,6 @@ export const DataService = {
           ...(s.aiPromptProfiles ?? {}),
           [appId]: normalizedProfile,
         },
-        ...(appId === 'character_editor' ? { characterEditorPrompts: profile } : {}),
       }));
       console.info(`[HypnoOS] DataService.saveAiPromptProfile 成功 app=${appId}`);
     } catch (err) {
@@ -1884,25 +1856,4 @@ export const DataService = {
     }
   },
 
-  getEditorPrompts: (): Record<string, PromptTemplate[]> | undefined => {
-    try {
-      const migrated = DataService.getAiPromptProfile('character_editor');
-      if (migrated && Object.keys(migrated).length > 0) return migrated;
-
-      const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
-      return store.characterEditorPrompts;
-    } catch (err) {
-      console.warn('[HypnoOS] DataService.getEditorPrompts 失敗', err);
-      return undefined;
-    }
-  },
-
-  saveEditorPrompts: async (prompts: Record<string, PromptTemplate[]>): Promise<void> => {
-    try {
-      await DataService.saveAiPromptProfile('character_editor', prompts);
-      console.info('[HypnoOS] DataService.saveEditorPrompts 成功');
-    } catch (err) {
-      console.error('[HypnoOS] DataService.saveEditorPrompts 失敗', err);
-    }
-  },
 };

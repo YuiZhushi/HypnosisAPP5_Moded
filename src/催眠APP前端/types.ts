@@ -140,7 +140,7 @@ export interface PromptTemplate {
   isSystem: boolean;
 }
 
-export type AiAppId = 'character_editor' | 'calendar' | 'custom_hypnosis' | 'hypnosis' | 'common';
+export type AiAppId = 'calendar' | 'custom_hypnosis' | 'hypnosis' | 'common';
 
 export type PromptTemplateScope = 'global' | 'app' | 'context';
 

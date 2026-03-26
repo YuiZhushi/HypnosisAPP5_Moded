@@ -285,7 +285,7 @@ function buildDefaultBehaviorBranchObject(
         发情状态: {
           表现: [],
           生理反应: [],
-          理智残存: '${理智殘存程度描述}',
+          理智残存: '',
           出格行为: [],
         },
       };
@@ -323,7 +323,7 @@ function buildDefaultBehaviorBranchObject(
           状态: statusText,
           行为指导: [],
           特殊互动: [],
-          心理依赖: '${對玩家的依賴心理描寫}',
+          心理依赖: '',
           允许越界: [],
         },
       };
@@ -343,7 +343,7 @@ function buildDefaultBehaviorBranchObject(
         状态: statusText,
         行为指导: [],
         忠诚表现: [],
-        自我认知: '${對自身定位的心理狀態}',
+        自我认知: '',
         羞耻承受极限: [],
       },
     };
