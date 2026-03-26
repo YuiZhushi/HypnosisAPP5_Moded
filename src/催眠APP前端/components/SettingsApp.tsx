@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronLeft, Settings, Cpu, ChevronRight, ChevronDown, CheckCircle, AlertCircle, RefreshCw, Eye, EyeOff } from 'lucide-react';
+import { ChevronLeft, Settings, Cpu, ChevronRight, ChevronDown, CheckCircle, AlertCircle, RefreshCw, Eye, EyeOff, FlaskConical } from 'lucide-react';
 import { DataService } from '../services/dataService';
 import { ApiSettings } from '../types';
+import { SettingsAIDebugSection } from './SettingsAIDebugSection';
 
 // ─── Extensibility: Section Registry ───────────────────────────────────────
 // To add a new settings section from another APP, push an entry to this array.
@@ -414,6 +415,13 @@ SETTINGS_SECTIONS.push({
   title: 'AI API 設定',
   icon: Cpu,
   Component: ApiSettingsSection,
+});
+
+SETTINGS_SECTIONS.push({
+  id: 'ai_debug',
+  title: 'AI 發送調適',
+  icon: FlaskConical,
+  Component: SettingsAIDebugSection,
 });
 
 // ─── Main SettingsApp Component ──────────────────────────────────────────────

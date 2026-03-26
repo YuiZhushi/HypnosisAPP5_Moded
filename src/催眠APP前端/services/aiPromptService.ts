@@ -1,8 +1,6 @@
 import { AiAppId, AiRequestSpec, AiResponseEnvelope, PromptTemplate } from '../types';
 import { AiPlaceholderService } from './aiPlaceholderService';
-
-declare function createChatMessages(messages: Array<{ role: string; message: string }>, opts?: Record<string, unknown>): Promise<void>;
-declare function triggerSlash(command: string): Promise<void>;
+import { DataService } from './dataService';
 
 type BuildFinalPromptParams = {
   appId: AiAppId;
@@ -22,6 +20,43 @@ type BuildFinalPromptParams = {
 type RequestParams = BuildFinalPromptParams & {
   requestSpec?: Partial<AiRequestSpec>;
 };
+
+type SendResult = {
+  ok: boolean;
+  responseText?: string;
+  error?: string;
+};
+
+function maskApiKey(value: string | undefined): string {
+  if (!value) return '(empty)';
+  if (value.length <= 8) return '***';
+  return `${value.slice(0, 4)}***${value.slice(-4)}`;
+}
+
+function getRequiredApiSettings() {
+  const api = DataService.getApiSettings();
+  const endpoint = (api?.apiEndpoint ?? '').trim();
+  const model = (api?.modelName ?? '').trim();
+
+  if (!endpoint) {
+    throw new Error('AI API 設定缺少端點（apiEndpoint）');
+  }
+  if (!model) {
+    throw new Error('AI API 設定缺少模型名稱（modelName）');
+  }
+
+  return {
+    endpoint,
+    model,
+    apiKey: api?.apiKey ?? '',
+    streamMode: api?.streamMode ?? 'non_streaming',
+    temperature: api?.temperature,
+    maxTokens: api?.maxTokens,
+    topP: api?.topP,
+    presencePenalty: api?.presencePenalty,
+    frequencyPenalty: api?.frequencyPenalty,
+  };
+}
 
 function normalizeText(text: string | undefined): string {
   return (text ?? '').replaceAll('\r\n', '\n').trimEnd();
@@ -100,36 +135,82 @@ export const AiPromptService = {
     return lines.join('\n');
   },
 
-  async send(prompt: string, transport: 'chat_transport' | 'api_transport' = 'chat_transport'): Promise<boolean> {
-    if (transport === 'api_transport') {
-      console.warn('[HypnoOS] AiPromptService: 尚未實作 api_transport，回退 chat_transport');
-    }
+  async send(prompt: string): Promise<SendResult> {
+    const startedAt = Date.now();
 
-    if (typeof createChatMessages !== 'function') {
-      console.error('[HypnoOS] AiPromptService: createChatMessages 未定義（未連接酒館）');
-      return false;
+    if (typeof generateRaw !== 'function') {
+      const message = 'generateRaw 不可用，無法執行背景 AI 生成';
+      console.error('[HypnoOS] AiPromptService: %s', message);
+      return { ok: false, error: message };
     }
 
     try {
-      await createChatMessages([{ role: 'user', message: prompt }], { refresh: 'affected' });
-      if (typeof triggerSlash === 'function') {
-        await triggerSlash('/trigger');
-      }
-      return true;
+      const api = getRequiredApiSettings();
+      const shouldStream = api.streamMode === 'streaming';
+
+      console.info('[HypnoOS] AiPromptService: 開始背景生成', {
+        transport: 'api_transport',
+        promptLength: prompt.length,
+        shouldStream,
+        shouldSilence: true,
+        api: {
+          endpoint: api.endpoint,
+          model: api.model,
+          keyMasked: maskApiKey(api.apiKey),
+          temperature: api.temperature,
+          maxTokens: api.maxTokens,
+          topP: api.topP,
+          presencePenalty: api.presencePenalty,
+          frequencyPenalty: api.frequencyPenalty,
+        },
+      });
+
+      const responseText = await generateRaw({
+        user_input: prompt,
+        should_stream: shouldStream,
+        should_silence: true,
+        custom_api: {
+          apiurl: api.endpoint,
+          key: api.apiKey || undefined,
+          model: api.model,
+          source: 'openai',
+          temperature: api.temperature,
+          max_tokens: api.maxTokens,
+          top_p: api.topP,
+          presence_penalty: api.presencePenalty,
+          frequency_penalty: api.frequencyPenalty,
+        },
+        ordered_prompts: ['user_input'],
+      });
+
+      console.info('[HypnoOS] AiPromptService: 背景生成完成', {
+        durationMs: Date.now() - startedAt,
+        responseLength: responseText.length,
+      });
+      return { ok: true, responseText };
     } catch (err) {
-      console.error('[HypnoOS] AiPromptService: 發送失敗', err);
-      return false;
+      console.error('[HypnoOS] AiPromptService: 背景生成失敗', {
+        durationMs: Date.now() - startedAt,
+        error: err,
+      });
+      return {
+        ok: false,
+        error: err instanceof Error ? err.message : 'generateRaw 背景請求失敗',
+      };
     }
   },
 
-  async request(params: RequestParams): Promise<{ ok: boolean; prompt: string; error?: string }> {
+  async request(params: RequestParams): Promise<{ ok: boolean; prompt: string; responseText?: string; error?: string }> {
     const prompt = await AiPromptService.buildFinalPrompt(params);
-    const transport = params.requestSpec?.transport ?? 'chat_transport';
-    const ok = await AiPromptService.send(prompt, transport);
-    if (!ok) {
-      return { ok: false, prompt, error: '發送失敗：未連接酒館或傳輸異常' };
+    const sent = await AiPromptService.send(prompt);
+    if (!sent.ok) {
+      return {
+        ok: false,
+        prompt,
+        error: sent.error ?? '發送失敗：未連接酒館或傳輸異常',
+      };
     }
-    return { ok: true, prompt };
+    return { ok: true, prompt, responseText: sent.responseText };
   },
 
   receiveAndParse<T = unknown>(rawText: string, parser?: (text: string) => T): AiResponseEnvelope<T> {

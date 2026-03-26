@@ -10,6 +10,19 @@ type ResolveContext = {
   appName?: string;
 };
 
+export type PlaceholderResolveRecord = {
+  raw: string;
+  key: string;
+  resolved: boolean;
+  source?: 'built_in' | 'user' | 'worldbook';
+  replacementPreview?: string;
+};
+
+export type PlaceholderResolveDebug = {
+  records: PlaceholderResolveRecord[];
+  unresolvedKeys: string[];
+};
+
 const PLACEHOLDER_REGEX = /\{\{\s*([^{}]+?)\s*\}\}/g;
 
 async function resolveWorldbookEntry(name: string): Promise<string | null> {
@@ -37,7 +50,7 @@ function getBuiltInValue(rawKey: string, context: ResolveContext): string | null
 }
 
 export const AiPlaceholderService = {
-  async resolveText(input: string, context: ResolveContext): Promise<string> {
+  async resolveTextWithDebug(input: string, context: ResolveContext): Promise<{ output: string; debug: PlaceholderResolveDebug }> {
     const globalDefs = DataService.getAiUserPlaceholders('global').filter(v => v.enabled);
     const appDefs = DataService.getAiUserPlaceholders(context.appId).filter(v => v.enabled);
     const userMap = new Map<string, string>();
@@ -46,28 +59,66 @@ export const AiPlaceholderService = {
     });
 
     const matches = [...input.matchAll(PLACEHOLDER_REGEX)];
-    if (matches.length === 0) return input;
+    if (matches.length === 0) {
+      return {
+        output: input,
+        debug: {
+          records: [],
+          unresolvedKeys: [],
+        },
+      };
+    }
 
     let output = input;
+    const records: PlaceholderResolveRecord[] = [];
     for (const m of matches) {
       const raw = m[0];
       const key = m[1]?.trim() ?? '';
       if (!key) continue;
 
       let replacement: string | null = null;
+      let source: PlaceholderResolveRecord['source'] | undefined;
       if (key.startsWith('WI:')) {
         replacement = await resolveWorldbookEntry(key.slice(3).trim());
+        if (replacement !== null) source = 'worldbook';
       } else {
         replacement = getBuiltInValue(key, context);
+        if (replacement !== null) source = 'built_in';
         if (replacement === null && userMap.has(key)) {
           replacement = userMap.get(key) ?? null;
+          if (replacement !== null) source = 'user';
         }
       }
 
       if (replacement !== null) {
         output = output.replace(raw, replacement);
+        records.push({
+          raw,
+          key,
+          resolved: true,
+          source,
+          replacementPreview: replacement.length > 120 ? `${replacement.slice(0, 120)}...` : replacement,
+        });
+      } else {
+        records.push({
+          raw,
+          key,
+          resolved: false,
+        });
       }
     }
-    return output;
+
+    return {
+      output,
+      debug: {
+        records,
+        unresolvedKeys: records.filter(r => !r.resolved).map(r => r.key),
+      },
+    };
+  },
+
+  async resolveText(input: string, context: ResolveContext): Promise<string> {
+    const result = await AiPlaceholderService.resolveTextWithDebug(input, context);
+    return result.output;
   },
 };
