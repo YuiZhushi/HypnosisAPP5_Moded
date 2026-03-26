@@ -492,7 +492,7 @@ type PersistedStore = {
     frequencyPenalty: number;
     streamMode?: 'streaming' | 'fake_streaming' | 'non_streaming';
   };
-  aiPromptProfiles: Record<AiAppId, Record<string, PromptTemplateV2[]>>;
+  aiPromptProfiles: Partial<Record<AiAppId, Record<string, PromptTemplateV2[]>>>;
   aiUserPlaceholders: Record<string, PlaceholderDefinition[]>;
   aiPipelineSettings?: {
     defaultTransport?: 'chat_transport' | 'api_transport';
@@ -501,6 +501,33 @@ type PersistedStore = {
 };
 
 const AI_APP_IDS: AiAppId[] = ['character_editor', 'calendar', 'custom_hypnosis', 'hypnosis', 'common'];
+
+const AI_PROMPT_PROFILE_SCHEMA = z.record(
+  z.string(),
+  z.array(
+    z
+      .object({
+        id: z.string(),
+        title: z.string(),
+        content: z.string(),
+        enabled: z.coerce.boolean().default(true),
+        isSystem: z.coerce.boolean(),
+        tags: z.array(z.string()).optional(),
+        scope: z.enum(['global', 'app', 'context']).default('context'),
+      })
+      .passthrough(),
+  ),
+);
+
+function createEmptyAiPromptProfiles(): Record<AiAppId, Record<string, PromptTemplateV2[]>> {
+  return {
+    character_editor: {},
+    calendar: {},
+    custom_hypnosis: {},
+    hypnosis: {},
+    common: {},
+  };
+}
 
 function toV2Template(t: PromptTemplate | PromptTemplateV2): PromptTemplateV2 {
   const input = t as Partial<PromptTemplateV2>;
@@ -527,7 +554,10 @@ function toLegacyTemplate(t: PromptTemplate | PromptTemplateV2): PromptTemplate 
 function migrateStore(store: PersistedStore): PersistedStore {
   const next = { ...store };
 
-  const normalizedProfiles: PersistedStore['aiPromptProfiles'] = { ...next.aiPromptProfiles };
+  const normalizedProfiles: Record<AiAppId, Record<string, PromptTemplateV2[]>> = {
+    ...createEmptyAiPromptProfiles(),
+    ...(next.aiPromptProfiles ?? {}),
+  };
   for (const appId of AI_APP_IDS) {
     const appProfile = normalizedProfiles[appId] ?? {};
     normalizedProfiles[appId] = Object.fromEntries(
@@ -644,23 +674,14 @@ const STORE_SCHEMA: z.ZodType<PersistedStore> = z
       )
       .default({}),
     aiPromptProfiles: z
-      .record(
-        z.enum(AI_APP_IDS),
-        z.record(
-          z.string(),
-          z.array(
-            z.object({
-              id: z.string(),
-              title: z.string(),
-              content: z.string(),
-              enabled: z.coerce.boolean().default(true),
-              isSystem: z.coerce.boolean(),
-              tags: z.array(z.string()).optional(),
-              scope: z.enum(['global', 'app', 'context']).default('context'),
-            }).passthrough(),
-          ),
-        ),
-      )
+      .object({
+        character_editor: AI_PROMPT_PROFILE_SCHEMA.optional(),
+        calendar: AI_PROMPT_PROFILE_SCHEMA.optional(),
+        custom_hypnosis: AI_PROMPT_PROFILE_SCHEMA.optional(),
+        hypnosis: AI_PROMPT_PROFILE_SCHEMA.optional(),
+        common: AI_PROMPT_PROFILE_SCHEMA.optional(),
+      })
+      .partial()
       .default({}),
     aiUserPlaceholders: z
       .record(
@@ -1809,7 +1830,10 @@ export const DataService = {
 
   getAiPromptProfiles: (): PersistedStore['aiPromptProfiles'] => {
     const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
-    return store.aiPromptProfiles ?? {};
+    return {
+      ...createEmptyAiPromptProfiles(),
+      ...(store.aiPromptProfiles ?? {}),
+    };
   },
 
   getAiPromptProfile: (appId: AiAppId): Record<string, PromptTemplate[]> | undefined => {
@@ -1821,10 +1845,10 @@ export const DataService = {
   },
 
   saveAiPromptProfile: async (appId: AiAppId, profile: Record<string, PromptTemplate[]>): Promise<void> => {
+    const normalizedProfile = Object.fromEntries(
+      Object.entries(profile).map(([ctx, templates]) => [ctx, (templates ?? []).map(toV2Template)]),
+    );
     try {
-      const normalizedProfile = Object.fromEntries(
-        Object.entries(profile).map(([ctx, templates]) => [ctx, (templates ?? []).map(toV2Template)]),
-      );
       await updateStoreWith(s => ({
         ...s,
         aiPromptProfiles: {
@@ -1836,6 +1860,7 @@ export const DataService = {
       console.info(`[HypnoOS] DataService.saveAiPromptProfile 成功 app=${appId}`);
     } catch (err) {
       console.error('[HypnoOS] DataService.saveAiPromptProfile 失敗', err);
+      throw err;
     }
   },
 

@@ -117,6 +117,7 @@ const Toast: React.FC<{ message: string; type: 'success' | 'error' | 'info'; onD
 // ========= Main CharacterEditorApp =========
 
 export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const APP_ID = 'character_editor' as const;
   const BEHAVIOR_TABS = new Set(['arousal', 'alert', 'affection', 'obedience']);
   const CONDITION_OPERATORS: Array<'<' | '<=' | '>' | '>=' | '=='> = ['<', '<=', '>', '>=', '=='];
   type EditMode = 'parsed' | 'raw';
@@ -167,7 +168,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
   const [sectionData, setSectionData] = useState<Record<string, EditorNode[]>>({});
   const [promptsDb, setPromptsDb] = useState<Record<string, PromptTemplate[]>>(() => {
     try {
-      const stored = DataService.getAiPromptProfile('character_editor') as Record<string, PromptTemplate[]> | undefined;
+      const stored = DataService.getAiPromptProfile(APP_ID) as Record<string, PromptTemplate[]> | undefined;
       if (stored && Object.keys(stored).length > 0) {
         console.info('[HypnoOS] CharacterEditor: 從 PersistedStore 讀取提示詞成功');
         return stored;
@@ -430,10 +431,12 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
   useEffect(() => {
     if (promptsSaveTimerRef.current) clearTimeout(promptsSaveTimerRef.current);
     promptsSaveTimerRef.current = setTimeout(() => {
-      void DataService.saveAiPromptProfile('character_editor', promptsDb);
+      void DataService.saveAiPromptProfile(APP_ID, promptsDb);
     }, 1000);
-    return () => { if (promptsSaveTimerRef.current) clearTimeout(promptsSaveTimerRef.current); };
-  }, [promptsDb]);
+    return () => {
+      if (promptsSaveTimerRef.current) clearTimeout(promptsSaveTimerRef.current);
+    };
+  }, [APP_ID, promptsDb]);
 
   // ----- Load character list from MVU -----
   useEffect(() => {
@@ -521,14 +524,14 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
           appId: 'character_editor',
           contextId: contextKey,
           mode: fillMode,
-          transport: 'chat_transport',
+          transport: 'api_transport',
         },
       });
 
       console.info(`[HypnoOS] CharacterEditor: 提示詞構建完成, 長度=${request.prompt.length}`);
 
       if (request.ok) {
-        setToast({ message: 'AI 提示詞已發送', type: 'success' });
+        setToast({ message: 'AI 背景請求已完成（未寫入聊天欄）', type: 'success' });
       } else {
         setToast({ message: request.error ?? '發送失敗: 未連接酒館', type: 'error' });
       }
@@ -1143,7 +1146,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
       {/* === Screen B: Prompt Manager === */}
       {showPromptSettings && (
         <PromptManager
-          appId="character_editor"
+          appId={APP_ID}
           promptsDb={promptsDb}
           setPromptsDb={setPromptsDb}
           activeTab={activeTab}
