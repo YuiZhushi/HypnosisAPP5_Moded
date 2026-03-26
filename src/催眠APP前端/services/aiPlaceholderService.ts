@@ -62,10 +62,8 @@ function getBuiltInValue(rawKey: string, context: ResolveContext): string | null
     return context.userInput ?? (context.playerDirection || '(無特殊要求)');
   }
 
-  if (key === '裝配角色名字') return context.characterName ?? '(未選擇角色)';
   if (key === '當前狀態與內容') return context.currentData || '(此分區尚無資料)';
   if (key === '玩家輸入' || key === '玩家特殊指示') return context.playerDirection || '(無特殊要求)';
-  if (key === '分區名稱') return context.sectionName ?? '(未知分區)';
   if (key === 'APP名稱') return context.appName ?? context.appId;
   return null;
 }
