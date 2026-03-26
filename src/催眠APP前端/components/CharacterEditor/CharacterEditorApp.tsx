@@ -257,6 +257,25 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
     return buildCanonicalSectionRaw(sectionId);
   }, [rawDraftBySection, buildCanonicalSectionRaw]);
 
+  const buildAiCurrentData = useCallback((mode: 'all' | 'section'): string => {
+    if (mode === 'section') {
+      if (currentNodes.length > 0) {
+        return JSON.stringify(treeToYaml(currentNodes), null, 2);
+      }
+      return isBehaviorTab
+        ? (activeBranch?.yamlRaw ?? '')
+        : getSectionRawText(activeTab);
+    }
+
+    const chunks = EDITOR_SECTIONS.map(section => {
+      const raw = getSectionRawText(section.id).trim();
+      if (!raw) return null;
+      return `# ${section.name} (${section.id})\n${raw}`;
+    }).filter((v): v is string => Boolean(v));
+
+    return chunks.join('\n\n');
+  }, [activeBranch?.yamlRaw, activeTab, currentNodes, getSectionRawText, isBehaviorTab]);
+
   const applyRawSectionToParsed = useCallback((sectionId: string): { ok: true } | { ok: false; message: string } => {
     const raw = getSectionRawText(sectionId).trim();
 
@@ -480,12 +499,8 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
       const templates = promptsDb[contextKey] ?? getDefaultPrompts(contextKey);
       const globalRules = promptsDb['global_output'] ?? SECTION_DEFAULT_PROMPTS['global_output'] ?? [];
 
-      // Build current section data as YAML string
-      const currentData = currentNodes.length > 0
-        ? JSON.stringify(treeToYaml(currentNodes), null, 2)
-        : (isBehaviorTab
-          ? (activeBranch?.yamlRaw ?? '')
-          : (rawFallbacks[activeTab] ?? ''));
+      // Build current data string
+      const currentData = buildAiCurrentData(fillMode);
 
       console.info(`[HypnoOS] CharacterEditor: 使用 ${templates.length} 個分區模板 + ${globalRules.length} 個全局規則`);
 
@@ -557,11 +572,20 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
         }
       }
 
+      // 安全策略：只要分區存在 raw fallback 或處於 raw 模式，就必須先嘗試解析。
+      // 若解析失敗則中止儲存，避免 saveCharacter 以重建資料覆蓋掉原始內容。
+      const sectionsNeedApply = new Set<string>();
       for (const [secId, mode] of Object.entries(editModeBySection)) {
-        if (mode !== 'raw') continue;
+        if (mode === 'raw') sectionsNeedApply.add(secId);
+      }
+      for (const secId of Object.keys(rawFallbacks)) {
+        sectionsNeedApply.add(secId);
+      }
+
+      for (const secId of sectionsNeedApply) {
         const parsed = applyRawSectionToParsed(secId);
         if (!parsed.ok) {
-          setToast({ message: `✗ ${EDITOR_SECTIONS.find(s => s.id === secId)?.name ?? secId} 原始碼解析失敗：${parsed.message}`, type: 'error' });
+          setToast({ message: `✗ ${EDITOR_SECTIONS.find(s => s.id === secId)?.name ?? secId} 原始碼解析失敗：${parsed.message}（已中止儲存，避免資料遺失）`, type: 'error' });
           setSaving(false);
           return;
         }

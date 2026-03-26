@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { QUEST_DB, type QuestDefinition } from '../data/questDb';
-import { Achievement, CustomHypnosisDef, HypnosisFeature, Quest, QuestStatus, UserResources } from '../types';
+import { Achievement, CustomHypnosisDef, HypnosisFeature, PromptTemplate, Quest, QuestStatus, UserResources } from '../types';
 import {
   canSubscribeTier,
   canUseFeature as canUseFeatureBySubscription,
@@ -481,6 +481,7 @@ type PersistedStore = {
     frequencyPenalty: number;
     streamMode?: 'streaming' | 'fake_streaming' | 'non_streaming';
   };
+  characterEditorPrompts: Record<string, PromptTemplate[]>;
 };
 
 const STORE_SCHEMA: z.ZodType<PersistedStore> = z
@@ -564,6 +565,21 @@ const STORE_SCHEMA: z.ZodType<PersistedStore> = z
         streamMode: z.enum(['streaming', 'fake_streaming', 'non_streaming']).default('non_streaming'),
       })
       .optional(),
+    characterEditorPrompts: z
+      .record(
+        z.string(),
+        z.array(
+          z
+            .object({
+              id: z.string(),
+              title: z.string(),
+              content: z.string(),
+              isSystem: z.coerce.boolean(),
+            })
+            .passthrough(),
+        ),
+      )
+      .default({}),
   })
   .default({
     version: 1,
@@ -576,6 +592,7 @@ const STORE_SCHEMA: z.ZodType<PersistedStore> = z
     customQuests: {},
     calendarEvents: {},
     customHypnosis: {},
+    characterEditorPrompts: {},
   });
 
 function toFiniteNumber(value: unknown): number | null {
@@ -1686,19 +1703,19 @@ export const DataService = {
 
   // ======== 角色編輯器提示詞持久化 ========
 
-  getEditorPrompts: (): Record<string, unknown> | undefined => {
+  getEditorPrompts: (): Record<string, PromptTemplate[]> | undefined => {
     try {
       const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
-      return (store as any).characterEditorPrompts;
+      return store.characterEditorPrompts;
     } catch (err) {
       console.warn('[HypnoOS] DataService.getEditorPrompts 失敗', err);
       return undefined;
     }
   },
 
-  saveEditorPrompts: async (prompts: Record<string, unknown>): Promise<void> => {
+  saveEditorPrompts: async (prompts: Record<string, PromptTemplate[]>): Promise<void> => {
     try {
-      await updateStoreWith(s => ({ ...s, characterEditorPrompts: prompts } as any));
+      await updateStoreWith(s => ({ ...s, characterEditorPrompts: prompts }));
       console.info('[HypnoOS] DataService.saveEditorPrompts 成功');
     } catch (err) {
       console.error('[HypnoOS] DataService.saveEditorPrompts 失敗', err);
