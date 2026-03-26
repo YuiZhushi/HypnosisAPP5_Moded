@@ -13,6 +13,10 @@ type BuildFinalPromptParams = {
   currentData?: string;
   characterName?: string;
   playerDirection?: string;
+  userInput?: string;
+  currentSectionName?: string;
+  currentSectionYaml?: string;
+  worldbookEntryContent?: string;
   appName?: string;
   xmlTag?: string;
 };
@@ -79,6 +83,10 @@ export const AiPromptService = {
       currentData = '',
       characterName = '',
       playerDirection = '',
+      userInput = '',
+      currentSectionName = '',
+      currentSectionYaml = '',
+      worldbookEntryContent = '',
       appName,
       xmlTag = '角色編輯',
     } = params;
@@ -100,7 +108,11 @@ export const AiPromptService = {
         characterName,
         currentData,
         playerDirection,
-        sectionName,
+        userInput,
+        sectionName: currentSectionName || sectionName,
+        currentSectionName: currentSectionName || sectionName,
+        currentSectionYaml,
+        worldbookEntryContent,
         appName,
       });
       lines.push(`[${block.title}]`);
@@ -116,7 +128,11 @@ export const AiPromptService = {
           characterName,
           currentData,
           playerDirection,
-          sectionName,
+          userInput,
+          sectionName: currentSectionName || sectionName,
+          currentSectionName: currentSectionName || sectionName,
+          currentSectionYaml,
+          worldbookEntryContent,
           appName,
         });
         lines.push(`[${rule.title}]`);
@@ -137,8 +153,9 @@ export const AiPromptService = {
 
   async send(prompt: string): Promise<SendResult> {
     const startedAt = Date.now();
+    const generateRawFn = (globalThis as { generateRaw?: (config: GenerateRawConfig) => Promise<string> }).generateRaw;
 
-    if (typeof generateRaw !== 'function') {
+    if (typeof generateRawFn !== 'function') {
       const message = 'generateRaw 不可用，無法執行背景 AI 生成';
       console.error('[HypnoOS] AiPromptService: %s', message);
       return { ok: false, error: message };
@@ -165,7 +182,7 @@ export const AiPromptService = {
         },
       });
 
-      const responseText = await generateRaw({
+      const responseText = await generateRawFn({
         user_input: prompt,
         should_stream: shouldStream,
         should_silence: true,

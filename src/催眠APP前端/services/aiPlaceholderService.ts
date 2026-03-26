@@ -1,12 +1,19 @@
 import { AiAppId } from '../types';
 import { DataService } from './dataService';
 
+declare const getCharWorldbookNames: (scope: 'current') => { primary?: string } | null | undefined;
+declare const getWorldbook: (name: string) => Promise<Array<{ name?: string; content?: string }>>;
+
 type ResolveContext = {
   appId: AiAppId;
   characterName?: string;
   currentData?: string;
   playerDirection?: string;
+  userInput?: string;
   sectionName?: string;
+  currentSectionName?: string;
+  currentSectionYaml?: string;
+  worldbookEntryContent?: string;
   appName?: string;
 };
 
@@ -41,6 +48,20 @@ async function resolveWorldbookEntry(name: string): Promise<string | null> {
 
 function getBuiltInValue(rawKey: string, context: ResolveContext): string | null {
   const key = rawKey.trim();
+  if (key === '隨機亂碼') return Math.random().toString(36).slice(2, 14);
+
+  if (key === '角色名' || key === '裝配角色名字') return context.characterName ?? '(未選擇角色)';
+  if (key === '角色世界書條目' || key === '角色的世界書條目') return context.worldbookEntryContent ?? '(無角色世界書條目內容)';
+  if (key === '當前的分區名稱' || key === '當前分區名稱' || key === '分區名稱') {
+    return context.currentSectionName ?? context.sectionName ?? '(未知分區)';
+  }
+  if (key === '當前分區yaml內容' || key === '當前分區YAML內容') {
+    return context.currentSectionYaml ?? (context.currentData || '(此分區尚無資料)');
+  }
+  if (key === '用戶的輸入') {
+    return context.userInput ?? (context.playerDirection || '(無特殊要求)');
+  }
+
   if (key === '裝配角色名字') return context.characterName ?? '(未選擇角色)';
   if (key === '當前狀態與內容') return context.currentData || '(此分區尚無資料)';
   if (key === '玩家輸入' || key === '玩家特殊指示') return context.playerDirection || '(無特殊要求)';
