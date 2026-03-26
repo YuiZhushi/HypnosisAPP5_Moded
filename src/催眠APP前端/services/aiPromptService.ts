@@ -1,4 +1,4 @@
-import { AiAppId, AiRequestSpec, AiResponseEnvelope, PromptTemplate } from '../types';
+import { AiAppId, AiResponseEnvelope, PromptTemplate } from '../types';
 import { AiPlaceholderService } from './aiPlaceholderService';
 import { DataService } from './dataService';
 
@@ -21,9 +21,7 @@ type BuildFinalPromptParams = {
   xmlTag?: string;
 };
 
-type RequestParams = BuildFinalPromptParams & {
-  requestSpec?: Partial<AiRequestSpec>;
-};
+type RequestParams = BuildFinalPromptParams;
 
 type SendResult = {
   ok: boolean;
