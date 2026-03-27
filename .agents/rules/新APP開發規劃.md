@@ -74,6 +74,46 @@ HypnoOS 是一個**嵌套在 iframe 中的偽手機系統**，UI 設計必須符
 - **提供玩家介入空間**：設計 AI 生成介面時，**必須**包含讓玩家輸入「修改建議」或「生成指引」的輸入框（Prompt Override），確保玩家有能力操控生成走向。
 - **背景解析 (MVU 解析)**：如果 AI 生成的行為是在背景執行且不產生新的可見聊天樓層，應利用 Mvu 機制（如 `Mvu.parseMessage`）自行解析 AI 回傳的更新文本，並透過 `Mvu.replaceMvuData` 將狀態寫回樓層。
 
+## 9. 新增功能前的「通用 / APP 專屬」判定（必做）
+
+在新增功能前，必須先做一次功能歸類，避免後續重複實作與命名衝突。
+
+- **判定為通用功能（多 APP 共用）**：符合以下任一條件時，優先抽為通用組件或通用服務。
+  - 兩個以上 APP 會使用到同一能力。
+  - 與單一 APP 的畫面與資料結構無強耦合。
+  - 可以透過統一輸入/輸出介面被重複呼叫。
+- **判定為 APP 專屬功能**：若邏輯明顯綁定某 APP 業務語義、欄位結構、交互流程，則必須實作在該 APP 內部。
+
+> 原則：**可共用就抽通用，不可共用才留 APP 內**。
+
+## 10. 命名規範（避免與其他 APP/服務混淆）
+
+### 10.1 通用組件 / 通用服務命名
+
+- 建議使用 `shared` / `common` / `os` 前綴與語義化名稱。
+- 範例：`sharedAiRequestAssembler`、`commonPromptModuleEditor`、`osAiRequestPipeline`。
+- 禁止使用無作用域且語意模糊的名稱，如：`promptTuning`、`moduleManager`。
+
+### 10.2 APP 專屬命名
+
+- 方法、狀態、型別需標明 APP 歸屬（建議 `<appId>` 前綴）。
+- 範例：`settingsAppPromptTuningState`、`characterEditorAppPlaceholderMap`、`settingsAppUpdatePromptModules()`。
+- 禁止在 APP 專屬程式碼中使用看似通用的名稱，以免被其他 APP 誤用。
+
+## 11. 持久化命名規範（避免鍵值與方法衝突）
+
+- APP 專屬持久化資料需放在清楚的 APP 命名空間下（例如 `appData.settingsApp.*`、`appData.characterEditorApp.*`）。
+- 寫入方法需與資料命名空間一致，名稱需可直接看出歸屬。
+- 若為通用服務持久化，鍵名需標明 `shared`/`common`，不可偽裝為單一 APP 資料。
+
+## 12. 實作前快速檢查（新增功能版）
+
+每次新增功能前，請先確認：
+
+1. [ ] 這個功能是通用還是 APP 專屬？判定依據是否明確。
+2. [ ] 方法名 / 型別名 / state 名是否有清楚作用域，避免跨 APP 混淆。
+3. [ ] 若需持久化，鍵名與寫入方法是否可辨識來源 APP（或 shared/common）。
+
 ---
 
 ## ✅ 開發前審查清單 (Checklist)

@@ -5,6 +5,8 @@ import {
   AiAppId,
   CustomHypnosisDef,
   HypnosisFeature,
+  PlaceholderDefinition,
+  PromptTemplateV2,
   Quest,
   QuestStatus,
   UserResources,
@@ -489,9 +491,161 @@ type PersistedStore = {
     frequencyPenalty: number;
     streamMode?: 'streaming' | 'fake_streaming' | 'non_streaming';
   };
+  settingsPromptTuning?: {
+    modules: Record<
+      string,
+      {
+        id: string;
+        title: string;
+        content: string;
+        enabled: boolean;
+      }
+    >;
+    moduleOrder: string[];
+    placeholders: Record<
+      string,
+      {
+        key: string;
+        value: string;
+        enabled: boolean;
+        source: 'built_in' | 'user' | 'worldbook' | 'runtime';
+        resolverType: 'static' | 'function';
+        scope: 'app';
+      }
+    >;
+  };
 };
 
+type SettingsPromptModule = Pick<PromptTemplateV2, 'id' | 'title' | 'content' | 'enabled'>;
+type SettingsPromptPlaceholder = PlaceholderDefinition & { value: string };
+export type SettingsPromptTuningConfig = {
+  modules: SettingsPromptModule[];
+  moduleOrder: string[];
+  placeholders: SettingsPromptPlaceholder[];
+};
+
+const DEFAULT_SETTINGS_PROMPT_CONFIG: SettingsPromptTuningConfig = {
+  modules: [
+    {
+      id: 'mod_test_system',
+      title: '測試模塊A：系統規則',
+      enabled: true,
+      content: [
+        '你是催眠APP的測試助手。',
+        '請依照以下佔位符資訊輸出：',
+        '- 目標：{{target_name}}',
+        '- 場景：{{scene}}',
+        '- 回應語氣：{{tone}}',
+        '',
+      ].join('\n'),
+    },
+    {
+      id: 'mod_test_user',
+      title: '測試模塊B：任務請求',
+      enabled: true,
+      content: [
+        '請根據上方規則，生成一段簡短回應：',
+        '{{user_goal}}',
+        '',
+      ].join('\n'),
+    },
+  ],
+  moduleOrder: ['mod_test_system', 'mod_test_user'],
+  placeholders: [
+    {
+      key: 'target_name',
+      value: '白鳥百合子',
+      enabled: true,
+      source: 'user',
+      resolverType: 'static',
+      scope: 'app',
+    },
+    {
+      key: 'scene',
+      value: '放學後教室',
+      enabled: true,
+      source: 'user',
+      resolverType: 'static',
+      scope: 'app',
+    },
+    {
+      key: 'tone',
+      value: '冷靜、簡潔',
+      enabled: true,
+      source: 'user',
+      resolverType: 'static',
+      scope: 'app',
+    },
+    {
+      key: 'user_goal',
+      value: '描述目標目前的心理變化。',
+      enabled: true,
+      source: 'user',
+      resolverType: 'static',
+      scope: 'app',
+    },
+  ],
+};
+
+function cloneSettingsPromptConfig(input: SettingsPromptTuningConfig): SettingsPromptTuningConfig {
+  return {
+    modules: input.modules.map(m => ({ ...m })),
+    moduleOrder: [...input.moduleOrder],
+    placeholders: input.placeholders.map(p => ({ ...p })),
+  };
+}
+
+function normalizeSettingsPromptConfig(
+  raw: PersistedStore['settingsPromptTuning'] | undefined,
+): SettingsPromptTuningConfig {
+  const defaults = cloneSettingsPromptConfig(DEFAULT_SETTINGS_PROMPT_CONFIG);
+
+  const moduleMap = new Map<string, SettingsPromptModule>(defaults.modules.map(m => [m.id, m]));
+  for (const persisted of Object.values(raw?.modules ?? {})) {
+    if (!persisted?.id) continue;
+    moduleMap.set(persisted.id, {
+      id: persisted.id,
+      title: persisted.title ?? persisted.id,
+      content: persisted.content ?? '',
+      enabled: persisted.enabled !== false,
+    });
+  }
+
+  const allModuleIds = new Set(moduleMap.keys());
+  const orderFromStore = (raw?.moduleOrder ?? []).filter(id => allModuleIds.has(id));
+  const fallbackOrder = defaults.moduleOrder.filter(id => allModuleIds.has(id));
+  const moduleOrder = Array.from(new Set([...orderFromStore, ...fallbackOrder, ...Array.from(allModuleIds)]));
+  const orderedModules = moduleOrder.map(id => moduleMap.get(id)).filter(Boolean) as SettingsPromptModule[];
+
+  const placeholderMap = new Map<string, SettingsPromptPlaceholder>(defaults.placeholders.map(p => [p.key, p]));
+  for (const persisted of Object.values(raw?.placeholders ?? {})) {
+    if (!persisted?.key) continue;
+    placeholderMap.set(persisted.key, {
+      key: persisted.key,
+      value: persisted.value ?? '',
+      enabled: persisted.enabled !== false,
+      source: persisted.source ?? 'user',
+      resolverType: persisted.resolverType ?? 'static',
+      scope: 'app',
+    });
+  }
+
+  const placeholders = Array.from(placeholderMap.values());
+
+  return {
+    modules: orderedModules,
+    moduleOrder,
+    placeholders,
+  };
+}
+
 function migrateStore(store: PersistedStore): PersistedStore {
+  // 遷移 promptTuning → settingsPromptTuning
+  const storeAny = store as any;
+  if (storeAny.promptTuning && !store.settingsPromptTuning) {
+    store.settingsPromptTuning = storeAny.promptTuning;
+  }
+  delete storeAny.promptTuning;
   return store;
 }
 
@@ -574,6 +728,35 @@ const STORE_SCHEMA: z.ZodType<PersistedStore> = z
         presencePenalty: z.coerce.number().min(-2).max(2).default(0),
         frequencyPenalty: z.coerce.number().min(-2).max(2).default(0),
         streamMode: z.enum(['streaming', 'fake_streaming', 'non_streaming']).default('non_streaming'),
+      })
+      .optional(),
+    settingsPromptTuning: z
+      .object({
+        modules: z
+          .record(
+            z.string(),
+            z.object({
+              id: z.string(),
+              title: z.string(),
+              content: z.string(),
+              enabled: z.coerce.boolean().default(true),
+            }),
+          )
+          .default({}),
+        moduleOrder: z.array(z.string()).default([]),
+        placeholders: z
+          .record(
+            z.string(),
+            z.object({
+              key: z.string(),
+              value: z.string().default(''),
+              enabled: z.coerce.boolean().default(true),
+              source: z.enum(['built_in', 'user', 'worldbook', 'runtime']).default('user'),
+              resolverType: z.enum(['static', 'function']).default('static'),
+              scope: z.literal('app').default('app'),
+            }),
+          )
+          .default({}),
       })
       .optional(),
   })
@@ -1659,6 +1842,55 @@ export const DataService = {
   getApiSettings: (): PersistedStore['apiSettings'] => {
     const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
     return store.apiSettings;
+  },
+
+  getSettingsPromptConfig: (): SettingsPromptTuningConfig => {
+    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
+    return normalizeSettingsPromptConfig(store.settingsPromptTuning);
+  },
+
+  getDefaultSettingsPromptConfig: (): SettingsPromptTuningConfig => {
+    return cloneSettingsPromptConfig(DEFAULT_SETTINGS_PROMPT_CONFIG);
+  },
+
+  updateSettingsPromptConfig: async (next: SettingsPromptTuningConfig): Promise<void> => {
+    const normalized: SettingsPromptTuningConfig = {
+      modules: next.modules.map(m => ({
+        id: String(m.id),
+        title: String(m.title || m.id),
+        content: String(m.content ?? ''),
+        enabled: m.enabled !== false,
+      })),
+      moduleOrder: next.moduleOrder.map(String),
+      placeholders: next.placeholders.map(p => ({
+        key: String(p.key),
+        value: String(p.value ?? ''),
+        enabled: p.enabled !== false,
+        source: p.source ?? 'user',
+        resolverType: p.resolverType ?? 'static',
+        scope: 'app',
+      })),
+    };
+
+    const modulesRecord: NonNullable<PersistedStore['settingsPromptTuning']>['modules'] = {};
+    for (const module of normalized.modules) {
+      modulesRecord[module.id] = { ...module };
+    }
+
+    const placeholdersRecord: NonNullable<PersistedStore['settingsPromptTuning']>['placeholders'] = {};
+    for (const placeholder of normalized.placeholders) {
+      placeholdersRecord[placeholder.key] = { ...placeholder };
+    }
+
+    await updateStoreWith(store => ({
+      ...store,
+      settingsPromptTuning: {
+        modules: modulesRecord,
+        moduleOrder: normalized.moduleOrder,
+        placeholders: placeholdersRecord,
+      },
+    }));
+    console.info('[HypnoOS] Settings Prompt 調適設定已更新');
   },
 
   updateApiSettings: async (patch: Partial<NonNullable<PersistedStore['apiSettings']>>): Promise<void> => {
