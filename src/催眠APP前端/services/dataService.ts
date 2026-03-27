@@ -5,9 +5,6 @@ import {
   AiAppId,
   CustomHypnosisDef,
   HypnosisFeature,
-  PlaceholderDefinition,
-  PromptTemplate,
-  PromptTemplateV2,
   Quest,
   QuestStatus,
   UserResources,
@@ -492,79 +489,10 @@ type PersistedStore = {
     frequencyPenalty: number;
     streamMode?: 'streaming' | 'fake_streaming' | 'non_streaming';
   };
-  aiPromptProfiles: Partial<Record<AiAppId, Record<string, PromptTemplateV2[]>>>;
-  aiUserPlaceholders: Record<string, PlaceholderDefinition[]>;
-  aiPipelineSettings?: {
-    defaultTransport?: 'chat_transport' | 'api_transport';
-  };
 };
 
-const AI_APP_IDS: AiAppId[] = ['calendar', 'custom_hypnosis', 'hypnosis', 'common'];
-
-const AI_PROMPT_PROFILE_SCHEMA = z.record(
-  z.string(),
-  z.array(
-    z
-      .object({
-        id: z.string(),
-        title: z.string(),
-        content: z.string(),
-        enabled: z.coerce.boolean().default(true),
-        isSystem: z.coerce.boolean(),
-        tags: z.array(z.string()).optional(),
-        scope: z.enum(['global', 'app', 'context']).default('context'),
-      })
-      .passthrough(),
-  ),
-);
-
-function createEmptyAiPromptProfiles(): Record<AiAppId, Record<string, PromptTemplateV2[]>> {
-  return {
-    calendar: {},
-    custom_hypnosis: {},
-    hypnosis: {},
-    common: {},
-  };
-}
-
-function toV2Template(t: PromptTemplate | PromptTemplateV2): PromptTemplateV2 {
-  const input = t as Partial<PromptTemplateV2>;
-  return {
-    id: t.id,
-    title: t.title,
-    content: t.content,
-    isSystem: t.isSystem,
-    enabled: input.enabled ?? true,
-    tags: input.tags,
-    scope: input.scope ?? 'context',
-  };
-}
-
-function toLegacyTemplate(t: PromptTemplate | PromptTemplateV2): PromptTemplate {
-  return {
-    id: t.id,
-    title: t.title,
-    content: t.content,
-    isSystem: t.isSystem,
-  };
-}
-
 function migrateStore(store: PersistedStore): PersistedStore {
-  const next = { ...store };
-
-  const normalizedProfiles: Record<AiAppId, Record<string, PromptTemplateV2[]>> = {
-    ...createEmptyAiPromptProfiles(),
-    ...(next.aiPromptProfiles ?? {}),
-  };
-  for (const appId of AI_APP_IDS) {
-    const appProfile = normalizedProfiles[appId] ?? {};
-    normalizedProfiles[appId] = Object.fromEntries(
-      Object.entries(appProfile).map(([ctx, templates]) => [ctx, (templates ?? []).map(toV2Template)]),
-    );
-  }
-
-  next.aiPromptProfiles = normalizedProfiles;
-  return next;
+  return store;
 }
 
 const STORE_SCHEMA: z.ZodType<PersistedStore> = z
@@ -648,35 +576,6 @@ const STORE_SCHEMA: z.ZodType<PersistedStore> = z
         streamMode: z.enum(['streaming', 'fake_streaming', 'non_streaming']).default('non_streaming'),
       })
       .optional(),
-    aiPromptProfiles: z
-      .object({
-        calendar: AI_PROMPT_PROFILE_SCHEMA.optional(),
-        custom_hypnosis: AI_PROMPT_PROFILE_SCHEMA.optional(),
-        hypnosis: AI_PROMPT_PROFILE_SCHEMA.optional(),
-        common: AI_PROMPT_PROFILE_SCHEMA.optional(),
-      })
-      .partial()
-      .default({}),
-    aiUserPlaceholders: z
-      .record(
-        z.string(),
-        z.array(
-          z.object({
-            key: z.string(),
-            source: z.enum(['built_in', 'user', 'worldbook', 'runtime']),
-            resolverType: z.enum(['static', 'function']),
-            value: z.string().optional(),
-            enabled: z.coerce.boolean().default(true),
-            scope: z.enum(['global', 'app']).default('app'),
-          }).passthrough(),
-        ),
-      )
-      .default({}),
-    aiPipelineSettings: z
-      .object({
-        defaultTransport: z.enum(['chat_transport', 'api_transport']).optional(),
-      })
-      .optional(),
   })
   .default({
     version: 1,
@@ -689,8 +588,6 @@ const STORE_SCHEMA: z.ZodType<PersistedStore> = z
     customQuests: {},
     calendarEvents: {},
     customHypnosis: {},
-    aiPromptProfiles: {},
-    aiUserPlaceholders: {},
   });
 
 function toFiniteNumber(value: unknown): number | null {
@@ -1796,63 +1693,6 @@ export const DataService = {
     } catch (err) {
       console.warn('[HypnoOS] 获取模型列表失败', err);
       return [];
-    }
-  },
-
-  // ======== 角色編輯器提示詞持久化 ========
-
-  getAiPromptProfiles: (): PersistedStore['aiPromptProfiles'] => {
-    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
-    return {
-      ...createEmptyAiPromptProfiles(),
-      ...(store.aiPromptProfiles ?? {}),
-    };
-  },
-
-  getAiPromptProfile: (appId: AiAppId): Record<string, PromptTemplate[]> | undefined => {
-    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
-    const profile = store.aiPromptProfiles?.[appId] ?? {};
-    return Object.fromEntries(
-      Object.entries(profile).map(([ctx, templates]) => [ctx, (templates ?? []).map(toLegacyTemplate)]),
-    );
-  },
-
-  saveAiPromptProfile: async (appId: AiAppId, profile: Record<string, PromptTemplate[]>): Promise<void> => {
-    const normalizedProfile = Object.fromEntries(
-      Object.entries(profile).map(([ctx, templates]) => [ctx, (templates ?? []).map(toV2Template)]),
-    );
-    try {
-      await updateStoreWith(s => ({
-        ...s,
-        aiPromptProfiles: {
-          ...(s.aiPromptProfiles ?? {}),
-          [appId]: normalizedProfile,
-        },
-      }));
-      console.info(`[HypnoOS] DataService.saveAiPromptProfile 成功 app=${appId}`);
-    } catch (err) {
-      console.error('[HypnoOS] DataService.saveAiPromptProfile 失敗', err);
-      throw err;
-    }
-  },
-
-  getAiUserPlaceholders: (scopeKey: AiAppId | 'global'): PlaceholderDefinition[] => {
-    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
-    return (store.aiUserPlaceholders?.[scopeKey] ?? []).map(v => ({ ...v }));
-  },
-
-  saveAiUserPlaceholders: async (scopeKey: AiAppId | 'global', placeholders: PlaceholderDefinition[]): Promise<void> => {
-    try {
-      await updateStoreWith(s => ({
-        ...s,
-        aiUserPlaceholders: {
-          ...(s.aiUserPlaceholders ?? {}),
-          [scopeKey]: placeholders,
-        },
-      }));
-      console.info(`[HypnoOS] DataService.saveAiUserPlaceholders 成功 scope=${scopeKey}`);
-    } catch (err) {
-      console.error('[HypnoOS] DataService.saveAiUserPlaceholders 失敗', err);
     }
   },
 
