@@ -26,11 +26,11 @@ export interface ApiSettings {
   apiKey: string;
   apiEndpoint: string;
   modelName: string;
-  temperature: number;        // 0.0 - 2.0
+  temperature: number; // 0.0 - 2.0
   maxTokens: number;
-  topP: number;               // 0.0 - 1.0
-  presencePenalty: number;    // -2.0 - 2.0
-  frequencyPenalty: number;   // -2.0 - 2.0
+  topP: number; // 0.0 - 1.0
+  presencePenalty: number; // -2.0 - 2.0
+  frequencyPenalty: number; // -2.0 - 2.0
   streamMode?: 'streaming' | 'fake_streaming' | 'non_streaming';
 }
 
@@ -83,10 +83,10 @@ export interface CustomHypnosisDef {
   description: string;
   tier: HypnosisFeature['tier'];
   costType: 'ONE_TIME' | 'PER_MINUTE';
-  costValue: number;          // energy cost per use (ONE_TIME) or per minute (PER_MINUTE)
-  notePlaceholder?: string;   // optional note prompt
-  createdAt: number;          // timestamp
-  researchCost: number;       // money spent to create (for refund calc)
+  costValue: number; // energy cost per use (ONE_TIME) or per minute (PER_MINUTE)
+  notePlaceholder?: string; // optional note prompt
+  createdAt: number; // timestamp
+  researchCost: number; // money spent to create (for refund calc)
 }
 
 // Data payload for backend submission
@@ -127,22 +127,16 @@ export interface EditorNode {
   id: string;
   key: string;
   type: NodeType;
-  value: string;           // type='string' 時的值
-  children: EditorNode[];  // type='object'/'list' 時的子項
-  isLocked: boolean;       // 頂層預設欄位不可刪除/改 key
+  value: string; // type='string' 時的值
+  children: EditorNode[]; // type='object'/'list' 時的子項
+  isLocked: boolean; // 頂層預設欄位不可刪除/改 key
 }
 
-/** 提示詞模板卡片 */
-export interface PromptTemplate {
-  id: string;
-  title: string;
-  content: string;
-  isSystem: boolean;
-}
+/** 提示詞模板卡片（現行版） */
 
 export type AiAppId = 'calendar' | 'custom_hypnosis' | 'hypnosis' | 'common';
 
-export type PromptTemplateScope = 'global' | 'app' | 'context';
+export type PromptTemplateScope = 'app' | 'context';
 
 export type PromptContextId = string;
 
@@ -162,7 +156,7 @@ export interface PlaceholderDefinition {
   resolverType: 'static' | 'function';
   value?: string;
   enabled: boolean;
-  scope: 'global' | 'app';
+  scope: 'app';
 }
 
 export interface AiRequestSpec {
@@ -183,10 +177,7 @@ export interface AiResponseEnvelope<T = unknown> {
 }
 
 /** 提示詞情境 key */
-export type PromptContextKey =
-  | 'global_output'
-  | 'full_fill'
-  | `sec_${string}`;
+export type PromptContextKey = 'global_output' | 'full_fill' | `sec_${string}`;
 
 /** 角色編輯器的分區定義 */
 export interface EditorSection {
@@ -197,14 +188,14 @@ export interface EditorSection {
 
 /** 編輯器 Tab 常量 */
 export const EDITOR_SECTIONS: EditorSection[] = [
-  { id: 'info',        name: '基本資訊',   category: 'data'     },
-  { id: 'social',      name: '社交網絡',   category: 'data'     },
-  { id: 'personality', name: '性格與興趣', category: 'data'     },
-  { id: 'appearance',  name: '外觀特點',   category: 'data'     },
-  { id: 'fetish',      name: '性癖與弱點', category: 'data'     },
-  { id: 'arousal',     name: '發情行為',   category: 'behavior' },
-  { id: 'alert',       name: '警戒行為',   category: 'behavior' },
-  { id: 'affection',   name: '好感行為',   category: 'behavior' },
-  { id: 'obedience',   name: '服從行為',   category: 'behavior' },
-  { id: 'global',      name: '全局行為',   category: 'behavior' },
+  { id: 'info', name: '基本資訊', category: 'data' },
+  { id: 'social', name: '社交網絡', category: 'data' },
+  { id: 'personality', name: '性格與興趣', category: 'data' },
+  { id: 'appearance', name: '外觀特點', category: 'data' },
+  { id: 'fetish', name: '性癖與弱點', category: 'data' },
+  { id: 'arousal', name: '發情行為', category: 'behavior' },
+  { id: 'alert', name: '警戒行為', category: 'behavior' },
+  { id: 'affection', name: '好感行為', category: 'behavior' },
+  { id: 'obedience', name: '服從行為', category: 'behavior' },
+  { id: 'global', name: '全局行為', category: 'behavior' },
 ];

@@ -1,7 +1,7 @@
-import { PromptTemplate } from '../types';
+import { PromptTemplateV2 } from '../types';
 import { DataService } from './dataService';
 
-type PromptModule = Pick<PromptTemplate, 'id' | 'content'>;
+type PromptModule = Pick<PromptTemplateV2, 'id' | 'content'>;
 
 type PlaceholderValue = string | number | boolean | null | undefined;
 
