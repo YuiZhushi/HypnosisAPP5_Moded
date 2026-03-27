@@ -134,13 +134,14 @@ export interface EditorNode {
 
 /** 提示詞模板卡片（現行版） */
 
-export type AiAppId = 'calendar' | 'custom_hypnosis' | 'hypnosis' | 'common';
+export type AiAppId = 'calendar' | 'custom_hypnosis' | 'hypnosis' | 'common' | 'settings';
 
 export type PromptTemplateScope = 'app' | 'context';
 
 export type PromptContextId = string;
 
 export interface PromptTemplateV2 {
+  appId: AiAppId;
   id: string;
   title: string;
   content: string;

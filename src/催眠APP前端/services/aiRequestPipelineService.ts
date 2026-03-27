@@ -81,11 +81,17 @@ export const AiRequestPipelineService = {
 
     const merged = orderedModules.map(m => normalizeText(m.content)).join('');
 
-    return merged.replace(PLACEHOLDER_REGEX, (raw, keyRaw: string) => {
+    const customReplaced = merged.replace(PLACEHOLDER_REGEX, (raw, keyRaw: string) => {
       const key = keyRaw.trim();
       if (!Object.prototype.hasOwnProperty.call(placeholders, key)) return raw;
       return stringifyPlaceholderValue(placeholders[key]);
     });
+
+    // 替換酒館內建宏（{{char}}, {{user}} 等）
+    if (typeof substitudeMacros === 'function') {
+      return substitudeMacros(customReplaced);
+    }
+    return customReplaced;
   },
 
   /** 步驟 3：發送請求 */

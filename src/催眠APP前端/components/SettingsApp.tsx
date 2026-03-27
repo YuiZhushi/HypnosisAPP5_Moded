@@ -1,7 +1,28 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronLeft, Settings, Cpu, ChevronRight, ChevronDown, CheckCircle, AlertCircle, RefreshCw, Eye, EyeOff } from 'lucide-react';
-import { DataService } from '../services/dataService';
+import {
+  ChevronLeft,
+  Settings,
+  Cpu,
+  ChevronRight,
+  ChevronDown,
+  CheckCircle,
+  AlertCircle,
+  RefreshCw,
+  Eye,
+  EyeOff,
+  Bot,
+  GripVertical,
+  ArrowUp,
+  ArrowDown,
+  Save,
+  RotateCcw,
+  Send,
+  Plus,
+  Trash2,
+} from 'lucide-react';
+import { DataService, type SettingsPromptTuningConfig } from '../services/dataService';
 import { ApiSettings } from '../types';
+import { AiRequestPipelineService } from '../services/aiRequestPipelineService';
 
 // ─── Extensibility: Section Registry ───────────────────────────────────────
 // To add a new settings section from another APP, push an entry to this array.
@@ -408,12 +429,480 @@ function ApiSettingsSection({ onDirty }: SettingsSectionProps) {
   );
 }
 
+type SettingsPromptTab = 'modules' | 'placeholders' | 'preview';
+
+const PLACEHOLDER_KEY_REGEX = /^[a-zA-Z0-9_-]+$/;
+
+// IDs of default (built-in) modules — cannot be deleted
+const DEFAULT_MODULE_IDS = new Set(['mod_test_system', 'mod_test_user']);
+// Keys of default (built-in) placeholders — cannot be deleted
+const DEFAULT_PLACEHOLDER_KEYS = new Set(['target_name', 'scene', 'tone', 'user_goal']);
+
+function SettingsPromptTuningSection({ onDirty }: SettingsSectionProps) {
+  const [settings, setSettings] = useState<SettingsPromptTuningConfig | null>(null);
+  const [activeTab, setActiveTab] = useState<SettingsPromptTab>('modules');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [sending, setSending] = useState(false);
+  const [previewPrompt, setPreviewPrompt] = useState('');
+  const [previewResponse, setPreviewResponse] = useState('');
+  const [previewError, setPreviewError] = useState<string | null>(null);
+
+  // -- New placeholder form state --
+  const [showNewPlaceholder, setShowNewPlaceholder] = useState(false);
+  const [newPlaceholderKey, setNewPlaceholderKey] = useState('');
+  const [newPlaceholderError, setNewPlaceholderError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loaded = DataService.getSettingsPromptConfig();
+    setSettings(loaded);
+  }, []);
+
+  const markDirty = () => onDirty?.();
+
+  const patchSettings = (updater: (prev: SettingsPromptTuningConfig) => SettingsPromptTuningConfig) => {
+    setSettings(prev => {
+      if (!prev) return prev;
+      const next = updater(prev);
+      markDirty();
+      return next;
+    });
+  };
+
+  const updateModuleField = (moduleId: string, patch: Partial<{ title: string; content: string; enabled: boolean }>) => {
+    patchSettings(prev => ({
+      ...prev,
+      modules: prev.modules.map(m => (m.id === moduleId ? { ...m, ...patch } : m)),
+    }));
+  };
+
+  const moveModule = (moduleId: string, direction: -1 | 1) => {
+    patchSettings(prev => {
+      const order = [...prev.moduleOrder];
+      const idx = order.indexOf(moduleId);
+      if (idx < 0) return prev;
+      const nextIdx = idx + direction;
+      if (nextIdx < 0 || nextIdx >= order.length) return prev;
+      [order[idx], order[nextIdx]] = [order[nextIdx], order[idx]];
+      return { ...prev, moduleOrder: order };
+    });
+  };
+
+  // -- Add custom module --
+  const handleAddModule = () => {
+    patchSettings(prev => {
+      // Generate unique ID
+      let newId: string;
+      let counter = 0;
+      do {
+        newId = `settings_custom_${Date.now()}_${counter}`;
+        counter++;
+      } while (prev.modules.some(m => m.id === newId));
+
+      const newModule = {
+        id: newId,
+        title: '新自訂模塊',
+        content: '',
+        enabled: true,
+      };
+      return {
+        ...prev,
+        modules: [...prev.modules, newModule],
+        moduleOrder: [...prev.moduleOrder, newId],
+      };
+    });
+  };
+
+  // -- Delete custom module --
+  const handleDeleteModule = (moduleId: string) => {
+    if (DEFAULT_MODULE_IDS.has(moduleId)) return;
+    patchSettings(prev => ({
+      ...prev,
+      modules: prev.modules.filter(m => m.id !== moduleId),
+      moduleOrder: prev.moduleOrder.filter(id => id !== moduleId),
+    }));
+  };
+
+  const updatePlaceholderValue = (key: string, patch: Partial<{ value: string; enabled: boolean }>) => {
+    patchSettings(prev => ({
+      ...prev,
+      placeholders: prev.placeholders.map(p => (p.key === key ? { ...p, ...patch } : p)),
+    }));
+  };
+
+  // -- Add custom placeholder --
+  const handleAddPlaceholder = () => {
+    const trimmed = newPlaceholderKey.trim();
+    if (!trimmed) {
+      setNewPlaceholderError('佔位符 key 不能為空');
+      return;
+    }
+    if (!PLACEHOLDER_KEY_REGEX.test(trimmed)) {
+      setNewPlaceholderError('只能包含英文字母、數字、底線（_）、減號（-）');
+      return;
+    }
+    if (settings?.placeholders.some(p => p.key === trimmed)) {
+      setNewPlaceholderError(`佔位符 "${trimmed}" 已存在`);
+      return;
+    }
+    patchSettings(prev => ({
+      ...prev,
+      placeholders: [
+        ...prev.placeholders,
+        {
+          key: trimmed,
+          value: '',
+          enabled: true,
+          source: 'user' as const,
+          resolverType: 'static' as const,
+          scope: 'app' as const,
+        },
+      ],
+    }));
+    setNewPlaceholderKey('');
+    setNewPlaceholderError(null);
+    setShowNewPlaceholder(false);
+  };
+
+  // -- Delete custom placeholder --
+  const handleDeletePlaceholder = (key: string) => {
+    if (DEFAULT_PLACEHOLDER_KEYS.has(key)) return;
+    patchSettings(prev => ({
+      ...prev,
+      placeholders: prev.placeholders.filter(p => p.key !== key),
+    }));
+  };
+
+  const handleRestoreDefault = () => {
+    setSettings(DataService.getDefaultSettingsPromptConfig());
+    setPreviewError(null);
+    setPreviewPrompt('');
+    setPreviewResponse('');
+    markDirty();
+  };
+
+  const handleSave = async () => {
+    if (!settings) return;
+    setSaveStatus('saving');
+    try {
+      await DataService.updateSettingsPromptConfig(settings);
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 1800);
+    } catch {
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 1800);
+    }
+  };
+
+  const handleComposePreview = () => {
+    if (!settings) return;
+    try {
+      const enabledModules = settings.moduleOrder
+        .map(id => settings.modules.find(m => m.id === id))
+        .filter(Boolean)
+        .filter(m => m!.enabled)
+        .map(m => ({ id: m!.id, content: m!.content }));
+      const placeholders = Object.fromEntries(
+        settings.placeholders.filter(p => p.enabled).map(p => [p.key, p.value]),
+      );
+      const composed = AiRequestPipelineService.composePrompt({
+        modules: enabledModules,
+        moduleOrder: enabledModules.map(m => m.id),
+        placeholders,
+      });
+      setPreviewPrompt(composed);
+      setPreviewError(null);
+    } catch (err) {
+      setPreviewError(err instanceof Error ? err.message : '預覽組合失敗');
+      setPreviewPrompt('');
+    }
+  };
+
+  const handleSendPreview = async () => {
+    if (!settings) return;
+    setSending(true);
+    setPreviewError(null);
+    setPreviewResponse('');
+    try {
+      const enabledModules = settings.moduleOrder
+        .map(id => settings.modules.find(m => m.id === id))
+        .filter(Boolean)
+        .filter(m => m!.enabled)
+        .map(m => ({ id: m!.id, content: m!.content }));
+      const placeholders = Object.fromEntries(
+        settings.placeholders.filter(p => p.enabled).map(p => [p.key, p.value]),
+      );
+
+      const result = await AiRequestPipelineService.request({
+        modules: enabledModules,
+        moduleOrder: enabledModules.map(m => m.id),
+        placeholders,
+      });
+
+      setPreviewPrompt(result.prompt);
+      if (!result.ok) {
+        setPreviewError(result.error ?? '發送失敗');
+        return;
+      }
+      setPreviewResponse(result.responseText ?? '');
+    } catch (err) {
+      setPreviewError(err instanceof Error ? err.message : '發送失敗');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (!settings) {
+    return <div className="text-sm text-white/50">讀取調適設定中...</div>;
+  }
+
+  const orderedModules = settings.moduleOrder
+    .map(id => settings.modules.find(m => m.id === id))
+    .filter(Boolean) as SettingsPromptTuningConfig['modules'];
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          { id: 'modules', label: '模塊', tab: 'modules' as const },
+          { id: 'placeholders', label: '佔位符', tab: 'placeholders' as const },
+          { id: 'preview', label: '預覽', tab: 'preview' as const },
+        ].map(item => (
+          <button
+            key={item.id}
+            onClick={() => setActiveTab(item.tab)}
+            className={`py-2 rounded-lg text-xs transition-colors border ${
+              activeTab === item.tab
+                ? 'bg-cyan-600/20 border-cyan-500/40 text-cyan-200'
+                : 'bg-white/5 border-white/10 text-white/60 hover:text-white/80'
+            }`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'modules' && (
+        <div className="space-y-3">
+          {orderedModules.map((module, idx) => (
+            <div key={module.id} className="rounded-xl border border-white/10 bg-white/5 p-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <GripVertical size={14} className="text-white/30" />
+                <input
+                  value={module.title}
+                  onChange={e => updateModuleField(module.id, { title: e.target.value })}
+                  className="flex-1 bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500/50"
+                />
+                <label className="text-[11px] text-white/60 flex items-center gap-1">
+                  <input
+                    type="checkbox"
+                    checked={module.enabled}
+                    onChange={e => updateModuleField(module.id, { enabled: e.target.checked })}
+                  />
+                  啟用
+                </label>
+                {/* Delete button for custom modules only */}
+                {!DEFAULT_MODULE_IDS.has(module.id) && (
+                  <button
+                    onClick={() => handleDeleteModule(module.id)}
+                    className="p-1.5 rounded border border-red-500/30 text-red-400/70 hover:text-red-300 hover:border-red-400/50 transition-colors"
+                    title="刪除此自訂模塊"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                )}
+              </div>
+              <textarea
+                value={module.content}
+                onChange={e => updateModuleField(module.id, { content: e.target.value })}
+                className="w-full h-28 bg-black/30 border border-white/10 rounded p-2 text-xs text-white focus:outline-none focus:border-cyan-500/50"
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => moveModule(module.id, -1)}
+                  disabled={idx === 0}
+                  className="p-1.5 rounded border border-white/10 text-white/60 disabled:opacity-30"
+                >
+                  <ArrowUp size={12} />
+                </button>
+                <button
+                  onClick={() => moveModule(module.id, 1)}
+                  disabled={idx === orderedModules.length - 1}
+                  className="p-1.5 rounded border border-white/10 text-white/60 disabled:opacity-30"
+                >
+                  <ArrowDown size={12} />
+                </button>
+              </div>
+            </div>
+          ))}
+          {/* Add custom module button */}
+          <button
+            onClick={handleAddModule}
+            className="w-full py-2.5 rounded-xl border border-dashed border-cyan-500/40 text-cyan-300/80 text-xs hover:bg-cyan-600/10 hover:text-cyan-200 transition-colors flex items-center justify-center gap-1.5"
+          >
+            <Plus size={14} /> 新增自訂模塊
+          </button>
+        </div>
+      )}
+
+      {activeTab === 'placeholders' && (
+        <div className="space-y-2">
+          {settings.placeholders.map(ph => (
+            <div key={ph.key} className="rounded-xl border border-white/10 bg-white/5 p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-xs text-cyan-200 font-mono">{'{{'}{ph.key}{'}}'}</div>
+                <div className="flex items-center gap-2">
+                  <label className="text-[11px] text-white/60 flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={ph.enabled}
+                      onChange={e => updatePlaceholderValue(ph.key, { enabled: e.target.checked })}
+                    />
+                    啟用
+                  </label>
+                  {/* Delete button for custom placeholders only */}
+                  {!DEFAULT_PLACEHOLDER_KEYS.has(ph.key) && (
+                    <button
+                      onClick={() => handleDeletePlaceholder(ph.key)}
+                      className="p-1 rounded border border-red-500/30 text-red-400/70 hover:text-red-300 hover:border-red-400/50 transition-colors"
+                      title="刪除此自訂佔位符"
+                    >
+                      <Trash2 size={11} />
+                    </button>
+                  )}
+                </div>
+              </div>
+              <input
+                value={ph.value}
+                onChange={e => updatePlaceholderValue(ph.key, { value: e.target.value })}
+                className="w-full bg-black/30 border border-white/10 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500/50"
+              />
+            </div>
+          ))}
+
+          {/* Add custom placeholder */}
+          {showNewPlaceholder ? (
+            <div className="rounded-xl border border-cyan-500/30 bg-cyan-900/10 p-3 space-y-2">
+              <div className="text-xs text-cyan-200 mb-1">新增自訂佔位符</div>
+              <div className="flex gap-2">
+                <input
+                  value={newPlaceholderKey}
+                  onChange={e => {
+                    setNewPlaceholderKey(e.target.value);
+                    setNewPlaceholderError(null);
+                  }}
+                  placeholder="輸入 key（英文、數字、_、-）"
+                  className="flex-1 bg-black/30 border border-white/10 rounded px-2 py-1.5 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-cyan-500/50"
+                  onKeyDown={e => { if (e.key === 'Enter') handleAddPlaceholder(); }}
+                />
+                <button
+                  onClick={handleAddPlaceholder}
+                  className="px-3 py-1.5 rounded-lg text-xs bg-cyan-600 hover:bg-cyan-500 text-white transition-colors"
+                >
+                  確認
+                </button>
+                <button
+                  onClick={() => { setShowNewPlaceholder(false); setNewPlaceholderError(null); setNewPlaceholderKey(''); }}
+                  className="px-3 py-1.5 rounded-lg text-xs bg-white/5 border border-white/10 text-white/60 hover:text-white transition-colors"
+                >
+                  取消
+                </button>
+              </div>
+              {newPlaceholderError && (
+                <div className="text-xs text-red-400">{newPlaceholderError}</div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowNewPlaceholder(true)}
+              className="w-full py-2.5 rounded-xl border border-dashed border-cyan-500/40 text-cyan-300/80 text-xs hover:bg-cyan-600/10 hover:text-cyan-200 transition-colors flex items-center justify-center gap-1.5"
+            >
+              <Plus size={14} /> 新增自訂佔位符
+            </button>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'preview' && (
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <button
+              onClick={handleComposePreview}
+              className="flex-1 py-2 rounded-lg text-xs bg-white/5 border border-white/10 text-white/80 hover:bg-white/10"
+            >
+              生成預覽 Prompt
+            </button>
+            <button
+              onClick={() => void handleSendPreview()}
+              disabled={sending}
+              className="flex-1 py-2 rounded-lg text-xs bg-cyan-600/80 hover:bg-cyan-500 text-white disabled:opacity-50"
+            >
+              {sending ? '發送中...' : '預覽發送'}
+            </button>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-black/30 p-3">
+            <div className="text-[11px] text-white/50 mb-1">發送內容</div>
+            <pre className="text-xs text-white/80 whitespace-pre-wrap break-words">{previewPrompt || '（尚未生成）'}</pre>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-black/30 p-3">
+            <div className="text-[11px] text-white/50 mb-1">AI 回應</div>
+            <pre className="text-xs text-white/80 whitespace-pre-wrap break-words">{previewResponse || '（尚無回應）'}</pre>
+          </div>
+
+          {previewError && <div className="text-xs text-red-400">{previewError}</div>}
+        </div>
+      )}
+
+      <div className="flex gap-2 pt-1">
+        <button
+          onClick={handleRestoreDefault}
+          className="flex-1 py-2 rounded-lg text-xs bg-white/5 border border-white/10 text-white/70 hover:text-white"
+        >
+          <span className="inline-flex items-center gap-1">
+            <RotateCcw size={12} /> 還原預設
+          </span>
+        </button>
+        <button
+          onClick={() => void handleSave()}
+          disabled={saveStatus === 'saving'}
+          className={`flex-1 py-2 rounded-lg text-xs text-white ${
+            saveStatus === 'saved'
+              ? 'bg-green-600/80'
+              : saveStatus === 'error'
+              ? 'bg-red-600/80'
+              : 'bg-cyan-600 hover:bg-cyan-500'
+          }`}
+        >
+          <span className="inline-flex items-center gap-1">
+            <Save size={12} />
+            {saveStatus === 'saving'
+              ? '保存中...'
+              : saveStatus === 'saved'
+              ? '已保存'
+              : saveStatus === 'error'
+              ? '保存失敗'
+              : '保存調適'}
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // Register the built-in API settings section (at module load time)
 SETTINGS_SECTIONS.push({
   id: 'api',
   title: 'AI API 設定',
   icon: Cpu,
   Component: ApiSettingsSection,
+});
+
+SETTINGS_SECTIONS.push({
+  id: 'settings_prompt_tuning',
+  title: 'AI 發送調適',
+  icon: Bot,
+  Component: SettingsPromptTuningSection,
 });
 
 // ─── Main SettingsApp Component ──────────────────────────────────────────────
