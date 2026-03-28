@@ -14,8 +14,9 @@ import {
   sortBehaviorBranches,
   validateBehaviorBranches,
 } from '../../services/characterDataService';
-import { ArrowLeft, CheckCircle, RotateCcw, Save, Loader2, RefreshCw } from 'lucide-react';
+import { ArrowLeft, CheckCircle, RotateCcw, Save, Loader2, RefreshCw, Wand2 } from 'lucide-react';
 import { NodeTree, treeReducer, TreeAction } from './NodeTree';
+import { PromptManagerPage } from './PromptManagerPage';
 
 
 
@@ -78,6 +79,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
   const [activeTab, setActiveTab] = useState<string>('info');
   const [editModeBySection, setEditModeBySection] = useState<Record<string, EditMode>>({});
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [editorView, setEditorView] = useState<'main' | 'prompts'>('main');
 
   // ----- Data State -----
   const [sectionData, setSectionData] = useState<Record<string, EditorNode[]>>({});
@@ -697,6 +699,18 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
     );
   }
 
+  // ----- Prompt Manager view -----
+  if (editorView === 'prompts') {
+    return (
+      <PromptManagerPage
+        selectedCharacter={selectedCharacter}
+        activeEditorTab={activeTab}
+        getSectionRaw={getSectionRawText}
+        onBack={() => setEditorView('main')}
+      />
+    );
+  }
+
   return (
     <div className="h-full w-full bg-[#0c0c0c] flex flex-col overflow-hidden text-neutral-200 relative">
 
@@ -757,6 +771,13 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
                 title="重置本分區（還原到上次載入）"
               >
                 <RotateCcw size={16} />
+              </button>
+              <button
+                onClick={() => setEditorView('prompts')}
+                className="flex items-center gap-1 bg-amber-500/10 hover:bg-amber-500/20 shadow-[0_0_8px_rgba(245,158,11,0.1)] text-amber-400 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-colors"
+                title="管理 AI 生成提示詞模塊"
+              >
+                <Wand2 size={12} /> 提示詞管理
               </button>
             </div>
             <div className="flex items-center gap-1 rounded-lg border border-neutral-700 bg-neutral-800/80 p-0.5">

@@ -9,6 +9,7 @@ type ComposePromptParams = {
   modules: PromptModule[];
   moduleOrder?: string[];
   placeholders?: Record<string, PlaceholderValue>;
+  escapeEjs?: boolean;
 };
 
 type SendResult = {
@@ -59,6 +60,42 @@ function stringifyPlaceholderValue(value: PlaceholderValue): string {
   return String(value);
 }
 
+function fastHash(input: string): string {
+  // FNV-1a 32-bit (debug 用，不做安全用途)
+  let h = 0x811c9dc5;
+  for (let i = 0; i < input.length; i += 1) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(16).padStart(8, '0');
+}
+
+function sampleText(input: string, maxLen: number = 120): string {
+  if (input.length <= maxLen) return input;
+  const head = input.slice(0, Math.floor(maxLen / 2));
+  const tail = input.slice(-Math.floor(maxLen / 2));
+  return `${head}…${tail}`;
+}
+
+function collectSentinelIndexMap(input: string): Record<string, number> {
+  const sentinels = [
+    '<current_yaml_content>',
+    '</current_yaml_content>',
+    '<current_EJS_content>',
+    '</current_EJS_content>',
+    '<instructions_for_entry>',
+    '</instructions_for_entry>',
+    '<user_requirements>',
+    '</user_requirements>',
+    'format: |-',
+    '<must>',
+    '</must>',
+  ];
+
+  const entries = sentinels.map(s => [s, input.indexOf(s)] as const);
+  return Object.fromEntries(entries);
+}
+
 export const AiRequestPipelineService = {
   /**
    * 步驟 1+2：按模塊順序拼接提示詞，並替換佔位符。
@@ -66,7 +103,30 @@ export const AiRequestPipelineService = {
    * - 若提供 moduleOrder，嚴格依照 moduleOrder 拼接。
    */
   composePrompt(params: ComposePromptParams): string {
-    const { modules, moduleOrder = [], placeholders = {} } = params;
+    const { modules, moduleOrder = [], placeholders = {}, escapeEjs = false } = params;
+
+    console.info('[HypnoOS] AiRequestPipelineService: composePrompt start', {
+      moduleCount: modules.length,
+      moduleOrderCount: moduleOrder.length,
+      placeholderCount: Object.keys(placeholders).length,
+      escapeEjs,
+      modules: modules.map(m => ({
+        id: m.id,
+        length: (m.content ?? '').length,
+        hash: fastHash(normalizeText(m.content)),
+        sample: sampleText(normalizeText(m.content), 80),
+      })),
+      moduleOrder,
+      placeholderPreview: Object.entries(placeholders).map(([k, v]) => {
+        const value = stringifyPlaceholderValue(v);
+        return {
+          key: k,
+          length: value.length,
+          hash: fastHash(normalizeText(value)),
+          sample: sampleText(normalizeText(value), 80),
+        };
+      }),
+    });
 
     const moduleMap = new Map(modules.map(m => [m.id, m]));
     const orderedModules = moduleOrder.length > 0
@@ -79,19 +139,47 @@ export const AiRequestPipelineService = {
         })
       : modules;
 
-    const merged = orderedModules.map(m => normalizeText(m.content)).join('');
+    let merged = orderedModules.map(m => normalizeText(m.content)).join('');
+
+    console.info('[HypnoOS] AiRequestPipelineService: composePrompt merged', {
+      mergedLength: merged.length,
+      mergedHash: fastHash(merged),
+      sentinels: collectSentinelIndexMap(merged),
+    });
+
+    // 若啟用，在替換佔位符前先逃避合併文本中的 EJS 標籤
+    if (escapeEjs) {
+      merged = merged.replace(/<%/g, '⟪%').replace(/%>/g, '%⟫');
+    }
 
     const customReplaced = merged.replace(PLACEHOLDER_REGEX, (raw, keyRaw: string) => {
       const key = keyRaw.trim();
       if (!Object.prototype.hasOwnProperty.call(placeholders, key)) return raw;
-      return stringifyPlaceholderValue(placeholders[key]);
+
+      let val = stringifyPlaceholderValue(placeholders[key]);
+      // 若啟用，佔位符本身的內容也必須逃避 EJS 標籤
+      if (escapeEjs) {
+        val = val.replace(/<%/g, '⟪%').replace(/%>/g, '%⟫');
+      }
+      return val;
     });
 
-    // 替換酒館內建宏（{{char}}, {{user}} 等）
+    let finalPrompt = customReplaced;
     if (typeof substitudeMacros === 'function') {
-      return substitudeMacros(customReplaced);
+      // @ts-ignore 'substitudeMacros' 為酒館全域函式，型別在部分環境可能不存在
+      finalPrompt = substitudeMacros(finalPrompt);
     }
-    return customReplaced;
+
+    console.info('[HypnoOS] AiRequestPipelineService: composePrompt final', {
+      customReplacedLength: customReplaced.length,
+      customReplacedHash: fastHash(customReplaced),
+      finalLength: finalPrompt.length,
+      finalHash: fastHash(finalPrompt),
+      macroChanged: customReplaced !== finalPrompt,
+      sentinels: collectSentinelIndexMap(finalPrompt),
+    });
+
+    return finalPrompt;
   },
 
   /** 步驟 3：發送請求 */
@@ -126,6 +214,11 @@ export const AiRequestPipelineService = {
         },
       });
 
+      // 供問題排查：完整輸出本次「真實送出」的 prompt 內容
+      console.info('[HypnoOS] AiRequestPipelineService: ===== PROMPT BEGIN =====');
+      console.info(prompt);
+      console.info('[HypnoOS] AiRequestPipelineService: ===== PROMPT END =====');
+
       const responseText = await generateRawFn({
         user_input: prompt,
         should_stream: shouldStream,
@@ -143,6 +236,11 @@ export const AiRequestPipelineService = {
         },
         ordered_prompts: ['user_input'],
       });
+
+      // 供問題排查：完整輸出本次接收的原始回應
+      console.info('[HypnoOS] AiRequestPipelineService: ===== RAW RESPONSE BEGIN =====');
+      console.info(responseText);
+      console.info('[HypnoOS] AiRequestPipelineService: ===== RAW RESPONSE END =====');
 
       console.info('[HypnoOS] AiRequestPipelineService: 背景生成完成', {
         durationMs: Date.now() - startedAt,
@@ -179,12 +277,15 @@ export const AiRequestPipelineService = {
     return {
       ok: true,
       prompt,
-      responseText: AiRequestPipelineService.receiveRawResponse(sent.responseText ?? ''),
+      responseText: AiRequestPipelineService.receiveRawResponse(sent.responseText ?? '', params.escapeEjs),
     };
   },
 
-  /** 步驟 4：接收回應（原樣返回，解析交由 APP 端） */
-  receiveRawResponse(rawText: string): string {
+  /** 步驟 4：接收回應（原樣返回，若啟用了 escapeEjs 則回復 EJS 標籤，解析交由 APP 端） */
+  receiveRawResponse(rawText: string, escapeEjs: boolean = false): string {
+    if (escapeEjs) {
+      return rawText.replace(/⟪%/g, '<%').replace(/%⟫/g, '%>');
+    }
     return rawText;
   },
 };

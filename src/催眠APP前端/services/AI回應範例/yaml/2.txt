@@ -1,0 +1,20 @@
+<UpdateVariable>
+<update_analysis>
+  target_section: "基本資訊"
+  context: "基於西園寺愛麗莎（Saionji Arisa）的現有人設框架，完善其基礎屬性。她是西園寺財團的千金，具備完美的公眾形象與極大反差的私下宅女屬性。"
+  logic:
+    - title: 應體現其高貴地位。
+    - gender: 根據人設描述（大小姐、千金）確定為女性。
+    - age: 設定為高中生年齡段（17歲），符合校園背景與「阿宅君」同學的設定。
+    - identity: 強調「財閥繼承人/完美校園偶像」與「重度宅女/生活廢柴」的對比。
+</update_analysis>
+
+<yaml_patch>
+title: "西園寺財團第一順位繼承人"
+gender: "女"
+age: "17"
+identity:
+  public: "私立秀英高中學生會副會長、名門西園寺家的完美大小姐"
+  hidden: "生活自理能力為零的重度純愛向御宅族、深夜炸雞愛好者"
+</yaml_patch>
+</UpdateVariable>

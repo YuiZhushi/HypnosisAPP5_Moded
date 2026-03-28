@@ -1,0 +1,81 @@
+<UpdateVariable>
+<update_analysis>
+  target_character: "測試角色"
+  update_focus: "發情狀態 (0-100)"
+  logic_progression:
+    - "0-20: Subtle arousal, slight warmth, largely ignored/suppressed."
+    - "20-40: Noticeable physical sensations, slight distraction, conscious suppression."
+    - "40-60: Rationality begins to waver, increased physical secretion, active internal conflict."
+    - "60-80: Heavy breathing, clouded judgment, involuntary movements, significant loss of focus."
+    - "80-95: Intense craving, loss of dignity, physical dependence, desperate seeking of relief."
+    - "95-99: Near-total loss of self, animalistic instincts, breakdown of social boundaries."
+    - "100+: Complete surrender to instinct, total collapse of ego, permanent psychological shift towards desire."
+  consistency_check: "Ensuring EJS tags match the provided structure exactly while filling the empty values."
+</update_analysis>
+
+<esj_patch>
+<%_ if (getvar('stat_data.角色.測試角色.发情值') < 20) { _%>
+发情状态:
+  表现:
+    - "呼吸頻率略微加快，但尚能通過深呼吸調整"
+    - "面部偶爾泛起不易察覺的微紅"
+    - "僅在獨處或安靜時能感覺到下腹部有輕微的燥熱感"
+
+<%_ } else if (getvar('stat_data.角色.測試角色.发情值') < 40) { _%>
+发情状态:
+  表现:
+    - "思緒開始偶爾飄向不自覺的幻想，需要用力搖頭驅散"
+    - "雙腿下意識地交疊摩擦，試圖緩解隱約的空虛感"
+    - "眼神變得有些游離，無法長時間專注於嚴肅的事務"
+
+<%_ } else if (getvar('stat_data.角色.測試角色.发情值') < 60) { _%>
+发情状态:
+  表现:
+    - "內衣感到明顯的潮濕與束縛，身體不自覺地扭動以尋求舒適"
+    - "聲音帶上了細微的顫抖與鼻音，說話時不自覺地嚥下唾液"
+    - "理智開始與生理本能反覆拉鋸，內心出現渴望被觸碰的禁忌念頭"
+
+<%_ } else if (getvar('stat_data.角色.測試角色.发情值') < 80) { _%>
+发情状态:
+  表现:
+    - "目光迷離且帶有濕氣，呼吸變得短促而灼熱"
+    - "手部不自覺地撫摸自己的肌膚或抓緊衣角，試圖壓抑身體的戰慄"
+  理智残存: "僅剩最後的羞恥感在支撐，但在持續的快感衝擊下已搖搖欲墜"
+
+<%_ } else if (getvar('stat_data.角色.測試角色.发情值') < 95) { _%>
+发情状态:
+  表现:
+    - "徹底放棄抵抗，身體癱軟或呈現不自然的弓起，不斷發出細碎的呻吟"
+    - "對外界的抗拒轉化為索求，主動靠近熱源或渴望異性的氣息"
+  生理反应:
+    - "體液大量分泌，浸透衣物，身體因過度敏感而頻繁痙攣"
+    - "心跳極快，意識模糊，視野中只剩下原始的慾望色彩"
+  理智残存: "幾乎消失，僅存的意識也只是在思考如何獲得更多的快感"
+  渴望程度: "極度強烈，願意為了緩解焦渴而放棄尊嚴與原則"
+
+<%_ } else if (getvar('stat_data.角色.測試角色.发情值') < 100) { _%>
+发情状态:
+  表现:
+    - "理智崩潰，行為完全由脊髓反射驅動，眼神空洞卻充滿渴望"
+    - "不斷重複著索求的語句，甚至無法維持完整的邏輯表達"
+  生理反应:
+    - "全身潮紅，汗水與體液混合，散發出濃郁的荷爾蒙氣息"
+    - "感官被無限放大，任何輕微的碰觸都會引發劇烈的絕頂反應"
+  出格行为:
+    - "主動撕扯自己的衣物，或強行拉住他人要求填充體內的空虛"
+    - "做出平日絕對無法想像的卑微姿態，只求能被粗暴地對待"
+
+<%_ } else { _%>
+发情状态:
+  表现:
+    - "進入完全的發情狂亂狀態，自我意識徹底沉溺於無盡的快感深淵"
+    - "人格暫時性解體，轉化為僅具備交配本能的雌性生物"
+  生理反应:
+    - "身體陷入持續性的高潮餘韻與渴望循環，肌肉痙攣無法停止"
+    - "分泌腺體超負荷運作，身體各處敏感點處於過載狀態"
+  出格行为:
+    - "完全喪失羞恥心，在公眾視野或危險環境下依然狂熱地索求交歡"
+    - "將任何進入視線的對象視為交配目標，不分場合地展現發情姿態"
+<%_ } _%>
+</esj_patch>
+</UpdateVariable>
