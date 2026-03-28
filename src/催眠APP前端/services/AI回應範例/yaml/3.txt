@@ -1,0 +1,23 @@
+<UpdateVariable>
+<update_analysis>
+  target_section: "基本資訊"
+  user_intent: "將角色人設更改為『雌小鬼』（Mesugaki）屬性"
+  analysis:
+    - title: 需體現「雌小鬼」那種自大、愛嘲諷但又帶點稚氣的特質。原設定是優雅大小姐，現在應轉向為「自命不凡的毒舌千金」。
+    - gender: 明確為女性。
+    - age: 配合「小鬼」屬性與學生身份，設定在高中階段（16歲），既有青春期的叛逆，也符合財團接班人的培養年齡。
+    - identity.public: 維持「西園寺財團千金」與「學生會要員」的高位，但風格轉變為利用權勢和毒舌壓制他人的典型雌小鬼。
+    - identity.hidden: 對應原設定的「純愛向御宅」與「生活廢柴」，在雌小鬼外殼下，隱藏著一旦被攻略就會徹底崩潰、依賴心極強的「雜魚」本質。
+  conflicts:
+    - 與原先「八面玲瓏」的優雅形象衝突，將在後續性格分區修正，此處先更新基本資訊。
+</update_analysis>
+
+<yaml_patch>
+title: "傲慢的毒舌小惡魔"
+gender: "女"
+age: "16"
+identity:
+  public: "西園寺財團第一繼承人、私立秀知教學園高中部風紀委員"
+  hidden: "渴望被強勢征服的雜魚系純愛宅、生活自理能力為零的廢人"
+</yaml_patch>
+</UpdateVariable>
