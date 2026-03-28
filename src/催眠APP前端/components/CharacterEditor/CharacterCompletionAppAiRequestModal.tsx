@@ -37,12 +37,18 @@ export const CharacterCompletionAppAiRequestModal: React.FC<CharacterCompletionA
   const [sending, setSending] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  useEffect(() => {
+    console.log(`%c[HypnoOS][Modal] CharacterCompletionAppAiRequestModal MOUNTED! Mode: ${mode}`, 'background: #333; color: #ffeb3b; font-size: 14px; font-weight: bold;');
+    return () => console.log(`%c[HypnoOS][Modal] CharacterCompletionAppAiRequestModal UNMOUNTED!`, 'background: #333; color: #ff9800;');
+  }, [mode]);
+
   const handleSend = useCallback(async () => {
+    console.log(`%c[HypnoOS][Modal] handleSend CLICKED!`, 'background: #333; color: #00bcd4; font-size: 14px; font-weight: bold;');
     setSending(true);
     setErrorMsg('');
     try {
       const modules = DataService.getEditorPromptModules();
-      
+
       // Determine expected format
       const isBehavior = EDITOR_SECTIONS.find(s => s.id === activeTab)?.category === 'behavior';
       const expectedType = mode === 'all' ? 'mixed' : (isBehavior ? 'ejs' : 'yaml');
@@ -57,7 +63,7 @@ export const CharacterCompletionAppAiRequestModal: React.FC<CharacterCompletionA
       if (mode === 'all') {
          formatReq = `請務必使用 <yaml_patch> 包裝 data 分區，使用 <ejs_patch> 包裝 behavior 分區的內容。`;
       } else if (expectedType === 'ejs') {
-         formatReq = `這是行為分區的其中一個邏輯分支 payload。請務必使用 <ejs_patch> 包裝回傳的 YAML 資料，絕對不要回傳任何 \`<% if ... %>\` 等ＥＪＳ控制碼邏輯骨架！僅針對 payload 屬性進行擴寫。`;
+         formatReq = `這是行為分區，包含多個 EJS 邏輯分支 (if/else if/else)。請務必使用 ejs_patch xml tag 包裝回傳內容，且必須包含完整的 <% if ... %> / <% else if ... %> / <% else %> 結構，覆蓋所有邏輯分支。`;
       } else {
          formatReq = `這是靜態資料分區。請務必使用 <yaml_patch> 包裝回傳的 YAML 資料。`;
       }
@@ -82,7 +88,9 @@ ${userInput ? `使用者額外指示：\n${userInput}` : ''}
         worldbookEntry: worldbookContent,
       });
 
+      console.log(`%c[HypnoOS][Modal] Sending AI Request with params:`, 'color: cyan', params);
       const response = await AiRequestPipelineService.request(params);
+      console.log(`%c[HypnoOS][Modal] AI Response received:`, 'color: cyan', response);
 
       if (response.ok && response.responseText) {
         const patchResult = CharacterCompletionAppAiPatchService.characterCompletionAppParseAiResponse(
@@ -105,7 +113,7 @@ ${userInput ? `使用者額外指示：\n${userInput}` : ''}
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div className="bg-[#121212] border border-neutral-800 rounded-xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden">
-        
+
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-800 bg-neutral-900/50">
           <div className="flex items-center gap-2">
@@ -119,7 +127,7 @@ ${userInput ? `使用者額外指示：\n${userInput}` : ''}
 
         {/* Content */}
         <div className="p-4 space-y-4 text-xs">
-          
+
           <div className="bg-neutral-900/80 rounded-lg p-3 space-y-1.5 border border-amber-900/30">
             <div className="flex items-center gap-1.5 text-amber-500 font-medium">
               <Info size={12} /> 目標對象

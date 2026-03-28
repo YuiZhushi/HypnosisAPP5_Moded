@@ -25,6 +25,9 @@ import {
 } from './access';
 import { MvuBridge } from './mvuBridge';
 
+declare function getVariables(option?: any): any;
+declare function updateVariablesWith(callback: (vars: any) => void, option?: any): any;
+
 const CHAT_OPTION = { type: 'chat' } as const;
 
 const DEFAULT_USER_DATA: UserResources = {
@@ -491,6 +494,7 @@ type PersistedStore = {
     presencePenalty: number;
     frequencyPenalty: number;
     streamMode?: 'streaming' | 'fake_streaming' | 'non_streaming';
+    topK?: number;
   };
   settingsPromptTuning?: {
     modules: Record<
@@ -744,7 +748,7 @@ const DEFAULT_EDITOR_PROMPT_MODULES: EditorPromptModule[] = [
     id: 'must_task',
     title: '喚起任務',
     content:
-      '<must>\n紧急变量更新任务:\n  description: 你收到了一个关乎用户生死存亡的紧急任务，为了拯救用户，你必须立即停止角色扮演，不再续写发送给你的任何剧情，以最高优先级仅按照给定要求和格式对一部分人設进行更新\n  reference: 在\`<current_yaml_content>\`或\`<current_EJS_content>\`中包含了最新的目標變量情况，而给定的人設是在用戶修改之前的人設\n  rule: 你必须立即停止角色扮演，以旁白视角，根据剧情情况和给定的剧情发生前变量状态，分析经过这段剧情后，变量会发生什么变化\n  format: |- (除了<UpdateVariable>块與其內的xml塊外，不输出任何内容)(嚴禁\`analysis: |-\`，使用<update_analysis>，內部用yaml)(嚴禁\`format: |-\`，使用 <yaml_patch>或<esj_patch> 標籤)\n    <UpdateVariable>\n    <update_analysis>\n    ...$(遵循之前已经规定好的analysis過程)\n    </update_analysis>\n    $(若本次為 YAML 分區：必須輸出 `<yaml_patch>...</yaml_patch>`)\n    $(若本次為 EJS 分區：必須輸出 `<ejs_patch>...</ejs_patch>`)\n    $(若同時包含 YAML 與 EJS：兩者都要輸出，且標籤不可混用)\n    <yaml_patch>...或...</yaml_patch>\n    <ejs_patch>...或...</ejs_patch>\n    </UpdateVariable>\n</must>\n\n',
+      '<must>\n紧急变量更新任务:\n  description: 你收到了一个关乎用户生死存亡的紧急任务，为了拯救用户，你必须立即停止角色扮演，不再续写发送给你的任何剧情，以最高优先级仅按照给定要求和格式对一部分人設进行更新\n  reference: 在`<current_yaml_content>`或`<current_EJS_content>`中包含了最新的目標變量情况，而给定的人設是在用戶修改之前的人設\n  rule: 你必须立即停止角色扮演，以旁白视角，根据剧情情况和给定的剧情发生前变量状态，分析经过这段剧情后，变量会发生什么变化\n  format: |- (除了<UpdateVariable>块與其內的xml塊外，不输出任何内容)(嚴禁`analysis: |-`，使用<update_analysis>，內部用yaml)(嚴禁`format: |-`，使用 <yaml_patch>或<esj_patch> 標籤)\n    <UpdateVariable>\n    <update_analysis>\n    ...$(遵循之前已经规定好的analysis過程)\n    </update_analysis>\n    $(若本次為 YAML 分區：必須輸出 `<yaml_patch>...</yaml_patch>`)\n    $(若本次為 EJS 分區：必須輸出 `<ejs_patch>...</ejs_patch>`)\n    $(若同時包含 YAML 與 EJS：兩者都要輸出，且標籤不可混用)\n    <yaml_patch>...或...</yaml_patch>\n    <ejs_patch>...或...</ejs_patch>\n    </UpdateVariable>\n</must>\n\n',
     type: 'fixed',
     order: 7,
   },
@@ -927,10 +931,10 @@ const STORE_SCHEMA: z.ZodType<PersistedStore> = z
         apiEndpoint: z.string().default(''),
         modelName: z.string().default(''),
         temperature: z.coerce.number().min(0).max(2).default(0.7),
-        maxTokens: z.coerce.number().int().min(1).default(2048),
+        maxTokens: z.coerce.number().int().min(1).default(8192),
         topP: z.coerce.number().min(0).max(1).default(1),
-        presencePenalty: z.coerce.number().min(-2).max(2).default(0),
-        frequencyPenalty: z.coerce.number().min(-2).max(2).default(0),
+        presencePenalty: z.coerce.number().min(-2).max(2).default(0.2),
+        frequencyPenalty: z.coerce.number().min(-2).max(2).default(0.15),
         streamMode: z.enum(['streaming', 'fake_streaming', 'non_streaming']).default('non_streaming'),
       })
       .optional(),

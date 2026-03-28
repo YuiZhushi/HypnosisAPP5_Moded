@@ -11,7 +11,7 @@ import {
 } from '../../types';
 import { CharacterCompletionAppDiffService } from '../../services/characterCompletionAppDiffService';
 import { CharacterCompletionAppMergeService } from '../../services/characterCompletionAppMergeService';
-import { yamlToTree } from '../../services/characterDataService';
+import { yamlToTree, parseBehaviorBranchesFromRaw } from '../../services/characterDataService';
 import type { BehaviorBranch } from '../../services/characterDataService';
 
 interface CharacterCompletionAppPatchReviewPanelProps {
@@ -58,12 +58,35 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
           const oldNodes = mainSectionData[activeTab] || [];
           newProposals = CharacterCompletionAppDiffService.characterCompletionAppBuildDiffProposals(oldNodes, newNodes, activeTab);
         } else {
-          const parsed = YAML.parse(patchResult.ejsRaw || patchResult.yamlRaw || '{}');
-          const newNodes = yamlToTree(parsed);
-          const currentBranches = mainBehaviorData[activeTab] || [];
-          const activeBranch = currentBranches.find(b => b.branchId === activeBranchId) || currentBranches[0];
-          const oldNodes = activeBranch?.nodes || [];
-          newProposals = CharacterCompletionAppDiffService.characterCompletionAppBuildDiffProposals(oldNodes, newNodes, activeTab, activeBranchId);
+          let isRawEjs = false;
+          let parsedBranches: BehaviorBranch[] = [];
+          if (patchResult.ejsRaw && typeof patchResult.ejsRaw === 'string' && patchResult.ejsRaw.includes('<%')) {
+             try {
+                parsedBranches = parseBehaviorBranchesFromRaw(patchResult.ejsRaw);
+                isRawEjs = true;
+             } catch (e) {
+                console.warn('[HypnoOS] parseBehaviorBranchesFromRaw failed', e);
+             }
+          }
+          
+          if (isRawEjs) {
+             const currentBranches = mainBehaviorData[activeTab] || [];
+             for (const nb of parsedBranches) {
+                const oldBranch = currentBranches.find(ob => ob.operator === nb.operator && ob.threshold === nb.threshold) 
+                               || currentBranches.find(ob => ob.kind === 'else' && nb.kind === 'else');
+                if (oldBranch) {
+                    const p = CharacterCompletionAppDiffService.characterCompletionAppBuildDiffProposals(oldBranch.nodes || [], nb.nodes || [], activeTab, oldBranch.branchId);
+                    newProposals = newProposals.concat(p);
+                }
+             }
+          } else {
+             const parsed = YAML.parse(patchResult.ejsRaw || patchResult.yamlRaw || '{}');
+             const newNodes = yamlToTree(parsed);
+             const currentBranches = mainBehaviorData[activeTab] || [];
+             const activeBranch = currentBranches.find(b => b.branchId === activeBranchId) || currentBranches[0];
+             const oldNodes = activeBranch?.nodes || [];
+             newProposals = CharacterCompletionAppDiffService.characterCompletionAppBuildDiffProposals(oldNodes, newNodes, activeTab, activeBranchId);
+          }
         }
       } else {
         // all mode - Best effort Data Sections mapping
@@ -83,7 +106,7 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
             const sDef = EDITOR_SECTIONS.find(s => s.id === k || s.name === k);
             if (sDef) {
               sec = sDef.id;
-              if (typeof v === 'object' && v !== null) {
+              if (typeof v === 'object' && v !== null && !Array.isArray(v)) {
                 for (const [ik, iv] of Object.entries(v as any)) {
                   sectionTempData[sec] = sectionTempData[sec] || {};
                   sectionTempData[sec][ik] = iv;
@@ -103,6 +126,145 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
           const oldNodes = mainSectionData[secId] || [];
           const p = CharacterCompletionAppDiffService.characterCompletionAppBuildDiffProposals(oldNodes, newNodes, secId);
           newProposals = newProposals.concat(p);
+        }
+
+        // Parse ejsRaw for 'all' mode
+        const ejsRaw = patchResult.ejsRaw || '';
+        const hasRawEjsTags = ejsRaw.includes('<%');
+        
+        if (hasRawEjsTags) {
+          // === Raw EJS path: split by ## section headers, parse each independently ===
+          console.info('[HypnoOS] AiPatchReview: ejsRaw contains raw EJS tags, using direct branch parsing');
+          const rawEjsBranchesData: Record<string, BehaviorBranch[]> = {};
+          
+          // Helper: map a section title string to a behavior section ID
+          function resolveBehaviorSectionId(title: string): string | undefined {
+            const normalized = title.trim();
+            // Try exact match first
+            const exact = EDITOR_SECTIONS.find(s => s.category === 'behavior' && (s.id === normalized || s.name === normalized));
+            if (exact) return exact.id;
+            // Fuzzy keyword match
+            if (normalized.includes('發情') || normalized.includes('发情')) return 'arousal';
+            if (normalized.includes('警戒')) return 'alert';
+            if (normalized.includes('好感')) return 'affection';
+            if (normalized.includes('服從') || normalized.includes('服从')) return 'obedience';
+            if (normalized.includes('全局') || normalized.includes('全域')) return 'global';
+            return undefined;
+          }
+          
+          // Split ejsRaw by markdown ## headers into sections
+          const sectionRegex = /^##\s+(.+)$/gm;
+          const headerMatches: { title: string; startIdx: number }[] = [];
+          let m: RegExpExecArray | null;
+          while ((m = sectionRegex.exec(ejsRaw)) !== null) {
+            headerMatches.push({ title: m[1].trim(), startIdx: m.index + m[0].length });
+          }
+          
+          if (headerMatches.length > 0) {
+            // Extract each section's body
+            for (let i = 0; i < headerMatches.length; i++) {
+              const startIdx = headerMatches[i].startIdx;
+              const endIdx = i + 1 < headerMatches.length 
+                ? ejsRaw.lastIndexOf('\n', headerMatches[i + 1].startIdx - headerMatches[i + 1].title.length - 4) 
+                : ejsRaw.length;
+              const sectionBody = ejsRaw.substring(startIdx, endIdx).trim();
+              const secId = resolveBehaviorSectionId(headerMatches[i].title);
+              
+              if (secId && sectionBody.includes('<%')) {
+                try {
+                  const branches = parseBehaviorBranchesFromRaw(sectionBody);
+                  console.info(`[HypnoOS] AiPatchReview: Parsed ${branches.length} branches for section "${headerMatches[i].title}" -> ${secId}`);
+                  rawEjsBranchesData[secId] = (rawEjsBranchesData[secId] || []).concat(branches);
+                } catch (e) {
+                  console.warn(`[HypnoOS] AiPatchReview: Failed to parse EJS branches for section "${headerMatches[i].title}"`, e);
+                }
+              } else if (secId && sectionBody) {
+                // Non-EJS behavior section (like global rules) — try YAML parse
+                try {
+                  const parsed = YAML.parse(sectionBody);
+                  if (parsed && typeof parsed === 'object') {
+                    const newNodes = yamlToTree(parsed);
+                    const currentBranches = mainBehaviorData[secId] || [];
+                    const defaultBranch = currentBranches[0];
+                    const oldNodes = defaultBranch?.nodes || [];
+                    const p = CharacterCompletionAppDiffService.characterCompletionAppBuildDiffProposals(oldNodes, newNodes, secId, defaultBranch?.branchId);
+                    newProposals = newProposals.concat(p);
+                  }
+                } catch (e) {
+                  console.warn(`[HypnoOS] AiPatchReview: Failed to parse YAML for behavior section "${headerMatches[i].title}"`, e);
+                }
+              }
+            }
+          } else {
+            // No ## headers, try to parse the entire ejsRaw as one behavior section
+            // Attempt to infer section from activeTab or default to arousal
+            try {
+              const branches = parseBehaviorBranchesFromRaw(ejsRaw);
+              console.info(`[HypnoOS] AiPatchReview: Parsed ${branches.length} branches from entire ejsRaw (no headers)`);
+              rawEjsBranchesData['arousal'] = branches; // Fallback
+            } catch (e) {
+              console.warn('[HypnoOS] AiPatchReview: Failed to parse entire ejsRaw as branches', e);
+            }
+          }
+          
+          // Generate diffs for all parsed raw EJS branches
+          for (const [secId, newBranches] of Object.entries(rawEjsBranchesData)) {
+            const currentBranches = mainBehaviorData[secId] || [];
+            for (const nb of newBranches) {
+              const oldBranch = currentBranches.find(ob => ob.operator === nb.operator && ob.threshold === nb.threshold) 
+                             || currentBranches.find(ob => ob.kind === 'else' && nb.kind === 'else');
+              if (oldBranch) {
+                const p = CharacterCompletionAppDiffService.characterCompletionAppBuildDiffProposals(oldBranch.nodes || [], nb.nodes || [], secId, oldBranch.branchId);
+                newProposals = newProposals.concat(p);
+              } else {
+                // New branch that doesn't exist in current data — generate add proposals for all nodes
+                const p = CharacterCompletionAppDiffService.characterCompletionAppBuildDiffProposals([], nb.nodes || [], secId);
+                newProposals = newProposals.concat(p);
+              }
+            }
+          }
+        } else if (ejsRaw && ejsRaw !== '{}') {
+          // === YAML-parseable EJS path (legacy / structured) ===
+          let ejsParsed: any = {};
+          try {
+            ejsParsed = YAML.parse(ejsRaw);
+          } catch (e) {
+            console.warn("[HypnoOS] failed to parse ejsRaw for all mode as YAML", e);
+          }
+          
+          const behaviorTempData: Record<string, any> = {};
+          for (const [k, v] of Object.entries((ejsParsed || {}) as any)) {
+            let sec: string | undefined = undefined;
+            const sDef = EDITOR_SECTIONS.find(s => s.category === 'behavior' && (s.id === k || s.name === k));
+            if (sDef) {
+              sec = sDef.id;
+            } else if (k.includes('發情') || k.includes('发情')) {
+              sec = 'arousal';
+            } else if (k.includes('警戒')) {
+              sec = 'alert';
+            } else if (k.includes('好感')) {
+              sec = 'affection';
+            } else if (k.includes('屈服') || k.includes('服從') || k.includes('服从')) {
+              sec = 'obedience';
+            }
+            if (sec && v && typeof v === 'object') {
+              if (Array.isArray(v)) {
+                behaviorTempData[sec] = Array.isArray(behaviorTempData[sec]) ? [...behaviorTempData[sec], ...v] : [...v];
+              } else {
+                behaviorTempData[sec] = behaviorTempData[sec] || {};
+                Object.assign(behaviorTempData[sec], v);
+              }
+            }
+          }
+          
+          for (const [secId, dataObj] of Object.entries(behaviorTempData)) {
+            const newNodes = yamlToTree(dataObj);
+            const currentBranches = mainBehaviorData[secId] || [];
+            const defaultBranch = currentBranches[0];
+            const oldNodes = defaultBranch?.nodes || [];
+            const p = CharacterCompletionAppDiffService.characterCompletionAppBuildDiffProposals(oldNodes, newNodes, secId, defaultBranch?.branchId);
+            newProposals = newProposals.concat(p);
+          }
         }
       }
 
@@ -134,7 +296,8 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
     setDecisions(prev => {
       const next = { ...prev };
       for (const p of proposals) {
-        if (p.path.join('.').startsWith(pathPrefix)) {
+        const pStr = p.sectionId + '.' + p.path.join('.');
+        if (pStr === pathPrefix || pStr.startsWith(pathPrefix + '.')) {
           next[p.id] = decision;
         }
       }
