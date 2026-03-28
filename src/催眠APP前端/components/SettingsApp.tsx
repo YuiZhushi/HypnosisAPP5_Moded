@@ -388,6 +388,14 @@ function ApiSettingsSection({ onDirty }: SettingsSectionProps) {
           onChange={v => patch('topP', v)}
         />
         <SliderRow
+          label="Top-k"
+          value={form.topK ?? 0.2}
+          min={0}
+          max={1}
+          step={0.05}
+          onChange={v => patch('topK', v)}
+        />
+        <SliderRow
           label="Presence Penalty"
           value={form.presencePenalty}
           min={-2}

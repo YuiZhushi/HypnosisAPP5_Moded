@@ -29,6 +29,7 @@ export interface ApiSettings {
   temperature: number; // 0.0 - 2.0
   maxTokens: number;
   topP: number; // 0.0 - 1.0
+  topK?: number;
   presencePenalty: number; // -2.0 - 2.0
   frequencyPenalty: number; // -2.0 - 2.0
   streamMode?: 'streaming' | 'fake_streaming' | 'non_streaming';
@@ -236,3 +237,42 @@ export const EDITOR_PROMPT_PLACEHOLDERS = [
   { key: '所有分區的yaml與ESJ內容', description: '所有分區合併的完整內容' },
   { key: '用戶的輸入', description: '用戶本次輸入要求文本' },
 ] as const;
+
+// ====== 角色資訊補全與保守審核系統 ======
+
+export interface CharacterCompletionAppAiPatchResult {
+  yamlRaw: string;
+  ejsRaw: string;
+  warnings: string[];
+  rawText: string;
+}
+
+export type CharacterCompletionAppDiffChangeType = 'add' | 'update' | 'empty_rejected' | 'type_conflict' | 'unchanged';
+
+export interface CharacterCompletionAppDiffProposal {
+  id: string; // unique literal id generated for UI mapping
+  sectionId: string; // The section this diff applies to e.g. 'info' or 'arousal'
+  branchId?: string; // If applicable (behavior tabs)
+  path: string[]; // e.g. ['stats', 'body', 'height']
+  changeType: CharacterCompletionAppDiffChangeType;
+  oldValue: unknown;
+  newValue: unknown;
+  defaultDecision: 'accept' | 'reject';
+  reason: string;
+}
+
+export type CharacterCompletionAppReviewDecision = 'accept' | 'reject';
+
+export interface CharacterCompletionAppApplyResult {
+  appliedCount: number;
+  rejectedCount: number;
+  skippedCount: number;
+  conflictCount: number;
+  updatedSections: string[];
+}
+
+export interface CharacterCompletionAppMode {
+  generationMode: 'completion' | 'rewrite' | 'rebuild';
+  target: 'current_section' | 'all_sections';
+  conservativeThreshold: 'strict' | 'relaxed';
+}
