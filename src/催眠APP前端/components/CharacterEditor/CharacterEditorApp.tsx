@@ -234,11 +234,12 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
 
   // ----- AI Patch Handlers -----
   const openAiRequestModal = useCallback((mode: 'current' | 'all') => {
-    console.info(`[HypnoOS][CharacterCompletionApp] Opening AI Request Modal, mode: ${mode}`);
+    console.log(`%c[HypnoOS][App] openAiRequestModal CLICKED! Mode: ${mode}`, 'background: #222; color: #bada55; font-size: 14px; font-weight: bold;');
     setAiRequestMode(mode);
   }, []);
 
   const handleAiRequestSuccess = useCallback((result: CharacterCompletionAppAiPatchResult) => {
+    console.log(`%c[HypnoOS][App] handleAiRequestSuccess triggered! Result:`, 'background: #222; color: #44cc44; font-size: 14px; font-weight: bold;', result);
     setPatchResult(result);
   }, []);
 
@@ -249,6 +250,23 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
   ) => {
     setSectionData(newSectionData);
     setBehaviorData(newBehaviorData);
+    
+    // Force re-derive active branch to refresh editor content
+    // by re-setting the same active branch IDs (triggers React re-render)
+    setActiveBehaviorBranchBySection(prev => {
+      const next = { ...prev };
+      for (const secId of applyResult.updatedSections) {
+        const branches = newBehaviorData[secId];
+        if (branches && branches.length > 0) {
+          const currentId = prev[secId];
+          // Keep current branch if it still exists, else pick first
+          const stillExists = branches.some(b => b.branchId === currentId);
+          next[secId] = stillExists ? currentId : branches[0].branchId;
+        }
+      }
+      return next;
+    });
+    
     setPatchResult(null);
     setAiRequestMode(null);
     setToast({
@@ -815,14 +833,20 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
                 <Wand2 size={12} /> 提示詞管理
               </button>
               <button
-                onClick={() => openAiRequestModal('current')}
+                onClick={(e) => {
+                  console.log('%c[HypnoOS][UI] "AI 當前分區" Button onClick fired!', 'color: yellow; padding: 2px;');
+                  openAiRequestModal('current');
+                }}
                 className="flex items-center gap-1 bg-purple-500/10 hover:bg-purple-500/20 shadow-[0_0_8px_rgba(168,85,247,0.1)] text-purple-400 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-colors"
                 title="AI 填補目前的資料分區"
               >
                 <Sparkles size={12} /> AI 當前分區
               </button>
               <button
-                onClick={() => openAiRequestModal('all')}
+                onClick={(e) => {
+                  console.log('%c[HypnoOS][UI] "AI 全部分區" Button onClick fired!', 'color: pink; padding: 2px;');
+                  openAiRequestModal('all');
+                }}
                 className="flex items-center gap-1 bg-pink-500/10 hover:bg-pink-500/20 shadow-[0_0_8px_rgba(236,72,153,0.1)] text-pink-400 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-colors"
                 title="AI 填滿並改寫所有資料分區"
               >
@@ -1018,7 +1042,10 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
           patchResult={patchResult}
           mainSectionData={sectionData}
           mainBehaviorData={behaviorData}
-          onClose={() => setPatchResult(null)}
+          onClose={() => {
+            setPatchResult(null);
+            setAiRequestMode(null);
+          }}
           onApply={handleAiReviewApply}
         />
       )}

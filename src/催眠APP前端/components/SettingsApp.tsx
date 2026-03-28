@@ -850,12 +850,12 @@ function SettingsPromptTuningSection({ onDirty }: SettingsSectionProps) {
 
           <div className="rounded-xl border border-white/10 bg-black/30 p-3">
             <div className="text-[11px] text-white/50 mb-1">發送內容</div>
-            <pre className="text-xs text-white/80 whitespace-pre-wrap break-words">{previewPrompt || '（尚未生成）'}</pre>
+            <pre className="text-xs text-white/80 whitespace-pre-wrap wrap-break-word">{previewPrompt || '（尚未生成）'}</pre>
           </div>
 
           <div className="rounded-xl border border-white/10 bg-black/30 p-3">
             <div className="text-[11px] text-white/50 mb-1">AI 回應</div>
-            <pre className="text-xs text-white/80 whitespace-pre-wrap break-words">{previewResponse || '（尚無回應）'}</pre>
+            <pre className="text-xs text-white/80 whitespace-pre-wrap wrap-break-word">{previewResponse || '（尚無回應）'}</pre>
           </div>
 
           {previewError && <div className="text-xs text-red-400">{previewError}</div>}
@@ -921,7 +921,7 @@ export function SettingsApp({ onBack }: { onBack: () => void }) {
   const activeSection = allSections.find(s => s.id === activeId);
 
   return (
-    <div className="w-full h-full bg-gradient-to-b from-slate-900 to-black flex flex-col text-white overflow-hidden">
+    <div className="w-full h-full bg-linear-to-b from-slate-900 to-black flex flex-col text-white overflow-hidden">
       {/* Header */}
       <div className="flex-none flex items-center gap-3 px-4 pt-10 pb-4 border-b border-white/10">
         <button

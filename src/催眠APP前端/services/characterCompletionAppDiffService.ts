@@ -5,6 +5,43 @@ function nextDiffId(): string {
   return `diff_${Date.now()}_${++_diffCounter}`;
 }
 
+/**
+ * Strip SillyTavern macros like {{user}}, {{char}} etc from a key to enable
+ * fuzzy matching against keys where macros have been resolved by the AI.
+ * e.g. '对{{user}}的态度' -> '对___的态度' pattern
+ */
+function stripMacrosFromKey(key: string): string {
+  return key.replace(/\{\{[^}]+\}\}/g, '');
+}
+
+/** Try to find an old node whose key matches the new key, accounting for macro substitution */
+function findOldNodeFuzzy(oldMap: Map<string, EditorNode>, newKey: string): { node: EditorNode; originalKey: string } | null {
+  // Direct match first
+  const direct = oldMap.get(newKey);
+  if (direct) return { node: direct, originalKey: newKey };
+  
+  // Fuzzy: for each old key containing {{...}}, strip macros and check if the new key
+  // contains the same non-macro text segments in the same order
+  for (const [oldKey, oldNode] of oldMap.entries()) {
+    if (!oldKey.includes('{{')) continue;
+    // Split old key by macro placeholders to get text segments
+    const segments = oldKey.split(/\{\{[^}]+\}\}/);
+    // Check if new key contains all segments in order
+    let pos = 0;
+    let allFound = true;
+    for (const seg of segments) {
+      if (!seg) continue; // skip empty segments from leading/trailing macros
+      const idx = newKey.indexOf(seg, pos);
+      if (idx < 0) { allFound = false; break; }
+      pos = idx + seg.length;
+    }
+    if (allFound && segments.some(s => s.length > 0)) {
+      return { node: oldNode, originalKey: oldKey };
+    }
+  }
+  return null;
+}
+
 export const CharacterCompletionAppDiffService = {
   /**
    * Recursively compares old and new EditorNode arrays to build a list of diff proposals.
@@ -46,8 +83,11 @@ export const CharacterCompletionAppDiffService = {
 
       // 1. Compare Keyed Objects
       for (const [key, newNode] of newMap.entries()) {
-        const oldNode = oldMap.get(key);
-        const path = [...currentPath, key];
+        const fuzzyResult = findOldNodeFuzzy(oldMap, key);
+        const oldNode = fuzzyResult?.node ?? null;
+        // Use the ORIGINAL key (with macros) for path if fuzzy matched, so merge targets correctly
+        const resolvedKey = fuzzyResult?.originalKey ?? key;
+        const path = [...currentPath, resolvedKey];
 
         if (!oldNode) {
           proposals.push({

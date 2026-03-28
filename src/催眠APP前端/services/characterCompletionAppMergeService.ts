@@ -76,11 +76,20 @@ function applyProposalToTree(tree: EditorNode[], proposal: CharacterCompletionAp
   if (leafKeyOrArrayMark.startsWith('[新增項目 #')) {
     if (parentNode && parentNode.type !== 'list') return false;
     
-    // We want to add an item to the list. We use yamlToTree on an array containing the newValue
-    // and grab its first node.
+    // Clean up empty placeholder items before adding real content
+    // If the list only has empty-string children, remove them first
+    const allEmpty = currentList.length > 0 && currentList.every(
+      n => n.type === 'string' && (!n.value || n.value.trim() === '')
+    );
+    if (allEmpty) {
+      currentList.length = 0;
+    }
+    
     const newItemsNodes = yamlToTree([proposal.newValue]);
     if (newItemsNodes.length > 0) {
-      currentList.push(newItemsNodes[0]);
+      const newNode = newItemsNodes[0];
+      delete newNode.key;
+      currentList.push(newNode);
     }
     return true;
   }

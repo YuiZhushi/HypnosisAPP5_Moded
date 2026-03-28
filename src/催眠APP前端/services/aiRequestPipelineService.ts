@@ -186,7 +186,7 @@ export const AiRequestPipelineService = {
   /** 步驟 3：發送請求 */
   async sendRequest(prompt: string): Promise<SendResult> {
     const startedAt = Date.now();
-    const generateRawFn = (globalThis as { generateRaw?: (config: GenerateRawConfig) => Promise<string> }).generateRaw;
+    const generateRawFn = (globalThis as { generateRaw?: (config: any) => Promise<string> }).generateRaw;
 
     if (typeof generateRawFn !== 'function') {
       const message = 'generateRaw 不可用，無法執行背景 AI 生成';
@@ -221,22 +221,30 @@ export const AiRequestPipelineService = {
       console.info(prompt);
       console.info('[HypnoOS] AiRequestPipelineService: ===== PROMPT END =====');
 
+      const customApiPayload: any = {
+        apiurl: api.endpoint,
+        key: api.apiKey || undefined,
+        model: api.model,
+        source: 'openai',
+      };
+      if (api.temperature != null) customApiPayload.temperature = api.temperature;
+      if (api.maxTokens != null) customApiPayload.max_tokens = api.maxTokens;
+      if (api.topP != null) customApiPayload.top_p = api.topP;
+      if (api.topK != null) customApiPayload.top_k = api.topK;
+      if (api.presencePenalty != null) customApiPayload.presence_penalty = api.presencePenalty;
+      if (api.frequencyPenalty != null) customApiPayload.frequency_penalty = api.frequencyPenalty;
+
+      // STRICT: Some OpenAI-compatible backends throw 400 Bad Request if unsupported fields like top_k are present.
+      // E.g. native OpenAI or strict proxies. Removing top_k if it's there avoids this validation error.
+      if (customApiPayload.top_k !== undefined) {
+         delete customApiPayload.top_k;
+      }
+
       const responseText = await generateRawFn({
         user_input: prompt,
         should_stream: shouldStream,
         should_silence: true,
-        custom_api: {
-          apiurl: api.endpoint,
-          key: api.apiKey || undefined,
-          model: api.model,
-          source: 'openai',
-          temperature: api.temperature,
-          max_tokens: api.maxTokens,
-          top_p: api.topP,
-          top_k: api.topK,
-          presence_penalty: api.presencePenalty,
-          frequency_penalty: api.frequencyPenalty,
-        },
+        custom_api: customApiPayload,
         ordered_prompts: ['user_input'],
       });
 
@@ -250,10 +258,17 @@ export const AiRequestPipelineService = {
         responseLength: responseText.length,
       });
       return { ok: true, responseText };
-    } catch (err) {
+    } catch (err: any) {
       console.error('[HypnoOS] AiRequestPipelineService: 背景生成失敗', {
         durationMs: Date.now() - startedAt,
         error: err,
+        errMessage: err?.message,
+        errStack: err?.stack,
+        errResponse: err?.response,
+        errData: err?.response?.data || err?.data,
+        errStatus: err?.status,
+        errBody: err?.body,
+        rawErr: JSON.stringify(err, Object.getOwnPropertyNames(err))
       });
       return {
         ok: false,
