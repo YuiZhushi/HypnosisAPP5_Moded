@@ -44,6 +44,7 @@ function getRequiredApiSettings() {
     temperature: api?.temperature,
     maxTokens: api?.maxTokens,
     topP: api?.topP,
+    topK: api?.topK,
     presencePenalty: api?.presencePenalty,
     frequencyPenalty: api?.frequencyPenalty,
   };
@@ -165,9 +166,9 @@ export const AiRequestPipelineService = {
     });
 
     let finalPrompt = customReplaced;
-    if (typeof substitudeMacros === 'function') {
-      // @ts-ignore 'substitudeMacros' 為酒館全域函式，型別在部分環境可能不存在
-      finalPrompt = substitudeMacros(finalPrompt);
+    const substituteFn = (globalThis as any).substituteMacros;
+    if (typeof substituteFn === 'function') {
+      finalPrompt = substituteFn(finalPrompt);
     }
 
     console.info('[HypnoOS] AiRequestPipelineService: composePrompt final', {
@@ -209,6 +210,7 @@ export const AiRequestPipelineService = {
           temperature: api.temperature,
           maxTokens: api.maxTokens,
           topP: api.topP,
+          topK: api.topK,
           presencePenalty: api.presencePenalty,
           frequencyPenalty: api.frequencyPenalty,
         },
@@ -231,6 +233,7 @@ export const AiRequestPipelineService = {
           temperature: api.temperature,
           max_tokens: api.maxTokens,
           top_p: api.topP,
+          top_k: api.topK,
           presence_penalty: api.presencePenalty,
           frequency_penalty: api.frequencyPenalty,
         },

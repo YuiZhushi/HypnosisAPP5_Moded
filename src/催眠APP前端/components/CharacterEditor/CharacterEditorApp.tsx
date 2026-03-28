@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { EDITOR_SECTIONS, EditorNode } from '../../types';
+import { EDITOR_SECTIONS, EditorNode, CharacterCompletionAppAiPatchResult, CharacterCompletionAppApplyResult } from '../../types';
 import { MvuBridge } from '../../services/mvuBridge';
 import { WorldBookService } from '../../services/worldBookService';
 import type { BehaviorBranch } from '../../services/characterDataService';
@@ -14,11 +14,11 @@ import {
   sortBehaviorBranches,
   validateBehaviorBranches,
 } from '../../services/characterDataService';
-import { ArrowLeft, CheckCircle, RotateCcw, Save, Loader2, RefreshCw, Wand2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle, RotateCcw, Save, Loader2, RefreshCw, Wand2, Sparkles } from 'lucide-react';
 import { NodeTree, treeReducer, TreeAction } from './NodeTree';
 import { PromptManagerPage } from './PromptManagerPage';
-
-
+import { CharacterCompletionAppAiRequestModal } from './CharacterCompletionAppAiRequestModal';
+import { CharacterCompletionAppPatchReviewPanel } from './CharacterCompletionAppPatchReviewPanel';
 
 // ========= Toast =========
 
@@ -88,6 +88,11 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
   const [behaviorData, setBehaviorData] = useState<Record<string, BehaviorBranch[]>>({});
   const [activeBehaviorBranchBySection, setActiveBehaviorBranchBySection] = useState<Record<string, string>>({});
   const [entryUid, setEntryUid] = useState<string | null>(null);
+  const [worldbookContent, setWorldbookContent] = useState<string>('');
+
+  // ----- AI Patch State -----
+  const [aiRequestMode, setAiRequestMode] = useState<'current' | 'all' | null>(null);
+  const [patchResult, setPatchResult] = useState<CharacterCompletionAppAiPatchResult | null>(null);
 
   // ----- Snapshot for reset -----
   const snapshotRef = useRef<{
@@ -162,7 +167,11 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
     return buildCanonicalSectionRaw(sectionId);
   }, [rawDraftBySection, buildCanonicalSectionRaw]);
 
-  const applyRawSectionToParsed = useCallback((sectionId: string): { ok: true } | { ok: false; message: string } => {
+  const getAllSectionsContent = useCallback(() => {
+    return EDITOR_SECTIONS.map(s => `## ${s.name}\n${buildCanonicalSectionRaw(s.id)}`).join('\n\n');
+  }, [buildCanonicalSectionRaw]);
+
+  const applyRawSectionToParsed = useCallback((sectionId: string): { ok: boolean; message?: string } => {
     const raw = getSectionRawText(sectionId).trim();
 
     try {
@@ -212,7 +221,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
     }
 
     const result = applyRawSectionToParsed(activeTab);
-    if (!result.ok) {
+    if (result.ok === false) {
       setToast({ message: `✗ 解析失敗：${result.message}`, type: 'error' });
       return;
     }
@@ -222,6 +231,31 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
     setEditModeBySection(prev => ({ ...prev, [activeTab]: 'parsed' }));
     setToast({ message: '✓ 已套用原始碼並切回解析模式', type: 'success' });
   }, [activeTab, applyRawSectionToParsed, buildCanonicalSectionRaw, currentEditMode, getSectionRawText]);
+
+  // ----- AI Patch Handlers -----
+  const openAiRequestModal = useCallback((mode: 'current' | 'all') => {
+    console.info(`[HypnoOS][CharacterCompletionApp] Opening AI Request Modal, mode: ${mode}`);
+    setAiRequestMode(mode);
+  }, []);
+
+  const handleAiRequestSuccess = useCallback((result: CharacterCompletionAppAiPatchResult) => {
+    setPatchResult(result);
+  }, []);
+
+  const handleAiReviewApply = useCallback((
+    applyResult: CharacterCompletionAppApplyResult,
+    newSectionData: Record<string, EditorNode[]>,
+    newBehaviorData: Record<string, BehaviorBranch[]>
+  ) => {
+    setSectionData(newSectionData);
+    setBehaviorData(newBehaviorData);
+    setPatchResult(null);
+    setAiRequestMode(null);
+    setToast({
+      message: `套用成功！修改了 ${applyResult.appliedCount} 個欄位。`,
+      type: 'success'
+    });
+  }, []);
 
   const updateBehaviorBranches = useCallback((sectionId: string, updater: (list: BehaviorBranch[]) => BehaviorBranch[]) => {
     setBehaviorData(prev => {
@@ -286,6 +320,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
       return next;
     });
     setEntryUid(result.entryUid);
+    setWorldbookContent(result.rawContent || '');
 
     if (refreshSnapshot) {
       snapshotRef.current = {
@@ -779,6 +814,20 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
               >
                 <Wand2 size={12} /> 提示詞管理
               </button>
+              <button
+                onClick={() => openAiRequestModal('current')}
+                className="flex items-center gap-1 bg-purple-500/10 hover:bg-purple-500/20 shadow-[0_0_8px_rgba(168,85,247,0.1)] text-purple-400 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-colors"
+                title="AI 填補目前的資料分區"
+              >
+                <Sparkles size={12} /> AI 當前分區
+              </button>
+              <button
+                onClick={() => openAiRequestModal('all')}
+                className="flex items-center gap-1 bg-pink-500/10 hover:bg-pink-500/20 shadow-[0_0_8px_rgba(236,72,153,0.1)] text-pink-400 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-colors"
+                title="AI 填滿並改寫所有資料分區"
+              >
+                <Sparkles size={12} /> AI 全部分區
+              </button>
             </div>
             <div className="flex items-center gap-1 rounded-lg border border-neutral-700 bg-neutral-800/80 p-0.5">
               <button
@@ -943,6 +992,36 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
             </button>
           </div>
         </div>
+
+      {/* AI Request Modal */}
+      {aiRequestMode && !patchResult && (
+        <CharacterCompletionAppAiRequestModal
+          mode={aiRequestMode}
+          activeTab={activeTab}
+          activeBranchLabel={activeBranch ? activeBranch.label : undefined}
+          characterName={selectedCharacter}
+          contextName={aiRequestMode === 'all' ? '所有分區' : (isBehaviorTab ? `${activeSection.name} (${activeBranch?.label || ''})` : activeSection.name)}
+          contextRaw={aiRequestMode === 'all' ? getAllSectionsContent() : getSectionRawText(activeTab)}
+          allSectionsContent={getAllSectionsContent()}
+          worldbookContent={worldbookContent}
+          onClose={() => setAiRequestMode(null)}
+          onSuccess={handleAiRequestSuccess}
+        />
+      )}
+
+      {/* AI Patch Review Panel */}
+      {patchResult && aiRequestMode && (
+        <CharacterCompletionAppPatchReviewPanel
+          mode={aiRequestMode} 
+          activeTab={activeTab}
+          activeBranchId={activeBranch?.branchId}
+          patchResult={patchResult}
+          mainSectionData={sectionData}
+          mainBehaviorData={behaviorData}
+          onClose={() => setPatchResult(null)}
+          onApply={handleAiReviewApply}
+        />
+      )}
 
     </div>
   );
