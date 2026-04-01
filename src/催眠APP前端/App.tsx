@@ -55,6 +55,7 @@ const App = () => {
     const load = async () => {
       attempt += 1;
       try {
+        await DataService.processCalendarBridgeEventsOnLoad();
         const data = await withTimeout(DataService.getUserData(), 4000, 'DataService.getUserData');
         if (stopped) return;
         setUserData(data);

@@ -30,6 +30,9 @@ declare function updateVariablesWith(callback: (vars: any) => void, option?: any
 
 const CHAT_OPTION = { type: 'chat' } as const;
 
+// CalendarCRUD 渲染路徑調適開關（預設關閉；需要時手動改為 true）
+const CALENDAR_CRUD_RESOLVE_DEBUG = false;
+
 const DEFAULT_USER_DATA: UserResources = {
   mcEnergy: 25,
   mcEnergyMax: 25,
@@ -466,6 +469,135 @@ export type CustomCalendarEvent = {
   description?: string;
 };
 
+type CalendarEventResolved = CustomCalendarEvent;
+
+type CalendarEventPatch = {
+  month?: number;
+  day?: number;
+  title?: string;
+  description?: string | null;
+};
+
+type CalendarCrudOp =
+  | {
+      opId: string;
+      type: 'add';
+      eventId: string;
+      month: number;
+      day: number;
+      title: string;
+      description?: string;
+      createdAt: number;
+    }
+  | {
+      opId: string;
+      type: 'edit';
+      eventId: string;
+      patch: CalendarEventPatch;
+      createdAt: number;
+    }
+  | {
+      opId: string;
+      type: 'delete';
+      eventId: string;
+      createdAt: number;
+    };
+
+type CalendarCrudNode = {
+  floor: number;
+  swipeId: number;
+  ops: CalendarCrudOp[];
+  updatedAt: number;
+};
+
+type CalendarResolvedState = {
+  events: Record<string, CalendarEventResolved>;
+};
+
+type CalendarBridgeStore = {
+  deleteFloor: { triggered: boolean; deleteFrom?: number };
+  deleteSwipe: { triggered: boolean; floor?: number; swipeId?: number; newSwipeId?: number };
+  switchSwipe: { triggered: boolean; floor?: number };
+};
+
+type CalendarCrudStore = {
+  version: number;
+  snapshotInterval: number;
+  lastKnownCurrentFloor: number;
+  floorSelectedSwipe: Record<string, number>;
+  nodes: Record<string, Record<string, CalendarCrudNode>>;
+  snapshots: Record<string, CalendarResolvedState>;
+  bridge: CalendarBridgeStore;
+};
+
+const DEFAULT_CALENDAR_CRUD: CalendarCrudStore = {
+  version: 1,
+  snapshotInterval: 50,
+  lastKnownCurrentFloor: -1,
+  floorSelectedSwipe: {},
+  nodes: {},
+  snapshots: {},
+  bridge: {
+    deleteFloor: { triggered: false },
+    deleteSwipe: { triggered: false },
+    switchSwipe: { triggered: false },
+  },
+};
+
+function cloneCalendarCrudStore(store: CalendarCrudStore): CalendarCrudStore {
+  return {
+    ...store,
+    floorSelectedSwipe: { ...store.floorSelectedSwipe },
+    nodes: Object.fromEntries(
+      Object.entries(store.nodes ?? {}).map(([floor, swipeMap]) => [
+        floor,
+        Object.fromEntries(
+          Object.entries(swipeMap ?? {}).map(([swipe, node]) => [
+            swipe,
+            {
+              ...node,
+              ops: [...(node.ops ?? [])],
+            },
+          ]),
+        ),
+      ]),
+    ),
+    snapshots: Object.fromEntries(
+      Object.entries(store.snapshots ?? {}).map(([floor, snap]) => [
+        floor,
+        { events: Object.fromEntries(Object.entries(snap.events ?? {}).map(([id, evt]) => [id, { ...evt }])) },
+      ]),
+    ),
+    bridge: {
+      deleteFloor: { ...store.bridge.deleteFloor },
+      deleteSwipe: { ...store.bridge.deleteSwipe },
+      switchSwipe: { ...store.bridge.switchSwipe },
+    },
+  };
+}
+
+function normalizeCalendarCrudStore(raw: unknown): CalendarCrudStore {
+  const input = (raw && typeof raw === 'object' ? raw : {}) as Partial<CalendarCrudStore>;
+  return {
+    version: 1,
+    snapshotInterval: 50,
+    lastKnownCurrentFloor: Number.isFinite(Number(input.lastKnownCurrentFloor)) ? Number(input.lastKnownCurrentFloor) : -1,
+    floorSelectedSwipe: { ...(input.floorSelectedSwipe ?? {}) },
+    nodes: { ...(input.nodes ?? {}) },
+    snapshots: { ...(input.snapshots ?? {}) },
+    bridge: {
+      deleteFloor: { triggered: Boolean(input.bridge?.deleteFloor?.triggered), deleteFrom: input.bridge?.deleteFloor?.deleteFrom },
+      deleteSwipe: {
+        triggered: Boolean(input.bridge?.deleteSwipe?.triggered),
+        floor: input.bridge?.deleteSwipe?.floor,
+        swipeId: input.bridge?.deleteSwipe?.swipeId,
+        newSwipeId: input.bridge?.deleteSwipe?.newSwipeId,
+      },
+      switchSwipe: { triggered: Boolean(input.bridge?.switchSwipe?.triggered), floor: input.bridge?.switchSwipe?.floor },
+    },
+  };
+}
+
 type PersistedStore = {
   version: number;
   debugEnabled: boolean;
@@ -483,6 +615,7 @@ type PersistedStore = {
   quests: Record<string, QuestStatus>;
   customQuests: Record<string, CustomQuestDef>;
   calendarEvents: Record<string, CustomCalendarEvent>;
+  calendarCRUD?: CalendarCrudStore;
   customHypnosis: Record<string, CustomHypnosisDef>;
   apiSettings?: {
     apiKey: string;
@@ -854,6 +987,34 @@ function migrateStore(store: PersistedStore): PersistedStore {
     store.settingsPromptTuning = storeAny.promptTuning;
   }
   delete storeAny.promptTuning;
+
+  store.calendarCRUD = normalizeCalendarCrudStore(store.calendarCRUD ?? DEFAULT_CALENDAR_CRUD);
+
+  // 舊資料一次性遷移：若沒有 calendarCRUD 節點但有 calendarEvents，收斂為 #0 swipe0 的 add 操作。
+  if (
+    Object.keys(store.calendarEvents ?? {}).length > 0 &&
+    Object.keys(store.calendarCRUD.nodes ?? {}).length === 0
+  ) {
+    const node: CalendarCrudNode = {
+      floor: 0,
+      swipeId: 0,
+      updatedAt: Date.now(),
+      ops: Object.values(store.calendarEvents).map(evt => ({
+        opId: `migrated_add_${evt.id}`,
+        type: 'add' as const,
+        eventId: evt.id,
+        month: evt.month,
+        day: evt.day,
+        title: evt.title,
+        ...(evt.description ? { description: evt.description } : {}),
+        createdAt: Date.now(),
+      })),
+    };
+    store.calendarCRUD.nodes['0'] = { '0': node };
+    store.calendarCRUD.floorSelectedSwipe['0'] = 0;
+    store.calendarCRUD.lastKnownCurrentFloor = Math.max(store.calendarCRUD.lastKnownCurrentFloor, 0);
+  }
+
   return store;
 }
 
@@ -909,6 +1070,40 @@ const STORE_SCHEMA: z.ZodType<PersistedStore> = z
         }),
       )
       .default({}),
+    calendarCRUD: z
+      .object({
+        version: z.coerce.number().default(1),
+        snapshotInterval: z.coerce.number().default(50),
+        lastKnownCurrentFloor: z.coerce.number().default(-1),
+        floorSelectedSwipe: z.record(z.string(), z.coerce.number()).default({}),
+        nodes: z.record(z.string(), z.record(z.string(), z.any())).default({}),
+        snapshots: z.record(z.string(), z.any()).default({}),
+        bridge: z
+          .object({
+            deleteFloor: z
+              .object({
+                triggered: z.coerce.boolean().default(false),
+                deleteFrom: z.coerce.number().optional(),
+              })
+              .default({}),
+            deleteSwipe: z
+              .object({
+                triggered: z.coerce.boolean().default(false),
+                floor: z.coerce.number().optional(),
+                swipeId: z.coerce.number().optional(),
+                newSwipeId: z.coerce.number().optional(),
+              })
+              .default({}),
+            switchSwipe: z
+              .object({
+                triggered: z.coerce.boolean().default(false),
+                floor: z.coerce.number().optional(),
+              })
+              .default({}),
+          })
+          .default({}),
+      })
+      .optional(),
     customHypnosis: z
       .record(
         z.string(),
@@ -991,6 +1186,7 @@ const STORE_SCHEMA: z.ZodType<PersistedStore> = z
     quests: {},
     customQuests: {},
     calendarEvents: {},
+    calendarCRUD: DEFAULT_CALENDAR_CRUD,
     customHypnosis: {},
   });
 
@@ -1331,6 +1527,172 @@ async function syncSubscriptionTierLabel(nowVirtualMinutes: number | null): Prom
   }, CHAT_OPTION);
 
   await MvuBridge.syncSubscriptionTier(desired);
+}
+
+function floorKey(floor: number): string {
+  return String(Math.max(0, Math.trunc(floor)));
+}
+
+function swipeKey(swipeId: number): string {
+  return String(Math.max(0, Math.trunc(swipeId)));
+}
+
+function cloneResolvedState(state: CalendarResolvedState): CalendarResolvedState {
+  return { events: Object.fromEntries(Object.entries(state.events).map(([k, v]) => [k, { ...v }])) };
+}
+
+function ensureCalendarCrud(store: PersistedStore): CalendarCrudStore {
+  const normalized = normalizeCalendarCrudStore(store.calendarCRUD ?? DEFAULT_CALENDAR_CRUD);
+  store.calendarCRUD = normalized;
+  return normalized;
+}
+
+function ensureNode(crud: CalendarCrudStore, floor: number, swipeId: number): CalendarCrudNode {
+  const fk = floorKey(floor);
+  const sk = swipeKey(swipeId);
+  if (!crud.nodes[fk]) crud.nodes[fk] = {};
+  if (!crud.nodes[fk][sk]) {
+    crud.nodes[fk][sk] = { floor: Number(fk), swipeId: Number(sk), ops: [], updatedAt: Date.now() };
+  }
+  return crud.nodes[fk][sk];
+}
+
+function applyCrudOp(state: CalendarResolvedState, op: CalendarCrudOp) {
+  if (op.type === 'add') {
+    state.events[op.eventId] = {
+      id: op.eventId,
+      month: op.month,
+      day: op.day,
+      title: op.title,
+      ...(op.description ? { description: op.description } : {}),
+    };
+    return;
+  }
+  if (op.type === 'edit') {
+    const curr = state.events[op.eventId];
+    if (!curr) return;
+    const next = { ...curr };
+    if (op.patch.month !== undefined) next.month = op.patch.month;
+    if (op.patch.day !== undefined) next.day = op.patch.day;
+    if (op.patch.title !== undefined) next.title = op.patch.title;
+    if (op.patch.description !== undefined) {
+      if (op.patch.description === null) delete next.description;
+      else if (op.patch.description) next.description = op.patch.description;
+      else delete next.description;
+    }
+    state.events[op.eventId] = next;
+    return;
+  }
+  delete state.events[op.eventId];
+}
+
+function getSnapshotBaseFloor(targetFloor: number, interval: number): number {
+  if (targetFloor < 0) return -1;
+  if (targetFloor % interval === 0) return targetFloor - interval;
+  return targetFloor - (targetFloor % interval);
+}
+
+function resolveCalendarStateAt(store: PersistedStore, targetFloor: number): CalendarResolvedState {
+  const crud = ensureCalendarCrud(store);
+  const interval = Math.max(1, crud.snapshotInterval || 50);
+  const appliedNodes: Array<{ floor: number; swipeId: number; opCount: number; source: 'selected' | 'fallback_s0' }> = [];
+  const snapshotFloors = Object.keys(crud.snapshots)
+    .map(Number)
+    .filter(n => Number.isFinite(n) && n <= targetFloor)
+    .sort((a, b) => a - b);
+  const startSnapshotFloor = snapshotFloors.length ? snapshotFloors[snapshotFloors.length - 1] : -1;
+  const startState =
+    startSnapshotFloor >= 0 && crud.snapshots[String(startSnapshotFloor)]
+      ? cloneResolvedState(crud.snapshots[String(startSnapshotFloor)])
+      : { events: {} };
+
+  const floors = Object.keys(crud.floorSelectedSwipe)
+    .map(Number)
+    .filter(n => Number.isFinite(n) && n > startSnapshotFloor && n <= targetFloor)
+    .sort((a, b) => a - b);
+  for (const floor of floors) {
+    const selected = crud.floorSelectedSwipe[floorKey(floor)] ?? 0;
+    const node = crud.nodes[floorKey(floor)]?.[swipeKey(selected)];
+    if (!node) continue;
+    if (CALENDAR_CRUD_RESOLVE_DEBUG) {
+      appliedNodes.push({ floor, swipeId: selected, opCount: node.ops.length, source: 'selected' });
+    }
+    for (const op of node.ops) applyCrudOp(startState, op);
+  }
+
+  // 補充：可能有節點但還沒寫 floorSelectedSwipe（舊資料/邊界）
+  for (const [fKey, swipeMap] of Object.entries(crud.nodes)) {
+    const floor = Number(fKey);
+    if (!Number.isFinite(floor) || floor <= startSnapshotFloor || floor > targetFloor) continue;
+    if (crud.floorSelectedSwipe[fKey] !== undefined) continue;
+    const node = swipeMap['0'];
+    if (!node) continue;
+    if (CALENDAR_CRUD_RESOLVE_DEBUG) {
+      appliedNodes.push({ floor, swipeId: 0, opCount: node.ops.length, source: 'fallback_s0' });
+    }
+    for (const op of node.ops) applyCrudOp(startState, op);
+  }
+
+  // 快照建立（新規則）：checkpoint 延遲 2 層確認後才建立。
+  // 例如 interval=50：到 #52 才建立 #50；到 #102 才建立 #100。
+  // 並且不補建歷史缺失 checkpoint，只處理本次對應的單一 checkpoint。
+  if (targetFloor > crud.lastKnownCurrentFloor) {
+    const checkpoint = targetFloor - 2;
+    if (checkpoint >= 0 && checkpoint % interval === 0 && !crud.snapshots[String(checkpoint)]) {
+      crud.snapshots[String(checkpoint)] = cloneResolvedState(startState);
+    }
+    crud.lastKnownCurrentFloor = targetFloor;
+  }
+
+  const snapshotUsed = startSnapshotFloor >= 0;
+  const snapshotKnownFloors = snapshotFloors;
+  const eventCount = Object.keys(startState.events).length;
+  if (CALENDAR_CRUD_RESOLVE_DEBUG) {
+    console.info('[HypnoOS][CalendarCRUD] resolve path', {
+      targetFloor,
+      snapshotUsed,
+      startSnapshotFloor,
+      snapshotKnownFloors,
+      appliedNodes,
+      eventCount,
+    });
+  }
+
+  return startState;
+}
+
+function cleanupAfterRollback(store: PersistedStore, currentFloor: number) {
+  const crud = ensureCalendarCrud(store);
+  for (const key of Object.keys(crud.nodes)) {
+    if (Number(key) > currentFloor) delete crud.nodes[key];
+  }
+  for (const key of Object.keys(crud.floorSelectedSwipe)) {
+    if (Number(key) > currentFloor) delete crud.floorSelectedSwipe[key];
+  }
+  const interval = Math.max(1, crud.snapshotInterval || 50);
+  const keepBase = getSnapshotBaseFloor(currentFloor, interval);
+  for (const key of Object.keys(crud.snapshots)) {
+    if (Number(key) > keepBase) delete crud.snapshots[key];
+  }
+  crud.lastKnownCurrentFloor = currentFloor;
+}
+
+function getCurrentFloorAndSwipe(): { floor: number; swipeId: number } {
+  const currentFromApi = Math.max(0, Number(getCurrentMessageId?.() ?? 0) || 0);
+  const latest = getChatMessages(-1, { include_swipes: true })?.[0] as
+    | { message_id?: number; swipe_id?: number }
+    | undefined;
+  const latestFloor = Math.max(0, Number(latest?.message_id ?? 0) || 0);
+
+  // 初載時 getCurrentMessageId() 可能暫時落在舊樓層，取兩者最大值作為當前樓層。
+  const floor = Math.max(currentFromApi, latestFloor);
+
+  const msgAtFloor =
+    floor === latestFloor && latest
+      ? latest
+      : ((getChatMessages(floor, { include_swipes: true })?.[0] as { swipe_id?: number } | undefined) ?? latest);
+
+  return { floor, swipeId: Math.max(0, Number(msgAtFloor?.swipe_id ?? 0) || 0) };
 }
 
 export const DataService = {
@@ -1878,7 +2240,108 @@ export const DataService = {
 
   getCalendarEvents: (): CustomCalendarEvent[] => {
     const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
-    return Object.values(store.calendarEvents ?? {});
+    const { floor, swipeId } = getCurrentFloorAndSwipe();
+    const crud = ensureCalendarCrud(store);
+
+    if (crud.floorSelectedSwipe[floorKey(floor)] === undefined) {
+      crud.floorSelectedSwipe[floorKey(floor)] = swipeId;
+    }
+
+    const resolved = resolveCalendarStateAt(store, floor);
+    return Object.values(resolved.events);
+  },
+
+  processCalendarBridgeEventsOnLoad: async (): Promise<void> => {
+    await updateStoreWith(store => {
+      const crud = ensureCalendarCrud(store);
+      const current = getCurrentFloorAndSwipe();
+
+      if (current.floor < crud.lastKnownCurrentFloor) {
+        cleanupAfterRollback(store, current.floor);
+      }
+
+      // 1) deleteFloor
+      if (crud.bridge.deleteFloor.triggered && Number.isFinite(crud.bridge.deleteFloor.deleteFrom)) {
+        const deleteFrom = Math.max(0, Math.trunc(Number(crud.bridge.deleteFloor.deleteFrom)));
+        // 防呆：初次載入時若 bridge 殘留舊的 deleteFloor 觸發值，不能清掉當前樓層。
+        // 只允許清理 current.floor 之後的樓層，避免誤刪目前仍存在的 selected swipe 記錄。
+        // const pruneFrom = Math.max(deleteFrom, current.floor + 1);
+        const pruneFrom = deleteFrom;
+        for (const key of Object.keys(crud.nodes)) {
+          if (Number(key) >= pruneFrom) delete crud.nodes[key];
+        }
+        for (const key of Object.keys(crud.floorSelectedSwipe)) {
+          if (Number(key) >= pruneFrom) delete crud.floorSelectedSwipe[key];
+        }
+        for (const key of Object.keys(crud.snapshots)) {
+          if (Number(key) >= pruneFrom) delete crud.snapshots[key];
+        }
+        crud.bridge.deleteFloor = { triggered: false };
+      }
+
+      // 2) deleteSwipe
+      if (
+        crud.bridge.deleteSwipe.triggered &&
+        Number.isFinite(crud.bridge.deleteSwipe.floor) &&
+        Number.isFinite(crud.bridge.deleteSwipe.swipeId) &&
+        Number.isFinite(crud.bridge.deleteSwipe.newSwipeId)
+      ) {
+        const floor = Math.max(0, Math.trunc(Number(crud.bridge.deleteSwipe.floor)));
+        const swipeId = Math.max(0, Math.trunc(Number(crud.bridge.deleteSwipe.swipeId)));
+        const nextSwipeId = Math.max(0, Math.trunc(Number(crud.bridge.deleteSwipe.newSwipeId)));
+        const fk = floorKey(floor);
+        const swipeMap = crud.nodes[fk] ?? {};
+
+        // 关键修正：删除中间 swipe 后，后续 swipe 索引会整体前移。
+        // 这里必须重建 key 映射，避免原本 s4/s5 仍挂在旧 key 导致资料错位。
+        const rebuilt: Record<string, CalendarCrudNode> = {};
+        for (const [key, node] of Object.entries(swipeMap)) {
+          const oldIndex = Number(key);
+          if (!Number.isFinite(oldIndex)) continue;
+          if (oldIndex === swipeId) continue;
+
+          const newIndex = oldIndex > swipeId ? oldIndex - 1 : oldIndex;
+          rebuilt[swipeKey(newIndex)] = {
+            ...node,
+            floor,
+            swipeId: newIndex,
+            ops: [...(node.ops ?? [])],
+          };
+        }
+        crud.nodes[fk] = rebuilt;
+
+        const existingSwipeIndexes = Object.keys(rebuilt)
+          .map(Number)
+          .filter(n => Number.isFinite(n))
+          .sort((a, b) => a - b);
+        const selectedSwipe =
+          existingSwipeIndexes.length > 0
+            ? Math.min(nextSwipeId, existingSwipeIndexes[existingSwipeIndexes.length - 1])
+            : 0;
+
+        // 刪除 swipe 後，無論先前是否有 selected 記錄，都要寫回目前選中的 swipe
+        crud.floorSelectedSwipe[fk] = selectedSwipe;
+        crud.bridge.deleteSwipe = { triggered: false };
+      }
+
+      // 3) switchSwipe
+      if (crud.bridge.switchSwipe.triggered) {
+        const floor = Number.isFinite(crud.bridge.switchSwipe.floor)
+          ? Math.max(0, Math.trunc(Number(crud.bridge.switchSwipe.floor)))
+          : current.floor;
+        const message = getChatMessages(floor, { include_swipes: true })?.[0] as { swipe_id?: number } | undefined;
+        const swipe = Math.max(0, Number(message?.swipe_id ?? 0) || 0);
+        crud.floorSelectedSwipe[floorKey(floor)] = swipe;
+        crud.bridge.switchSwipe = { triggered: false };
+      }
+
+      if (crud.floorSelectedSwipe[floorKey(current.floor)] === undefined) {
+        crud.floorSelectedSwipe[floorKey(current.floor)] = current.swipeId;
+      }
+
+      resolveCalendarStateAt(store, current.floor);
+      return store;
+    });
   },
 
   addCalendarEvent: async (params: {
@@ -1890,7 +2353,6 @@ export const DataService = {
     const trimmedTitle = params.title.trim();
     if (!trimmedTitle) return { ok: false, message: '标题不能为空' };
 
-    // 同月同日同標題去重
     const existing = DataService.findCalendarEventByTitleAndDate(trimmedTitle, params.month, params.day);
     if (existing) {
       console.info(`[HypnoOS] 日历事件「${trimmedTitle}」(${params.month}月${params.day}日) 已存在，跳过新增`);
@@ -1898,17 +2360,28 @@ export const DataService = {
     }
 
     const id = `cal_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const evt: CustomCalendarEvent = {
-      id,
-      month: params.month,
-      day: params.day,
-      title: trimmedTitle,
-      description: params.description?.trim() || undefined,
-    };
+    const { floor, swipeId } = getCurrentFloorAndSwipe();
+    const description = params.description?.trim() || undefined;
 
     await updateStoreWith(s => ({
-      ...s,
-      calendarEvents: { ...s.calendarEvents, [id]: evt },
+      ...(() => {
+        const crud = ensureCalendarCrud(s);
+        crud.floorSelectedSwipe[floorKey(floor)] = swipeId;
+        const node = ensureNode(crud, floor, swipeId);
+        node.ops.push({
+          opId: `op_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          type: 'add',
+          eventId: id,
+          month: params.month,
+          day: params.day,
+          title: trimmedTitle,
+          ...(description ? { description } : {}),
+          createdAt: Date.now(),
+        });
+        node.updatedAt = Date.now();
+        resolveCalendarStateAt(s, floor);
+        return s;
+      })(),
     }));
 
     console.info(`[HypnoOS] 新增日历事件「${trimmedTitle}」(${params.month}月${params.day}日)`);
@@ -1919,23 +2392,67 @@ export const DataService = {
     id: string,
     patch: { title?: string; description?: string; month?: number; day?: number },
   ): Promise<{ ok: boolean; message?: string }> => {
-    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
-    const existing = store.calendarEvents?.[id];
+    const currentEvents = DataService.getCalendarEvents();
+    const existing = currentEvents.find(e => e.id === id);
     if (!existing) return { ok: false, message: '未找到该事件' };
 
-    const updated: CustomCalendarEvent = {
-      ...existing,
-      ...(patch.title !== undefined ? { title: patch.title.trim() } : {}),
-      ...(patch.description !== undefined ? { description: patch.description.trim() || undefined } : {}),
-      ...(patch.month !== undefined ? { month: patch.month } : {}),
-      ...(patch.day !== undefined ? { day: patch.day } : {}),
-    };
+    const nextTitle = patch.title !== undefined ? patch.title.trim() : existing.title;
+    const nextMonth = patch.month ?? existing.month;
+    const nextDay = patch.day ?? existing.day;
+    const nextDescRaw = patch.description !== undefined ? patch.description.trim() : existing.description;
+    const nextDescription = patch.description !== undefined && nextDescRaw === '' ? undefined : nextDescRaw;
+
+    const updated: CustomCalendarEvent = { id, title: nextTitle, month: nextMonth, day: nextDay, ...(nextDescription ? { description: nextDescription } : {}) };
 
     if (!updated.title) return { ok: false, message: '标题不能为空' };
 
+    const sameNameConflict = currentEvents.some(
+      e => e.id !== id && e.month === updated.month && e.day === updated.day && e.title === updated.title,
+    );
+    if (sameNameConflict) return { ok: false, message: '同日期已存在同名事件' };
+
+    const { floor, swipeId } = getCurrentFloorAndSwipe();
+
     await updateStoreWith(s => ({
-      ...s,
-      calendarEvents: { ...s.calendarEvents, [id]: updated },
+      ...(() => {
+        const crud = ensureCalendarCrud(s);
+        crud.floorSelectedSwipe[floorKey(floor)] = swipeId;
+        const node = ensureNode(crud, floor, swipeId);
+
+        const addIdx = node.ops.findIndex(op => op.type === 'add' && op.eventId === id);
+        if (addIdx >= 0) {
+          const addOp = node.ops[addIdx] as Extract<CalendarCrudOp, { type: 'add' }>;
+          addOp.title = updated.title;
+          addOp.month = updated.month;
+          addOp.day = updated.day;
+          if (updated.description) addOp.description = updated.description;
+          else delete addOp.description;
+        } else {
+          const editIdx = node.ops.findIndex(op => op.type === 'edit' && op.eventId === id);
+          const patchData: CalendarEventPatch = {
+            ...(patch.title !== undefined ? { title: updated.title } : {}),
+            ...(patch.month !== undefined ? { month: updated.month } : {}),
+            ...(patch.day !== undefined ? { day: updated.day } : {}),
+            ...(patch.description !== undefined ? { description: patch.description.trim() ? patch.description.trim() : null } : {}),
+          };
+          if (editIdx >= 0) {
+            const editOp = node.ops[editIdx] as Extract<CalendarCrudOp, { type: 'edit' }>;
+            editOp.patch = { ...editOp.patch, ...patchData };
+          } else {
+            node.ops.push({
+              opId: `op_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+              type: 'edit',
+              eventId: id,
+              patch: patchData,
+              createdAt: Date.now(),
+            });
+          }
+        }
+
+        node.updatedAt = Date.now();
+        resolveCalendarStateAt(s, floor);
+        return s;
+      })(),
     }));
 
     console.info(`[HypnoOS] 修改日历事件「${updated.title}」`);
@@ -1943,14 +2460,34 @@ export const DataService = {
   },
 
   deleteCalendarEvent: async (id: string): Promise<{ ok: boolean; message?: string }> => {
-    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
-    const existing = store.calendarEvents?.[id];
+    const existing = DataService.getCalendarEvents().find(e => e.id === id);
     if (!existing) return { ok: false, message: '未找到该事件' };
 
+    const { floor, swipeId } = getCurrentFloorAndSwipe();
+
     await updateStoreWith(s => {
-      const next = { ...s.calendarEvents };
-      delete next[id];
-      return { ...s, calendarEvents: next };
+      const crud = ensureCalendarCrud(s);
+      crud.floorSelectedSwipe[floorKey(floor)] = swipeId;
+      const node = ensureNode(crud, floor, swipeId);
+
+      const addIdx = node.ops.findIndex(op => op.type === 'add' && op.eventId === id);
+      if (addIdx >= 0) {
+        node.ops.splice(addIdx, 1);
+      } else {
+        const existingDeleteIdx = node.ops.findIndex(op => op.type === 'delete' && op.eventId === id);
+        if (existingDeleteIdx < 0) {
+          node.ops.push({
+            opId: `op_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            type: 'delete',
+            eventId: id,
+            createdAt: Date.now(),
+          });
+        }
+      }
+
+      node.updatedAt = Date.now();
+      resolveCalendarStateAt(s, floor);
+      return s;
     });
 
     console.info(`[HypnoOS] 删除日历事件「${existing.title}」`);
@@ -1958,8 +2495,8 @@ export const DataService = {
   },
 
   findCalendarEventByTitleAndDate: (title: string, month: number, day: number): CustomCalendarEvent | undefined => {
-    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
-    return Object.values(store.calendarEvents ?? {}).find(e => e.title === title && e.month === month && e.day === day);
+    const events = DataService.getCalendarEvents();
+    return events.find(e => e.title === title && e.month === month && e.day === day);
   },
 
   // --- Custom Hypnosis ---
