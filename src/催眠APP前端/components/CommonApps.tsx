@@ -944,7 +944,8 @@ const CalendarDarkApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     if (!trimmed) return;
     await DataService.updateCalendarEvent(id, {
       title: trimmed,
-      description: editDesc.trim() || undefined,
+      // 这里必须传原始输入：空字串代表「清空描述」，由 DataService 统一 trim/null 处理
+      description: editDesc,
     });
     refreshCustomEvents();
     setEditingId(null);
