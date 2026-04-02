@@ -1342,6 +1342,11 @@ async function updateStoreWith(updater: (store: PersistedStore) => PersistedStor
   return result;
 }
 
+function readStoreSnapshot(): PersistedStore {
+  const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
+  return STORE_SCHEMA.parse(store);
+}
+
 const STATIC_ACHIEVEMENTS: Array<Omit<Achievement, 'isClaimed'>> = [
   {
     id: 'ach_newbie',
@@ -1866,7 +1871,7 @@ export const DataService = {
     const user = await DataService.getUserData();
     if (user.money < price) return { ok: false, message: '零花钱不足' };
 
-    const storeBefore = await updateStoreWith(s => s);
+    const storeBefore = readStoreSnapshot();
     const prev = storeBefore.subscription;
     const prevActive = Boolean(prev) && prev!.endVirtualMinutes > nowVirtualMinutes;
 
@@ -1961,7 +1966,7 @@ export const DataService = {
     const price = getPurchasePricePoints(feature);
     if (price === null) return { ok: false, message: '该功能无需购买' };
 
-    const storeBefore = await updateStoreWith(s => s);
+    const storeBefore = readStoreSnapshot();
     if (storeBefore.purchases?.[id]) return { ok: false, message: '已购买' };
 
     const user = await DataService.getUserData();
@@ -2078,7 +2083,7 @@ export const DataService = {
     const ach = achievements.find(a => a.id === id);
     if (!ach) return { success: false, newPoints: currentPoints };
 
-    const store = await updateStoreWith(s => s);
+    const store = readStoreSnapshot();
     if (store.achievements[id]) return { success: false, newPoints: currentPoints };
 
     const user = await DataService.getUserData();
@@ -2265,6 +2270,7 @@ export const DataService = {
         const deleteFrom = Math.max(0, Math.trunc(Number(crud.bridge.deleteFloor.deleteFrom)));
         // 防呆：初次載入時若 bridge 殘留舊的 deleteFloor 觸發值，不能清掉當前樓層。
         // 只允許清理 current.floor 之後的樓層，避免誤刪目前仍存在的 selected swipe 記錄。
+        // 修正：真正的原因是錯誤的在載入聊天時，錯誤的更新了lastKnownCurrentFloor，所以回到原始邏輯
         // const pruneFrom = Math.max(deleteFrom, current.floor + 1);
         const pruneFrom = deleteFrom;
         for (const key of Object.keys(crud.nodes)) {
