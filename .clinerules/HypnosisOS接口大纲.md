@@ -62,16 +62,24 @@
 
 ## 8. 角色编辑器与世界书服务
 
-- `DataService.getEditorPrompts()` / `saveEditorPrompts()`
+- `DataService.getEditorPromptModules()` / `saveEditorPromptModules()`
 - `loadCharacter()` / `saveCharacter()` (from `characterDataService.ts`)
 - `yamlToTree()` / `treeToYaml()` (from `characterDataService.ts`)
+- `characterCompletionAppBuildDiffProposals()` / `characterCompletionAppApplyApprovedProposals()`
+- `AiRequestPipelineService.composePrompt()` / `sendRequest()` / `request()`
 - `WorldBookService.checkAndEnsureEntry()`
 - `WorldBookService.checkAndEnsurePlotEntry()`
 
 ## 9. 消息发送构造 (Prompts)
 
 - `buildHypnosisSendMessage()` (from `hypnosisSend.ts`)
-- `buildEditorPrompt()` / `sendEditorPrompt()` (from `characterEditorSend.ts`)
+- `buildEditorPipelineParams()` (from `characterEditorSend.ts`)
+
+## 10. 日历桥接与操作日志（MVU）
+
+- `DataService.processCalendarBridgeEventsOnLoad()`
+- `MvuBridge.resetThisTurnAppOperationLog()` / `appendThisTurnAppOperationLog()`
+- `MvuBridge.getCalendarOps()` / `clearCalendarOps()`
 
 ## 提示词使用方式
 

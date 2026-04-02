@@ -1,46 +1,61 @@
 # 任務進度暫存
 
 ## 任務
-- 名稱：全專案（排除示例）Debug 訊息分級與硬編碼切換
-- 目標：建立統一 Logger 分級機制，讓 debug 訊息可依等級（完整/詳細/簡略/發行版）顯示，並以硬編碼常數手動切換。
-- 開始時間：2026-04-02 22:43
+- 名稱：盤點並更新 rules / skills
+- 目標：修正過時與不一致內容，刪除冗餘項目並完成歸檔
+- 開始時間：2026-04-02 23:42
 
 ## 待辦清單(重要細節不可缺失，可能遇見的問題要附上，步驟避免過於簡略)
-- [x] 步驟 1：建立共用 Logger 與分級規則（硬編碼切換）
-  - [x] 詳細步驟 1-1：新增共用 logger 檔案，定義訊息類型與等級
-  - [x] 詳細步驟 1-2：定義每個等級可顯示的類型與顯示內容（標題/詳細）
-  - [x] 詳細步驟 1-3：提供 console 橋接，讓既有 console 訊息被統一分級處理
-- [x] 步驟 2：套用到全專案正式程式（排除示例）
-  - [x] 詳細步驟 2-1：在主要入口初始化 logger/console bridge
-  - [x] 詳細步驟 2-2：關鍵模組改用具類型的 logger 呼叫（尤其生成流程）
-  - [x] 詳細步驟 2-3：確認不改動示例與範例路徑
-- [x] 步驟 3：驗證與收尾
-  - [x] 詳細步驟 3-1：搜尋確認正式程式已套用分級機制
-  - [x] 詳細步驟 3-2：執行 `pnpm build:dev` 驗證型別/建置
-  - [x] 詳細步驟 3-3：整理風險與完成摘要
+- [x] 步驟 1：完成進度檔初始化與盤點範圍確認
+  - [x] 詳細步驟 1-1：清空舊 cline_progress.md
+  - [x] 詳細步驟 1-2：建立本次任務新進度框架
+  - [x] 詳細步驟 1-3：確認本次更新目標檔案（rules / skills / archive）
+- [x] 步驟 2：更新 rules 文件以符合當前專案結構
+  - [x] 詳細步驟 2-1：更新 `.clinerules/项目说明.md`
+  - [x] 詳細步驟 2-2：更新 `.clinerules/HypnosisOS接口大纲.md`
+  - [x] 詳細步驟 2-3：必要時同步調整 `.agents/rules` 對應文件
+- [x] 步驟 3：更新 skills 文件並移除冗餘項目
+  - [x] 詳細步驟 3-1：修正 `.agents/skills/app_repair/SKILL.md` 的過時工具與流程描述
+  - [x] 詳細步驟 3-2：修正 `.agents/skills/mvu_interaction_reference/SKILL.md` 與現況不一致內容
+  - [x] 詳細步驟 3-3：處理重疊 skill（frontend-design）
+- [x] 步驟 4：建立歸檔並寫入刪除原因
+  - [x] 詳細步驟 4-1：建立 `.acrhive_skills-rules/rules_archive.md`
+  - [x] 詳細步驟 4-2：建立 `.acrhive_skills-rules/skill_archive.md`
+  - [x] 詳細步驟 4-3：寫入刪除內容與刪除原因
+- [x] 步驟 5：最終核對與回報
+  - [x] 詳細步驟 5-1：檢查所有待辦是否完成
+  - [x] 詳細步驟 5-2：整理變更摘要與影響說明
+- [x] 步驟 6：依用戶回饋深化 MVU 交互規範
+  - [x] 詳細步驟 6-1：重新核對 mvuBridge / dataService / components 中的 MVU 流程
+  - [x] 詳細步驟 6-2：重寫 `.agents/skills/mvu_interaction_reference/SKILL.md`（架構、方法、規則、映射、交互、雙寫）
+  - [x] 詳細步驟 6-3：完成回報與請用戶確認
 
 ## 進行中
-- 目前處理：已完成，待使用者驗收
+- 目前處理：全部變更完成，準備回報摘要
 
 ## 已完成
-- 已清空舊任務進度並建立本次任務框架。
-- 已新增 `src/util/logger.ts`，提供統一訊息類型（runtime/logic/generation/error）與分級（full/detail/brief/release）控制，並以硬編碼常數 `LOG_LEVEL` 手動切換。
-- 已在正式入口初始化 console bridge：`src/催眠APP前端/index.tsx`、`src/催眠APP脚本/index.ts`、`src/MChan/index.ts`，使既有 `console.*` 訊息納入統一分級顯示。
-- 已在 `src/催眠APP前端/services/aiRequestPipelineService.ts` 將生成流程改為顯式分類 logger 呼叫（runtime / generation / error）。
-- 已執行 `pnpm build:dev`，建置通過。
+- 已刪除舊版 `cline_progress.md` 並重新初始化任務進度框架。
+- 已更新 `.clinerules/` 與 `.agents/rules/` 的 HypnoOS 說明與接口大綱。
+- 已修正 `.agents/skills/app_repair/SKILL.md` 的過時工具描述。
+- 已重寫 `.agents/skills/mvu_interaction_reference/SKILL.md` 為精簡且可維護版本。
+- 已刪除重疊規範 `.agents/skills/frontend-design/SKILL.md` 與 `.agents/rules/frontend-design.md`。
+- 已建立 `.acrhive_skills-rules/rules_archive.md`、`.acrhive_skills-rules/skill_archive.md`，並寫入刪除內容與原因。
 
 ## 變更紀錄
-- 22:43 初始化檔案並建立待辦
-- 22:46 新增共用 logger 與分級規則，加入 console bridge
-- 22:49 在正式入口套用 bridge（前端/腳本/MChan）
-- 22:52 AI 生成管線改為分類 logger 呼叫
-- 22:53 完成建置驗證與收尾整理
+- 2026-04-02 23:42 清空舊進度檔
+- 2026-04-02 23:43 建立新進度框架與待辦清單
+- 2026-04-02 23:45 修正 app_repair skill 過時工具描述
+- 2026-04-02 23:55 更新 HypnosisOS 規則說明與接口大綱
+- 2026-04-03 00:00 建立 rules/skills archive 並寫入刪除內容
+- 2026-04-03 00:01 刪除 frontend-design 規則與技能檔案
+- 2026-04-03 00:13 依用戶回饋，追加 MVU 規範深化任務
+- 2026-04-03 00:16 完成 MVU 規範深度版重寫（架構/方法/規則/映射/交互/雙寫）
 
 ## 風險與阻塞
-- 風險：bridge 會將歷史 `console.warn/error` 一律映射為 error 類型，若未來需更細分可再逐檔轉為顯式 `logLogic/logRuntime/...`。
-- 阻塞：無
+- 需避免與現有 `.agents/rules`、`.clinerules` 產生互相矛盾描述。
 
 ## 用戶需要進行的檢查與確認
-- 待我完成後，請確認四種等級輸出是否符合你的閱讀偏好。
+- 請確認目前保留的 `front_interface` / `前端界面` 是否已足夠覆蓋你的前端設計需求。
+- 請確認新版 `mvu_interaction_reference` 是否符合你要求的詳細度與維護方式。
 
 === 全部完成 ===

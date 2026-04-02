@@ -58,15 +58,22 @@ trigger: always_on
 - `DataService.getApiSettings()` / `updateApiSettings()` / `fetchAvailableModels()`
 
 ## 8. 角色编辑器与世界书服务
-- `DataService.getEditorPrompts()` / `saveEditorPrompts()`
+- `DataService.getEditorPromptModules()` / `saveEditorPromptModules()`
 - `loadCharacter()` / `saveCharacter()` (from `characterDataService.ts`)
 - `yamlToTree()` / `treeToYaml()` (from `characterDataService.ts`)
+- `characterCompletionAppBuildDiffProposals()` / `characterCompletionAppApplyApprovedProposals()`
+- `AiRequestPipelineService.composePrompt()` / `sendRequest()` / `request()`
 - `WorldBookService.checkAndEnsureEntry()`
 - `WorldBookService.checkAndEnsurePlotEntry()`
 
 ## 9. 消息发送构造 (Prompts)
 - `buildHypnosisSendMessage()` (from `hypnosisSend.ts`)
-- `buildEditorPrompt()` / `sendEditorPrompt()` (from `characterEditorSend.ts`)
+- `buildEditorPipelineParams()` (from `characterEditorSend.ts`)
+
+## 10. 日历桥接与操作日志（MVU）
+- `DataService.processCalendarBridgeEventsOnLoad()`
+- `MvuBridge.resetThisTurnAppOperationLog()` / `appendThisTurnAppOperationLog()`
+- `MvuBridge.getCalendarOps()` / `clearCalendarOps()`
 
 ## 提示词使用方式
 当你需要使用上述 API 时，請打開 `@.agents/rules/sub_skills/HypnosisOS接口详细说明.md` 文件來獲取詳細的參數定義與範例，藉此減少 token 消耗，精準尋找你要的接口。
