@@ -1,5 +1,6 @@
 import { PromptTemplateV2 } from '../types';
 import { DataService } from './dataService';
+import { logError, logGeneration, logRuntime } from '../../util/logger';
 
 type PromptModule = Pick<PromptTemplateV2, 'id' | 'content'>;
 
@@ -106,7 +107,7 @@ export const AiRequestPipelineService = {
   composePrompt(params: ComposePromptParams): string {
     const { modules, moduleOrder = [], placeholders = {}, escapeEjs = false } = params;
 
-    console.info('[HypnoOS] AiRequestPipelineService: composePrompt start', {
+    logRuntime('AiRequestPipelineService composePrompt start', [{
       moduleCount: modules.length,
       moduleOrderCount: moduleOrder.length,
       placeholderCount: Object.keys(placeholders).length,
@@ -127,7 +128,7 @@ export const AiRequestPipelineService = {
           sample: sampleText(normalizeText(value), 80),
         };
       }),
-    });
+    }], { source: 'HypnoFront' });
 
     const moduleMap = new Map(modules.map(m => [m.id, m]));
     const orderedModules = moduleOrder.length > 0
@@ -142,11 +143,11 @@ export const AiRequestPipelineService = {
 
     let merged = orderedModules.map(m => normalizeText(m.content)).join('');
 
-    console.info('[HypnoOS] AiRequestPipelineService: composePrompt merged', {
+    logRuntime('AiRequestPipelineService composePrompt merged', [{
       mergedLength: merged.length,
       mergedHash: fastHash(merged),
       sentinels: collectSentinelIndexMap(merged),
-    });
+    }], { source: 'HypnoFront' });
 
     // 若啟用，在替換佔位符前先逃避合併文本中的 EJS 標籤
     if (escapeEjs) {
@@ -171,14 +172,14 @@ export const AiRequestPipelineService = {
       finalPrompt = substituteFn(finalPrompt);
     }
 
-    console.info('[HypnoOS] AiRequestPipelineService: composePrompt final', {
+    logRuntime('AiRequestPipelineService composePrompt final', [{
       customReplacedLength: customReplaced.length,
       customReplacedHash: fastHash(customReplaced),
       finalLength: finalPrompt.length,
       finalHash: fastHash(finalPrompt),
       macroChanged: customReplaced !== finalPrompt,
       sentinels: collectSentinelIndexMap(finalPrompt),
-    });
+    }], { source: 'HypnoFront' });
 
     return finalPrompt;
   },
@@ -190,7 +191,7 @@ export const AiRequestPipelineService = {
 
     if (typeof generateRawFn !== 'function') {
       const message = 'generateRaw 不可用，無法執行背景 AI 生成';
-      console.error('[HypnoOS] AiRequestPipelineService: %s', message);
+      logError('AiRequestPipelineService generateRaw 不可用', [message], { source: 'HypnoFront', key: true });
       return { ok: false, error: message };
     }
 
@@ -198,7 +199,7 @@ export const AiRequestPipelineService = {
       const api = getRequiredApiSettings();
       const shouldStream = api.streamMode === 'streaming';
 
-      console.info('[HypnoOS] AiRequestPipelineService: 開始背景生成', {
+      logRuntime('AiRequestPipelineService 開始背景生成', [{
         transport: 'api_transport',
         promptLength: prompt.length,
         shouldStream,
@@ -214,12 +215,10 @@ export const AiRequestPipelineService = {
           presencePenalty: api.presencePenalty,
           frequencyPenalty: api.frequencyPenalty,
         },
-      });
+      }], { source: 'HypnoFront', key: true });
 
       // 供問題排查：完整輸出本次「真實送出」的 prompt 內容
-      console.info('[HypnoOS] AiRequestPipelineService: ===== PROMPT BEGIN =====');
-      console.info(prompt);
-      console.info('[HypnoOS] AiRequestPipelineService: ===== PROMPT END =====');
+      logGeneration('AiRequestPipelineService PROMPT BEGIN', [prompt], { source: 'HypnoFront' });
 
       const customApiPayload: any = {
         apiurl: api.endpoint,
@@ -249,17 +248,15 @@ export const AiRequestPipelineService = {
       });
 
       // 供問題排查：完整輸出本次接收的原始回應
-      console.info('[HypnoOS] AiRequestPipelineService: ===== RAW RESPONSE BEGIN =====');
-      console.info(responseText);
-      console.info('[HypnoOS] AiRequestPipelineService: ===== RAW RESPONSE END =====');
+      logGeneration('AiRequestPipelineService RAW RESPONSE', [responseText], { source: 'HypnoFront' });
 
-      console.info('[HypnoOS] AiRequestPipelineService: 背景生成完成', {
+      logRuntime('AiRequestPipelineService 背景生成完成', [{
         durationMs: Date.now() - startedAt,
         responseLength: responseText.length,
-      });
+      }], { source: 'HypnoFront', key: true });
       return { ok: true, responseText };
     } catch (err: any) {
-      console.error('[HypnoOS] AiRequestPipelineService: 背景生成失敗', {
+      logError('AiRequestPipelineService 背景生成失敗', [{
         durationMs: Date.now() - startedAt,
         error: err,
         errMessage: err?.message,
@@ -269,7 +266,7 @@ export const AiRequestPipelineService = {
         errStatus: err?.status,
         errBody: err?.body,
         rawErr: JSON.stringify(err, Object.getOwnPropertyNames(err))
-      });
+      }], { source: 'HypnoFront', key: true });
       return {
         ok: false,
         error: err instanceof Error ? err.message : 'generateRaw 背景請求失敗',

@@ -6,6 +6,7 @@
 // 4) 每个角色每 5 点“警戒度”，每天会增加 1 点“主角可疑度”
 
 import _ from 'lodash';
+import { installConsoleBridge, logError, logRuntime } from '../util/logger';
 
 const UPDATE_REASON = '催眠APP脚本：每日结算';
 
@@ -240,10 +241,14 @@ async function applyDailySettlement(mvu: Mvu.MvuData, before: Mvu.MvuData): Prom
 
 $(() => {
   (async () => {
+    // 初始化統一分級 logger（硬編碼等級由 logger.ts 管理）
+    installConsoleBridge({ source: 'HypnoScript' });
+    logRuntime('腳本入口初始化', [], { source: 'HypnoScript', key: true });
+
     try {
       await waitGlobalInitialized('Mvu');
     } catch (err) {
-      console.warn('[催眠APP脚本] Mvu 未就绪，脚本不生效', err);
+      logError('Mvu 未就緒，腳本不生效', [err], { source: 'HypnoScript', key: true });
       return;
     }
 
@@ -262,7 +267,7 @@ $(() => {
         isSelfApplying = true;
         await Mvu.replaceMvuData(after, getMessageVariableOption());
       } catch (err) {
-        console.error('[催眠APP脚本] 每日结算失败', err);
+        logError('每日結算失敗', [err], { source: 'HypnoScript', key: true });
         isSelfApplying = false;
       }
     });
