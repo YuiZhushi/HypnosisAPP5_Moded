@@ -167,7 +167,7 @@ export const AiRequestPipelineService = {
     });
 
     let finalPrompt = customReplaced;
-    const substituteFn = (globalThis as any).substituteMacros;
+	const substituteFn = (globalThis as { substituteMacros?: (text: string) => string }).substituteMacros;
     if (typeof substituteFn === 'function') {
       finalPrompt = substituteFn(finalPrompt);
     }
@@ -187,7 +187,7 @@ export const AiRequestPipelineService = {
   /** 步驟 3：發送請求 */
   async sendRequest(prompt: string): Promise<SendResult> {
     const startedAt = Date.now();
-    const generateRawFn = (globalThis as { generateRaw?: (config: any) => Promise<string> }).generateRaw;
+	const generateRawFn = (globalThis as { generateRaw?: (config: GenerateRawConfig) => Promise<string> }).generateRaw;
 
     if (typeof generateRawFn !== 'function') {
       const message = 'generateRaw 不可用，無法執行背景 AI 生成';
@@ -220,24 +220,17 @@ export const AiRequestPipelineService = {
       // 供問題排查：完整輸出本次「真實送出」的 prompt 內容
       logGeneration('AiRequestPipelineService PROMPT BEGIN', [prompt], { source: 'HypnoFront' });
 
-      const customApiPayload: any = {
-        apiurl: api.endpoint,
-        key: api.apiKey || undefined,
-        model: api.model,
-        source: 'openai',
-      };
-      if (api.temperature != null) customApiPayload.temperature = api.temperature;
-      if (api.maxTokens != null) customApiPayload.max_tokens = api.maxTokens;
-      if (api.topP != null) customApiPayload.top_p = api.topP;
-      if (api.topK != null) customApiPayload.top_k = api.topK;
-      if (api.presencePenalty != null) customApiPayload.presence_penalty = api.presencePenalty;
-      if (api.frequencyPenalty != null) customApiPayload.frequency_penalty = api.frequencyPenalty;
-
-      // STRICT: Some OpenAI-compatible backends throw 400 Bad Request if unsupported fields like top_k are present.
-      // E.g. native OpenAI or strict proxies. Removing top_k if it's there avoids this validation error.
-      if (customApiPayload.top_k !== undefined) {
-         delete customApiPayload.top_k;
-      }
+	const customApiPayload: CustomApiConfig = {
+		apiurl: api.endpoint,
+		key: api.apiKey || undefined,
+		model: api.model,
+		source: 'openai',
+		temperature: api.temperature,
+		max_tokens: api.maxTokens,
+		top_p: api.topP,
+		presence_penalty: api.presencePenalty,
+		frequency_penalty: api.frequencyPenalty,
+	};
 
       const responseText = await generateRawFn({
         user_input: prompt,

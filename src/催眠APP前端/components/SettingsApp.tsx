@@ -50,10 +50,10 @@ const DEFAULT_API: ApiSettings = {
   apiEndpoint: '',
   modelName: '',
   temperature: 0.7,
-  maxTokens: 2048,
-  topP: 1,
-  presencePenalty: 0,
-  frequencyPenalty: 0,
+  maxTokens: 8192,
+  topP: 0.95,
+  presencePenalty: 0.2,
+  frequencyPenalty: 0.3,
   streamMode: 'non_streaming',
 };
 
