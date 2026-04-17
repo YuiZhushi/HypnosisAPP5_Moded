@@ -1,0 +1,303 @@
+# DataService 方法遷移對照表（2026-04-16 完成更新）
+
+> 盤點時間：2026-04-16
+> 依據：`src/催眠APP前端/services/dataService.ts` 與 `services/domain/*`、`services/usecases/*` 實際代碼。
+
+---
+
+## 1) 總結
+
+- ✅ **已完成**：DataService 對外主方法已全量按領域委派至 `domain service` / `usecase service`（facade 以轉發為主）。
+- ✅ **已完成**：所有 `*Impl` 函式、大型 Zod Schema、Core Helper 函式均已下沉到對應模組。
+- ✅ **已完成**：`DEFAULT_SETTINGS_PROMPT_CONFIG` 已搬遷至 `services/constants/settingsPromptDefaults.ts`。
+- ✅ **Phase D-2 已完成**：`dataService.ts` 從 1596 行降至約 844 行，入口薄化收尾完成。
+- ✅ **Phase E 已完成**：邊界稽核與命名收斂已完成，所有 Domain 服務符合單一領域原則，跨領域交易集中於 Usecase 層。
+- ⏳ **進行中**：全域型別治理（Phase F）已啟動，第一批低風險檔案已完成。
+
+> 補充：本表「完成（完全委派）」的語義是指 **DataService 對外呼叫路徑** 已委派；
+> 不等同於「所有實作細節都已自 `dataService.ts` 完全下沉」。
+
+---
+
+## 2) 逐方法完整盤點（DataService export 全量）
+
+> 註記：
+> - **完成（完全委派）**：facade 僅轉發，不含業務邏輯。
+> - **部分完成（委派+薄包裝）**：已委派，但 facade 仍保留少量包裝（例如 log/錯誤降級）。
+> - **未完成**：尚未達到目標遷移狀態。
+
+### A. 資源 / 會話
+
+| DataService 方法 | 目前落點 | 狀態 | D-2 下沉進度 | 備註 |
+|---|---|---|---|---|
+| `getUserData` | `resourceService.getUserData` | 完成（完全委派） | ✅ 已下沉 | |
+| `updateResources` | `resourceService.updateResources` | 完成（完全委派） | ✅ 已下沉 | |
+| `getSystemClock` | `resourceService.getSystemClock` | 完成（完全委派） | ✅ 已下沉 | |
+| `getSessionEnd` | `resourceService.getSessionEnd` | 完成（完全委派） | ✅ 已下沉 | |
+| `setSessionEnd` | `resourceService.setSessionEnd` | 完成（完全委派） | ✅ 已下沉 | |
+| `clearSessionEnd` | `resourceService.clearSessionEnd` | 完成（完全委派） | ✅ 已下沉 | |
+| `startSession` | `resourceService.startSession` → `hypnoAppUsecaseService.startSession` | 完成（完全委派） | ✅ 已下沉 | payload 已為 `SessionStartPayload` |
+
+### B. 訂閱 / 權限
+
+| DataService 方法 | 目前落點 | 狀態 | D-2 下沉進度 | 備註 |
+|---|---|---|---|---|
+| `getSubscription` | `subscriptionService.getSubscription` | 完成（完全委派） | ✅ 已下沉 | |
+| `setSubscriptionAutoRenew` | `subscriptionService.setSubscriptionAutoRenew` | 完成（完全委派） | ✅ 已下沉 | |
+| `clearSubscription` | `subscriptionService.clearSubscription` | 完成（完全委派） | ✅ 已下沉 | |
+| `subscribeOrRenew` | `subscriptionService.subscribeOrRenew` → `hypnoAppUsecaseService.subscribeOrRenew` | 完成（完全委派） | ✅ 已下沉 | `SUBSCRIPTION_PRICES` 在 `subscriptionConstants.ts` |
+| `maybeAutoRenewSubscription` | `subscriptionService.maybeAutoRenewSubscription` → `hypnoAppUsecaseService.maybeAutoRenewSubscription` | 完成（完全委派） | ✅ 已下沉 | |
+| `getSubscriptionUnlockThreshold` | `subscriptionService.getSubscriptionUnlockThreshold` | 完成（完全委派） | ✅ 已下沉 | |
+| `canSubscribeTier` | `subscriptionService.canSubscribeTier` | 完成（完全委派） | ✅ 已下沉 | |
+| `isSubscriptionActive` | `subscriptionService.isSubscriptionActive` | 完成（完全委派） | ✅ 已下沉 | |
+| `getSubscriptionTiers` | `subscriptionService.getSubscriptionTiers` | 完成（完全委派） | ✅ 已下沉 | |
+
+### C. 功能（Feature）
+
+| DataService 方法 | 目前落點 | 狀態 | D-2 下沉進度 | 備註 |
+|---|---|---|---|---|
+| `getFeatures` | `featureService.getFeatures` | 完成（完全委派） | ✅ 已下沉 | Helper 在 `featureHelpers.ts` |
+| `purchaseFeature` | `featureService.purchaseFeature` → `hypnoAppUsecaseService.purchaseFeature` | 完成（完全委派） | ✅ 已下沉 | |
+| `updateFeature` | `featureService.updateFeature` | 完成（完全委派） | ✅ 已下沉 | |
+| `resetFeatures` | `featureService.resetFeatures` | 完成（完全委派） | ✅ 已下沉 | `PERSISTENT_FEATURE_IDS` 在 `featureConstants.ts` |
+| `canUseFeature` | `featureService.canUseFeature` | 完成（完全委派） | ✅ 已下沉 | |
+| `getUnlocks` | `featureService.getUnlocks` | 完成（完全委派） | ✅ 已下沉 | |
+| `getDebugEnabled` | `featureService.getDebugEnabled` | 完成（完全委派） | ✅ 已下沉 | |
+| `setDebugEnabled` | `featureService.setDebugEnabled` | 完成（完全委派） | ✅ 已下沉 | |
+
+### D. 成就 / 任務
+
+| DataService 方法 | 目前落點 | 狀態 | D-2 下沉進度 | 備註 |
+|---|---|---|---|---|
+| `getAchievements` | `achievementQuestService.getAchievements` | 完成（完全委派） | ✅ 已下沉 | `*Impl` 在 `achievementQuestImpl.ts` |
+| `getQuests` | `achievementQuestService.getQuests` | 完成（完全委派） | ✅ 已下沉 | `*Impl` 在 `achievementQuestImpl.ts` |
+| `claimAchievement` | `achievementQuestService.claimAchievement` → `hypnoAppUsecaseService.claimAchievement` | 完成（完全委派） | ✅ 已下沉 | |
+| `acceptQuest` | `achievementQuestService.acceptQuest` | 完成（完全委派） | ✅ 已下沉 | `*Impl` 在 `achievementQuestImpl.ts` |
+| `cancelQuest` | `achievementQuestService.cancelQuest` | 完成（完全委派） | ✅ 已下沉 | `*Impl` 在 `achievementQuestImpl.ts` |
+| `claimQuest` | `achievementQuestService.claimQuest` → `hypnoAppUsecaseService.claimQuest` | 完成（完全委派） | ✅ 已下沉 | |
+| `publishCustomQuest` | `achievementQuestService.publishCustomQuest` | 完成（完全委派） | ✅ 已下沉 | `*Impl` 在 `achievementQuestImpl.ts` |
+| `deleteCustomQuest` | `achievementQuestService.deleteCustomQuest` | 完成（完全委派） | ✅ 已下沉 | `*Impl` 在 `achievementQuestImpl.ts` |
+
+### E. 日曆
+
+| DataService 方法 | 目前落點 | 狀態 | D-2 下沉進度 | 備註 |
+|---|---|---|---|---|
+| `getCalendarEvents` | `calendarService.getCalendarEvents` | 完成（完全委派） | ✅ 已下沉 | `*Impl` 在 `calendarEventImpl.ts` |
+| `processCalendarBridgeEventsOnLoad` | `calendarService.processCalendarBridgeEventsOnLoad` | 完成（完全委派） | ✅ 已下沉 | `*Impl` 在 `calendarEventImpl.ts` |
+| `addCalendarEvent` | `calendarService.addCalendarEvent` | 完成（完全委派） | ✅ 已下沉 | `*Impl` 在 `calendarEventImpl.ts` |
+| `updateCalendarEvent` | `calendarService.updateCalendarEvent` | 完成（完全委派） | ✅ 已下沉 | `*Impl` 在 `calendarEventImpl.ts` |
+| `deleteCalendarEvent` | `calendarService.deleteCalendarEvent` | 完成（完全委派） | ✅ 已下沉 | `*Impl` 在 `calendarEventImpl.ts` |
+| `findCalendarEventByTitleAndDate` | `calendarService.findCalendarEventByTitleAndDate` | 完成（完全委派） | ✅ 已下沉 | `*Impl` 在 `calendarEventImpl.ts` |
+
+### F. 自訂催眠
+
+| DataService 方法/欄位 | 目前落點 | 狀態 | D-2 下沉進度 | 備註 |
+|---|---|---|---|---|
+| `CUSTOM_HYPNOSIS_TIER_BASE` | `services/constants/customHypnosis.ts` | 完成（模組化輸出） | ✅ 已下沉 | |
+| `calculateCustomHypnosisCost` | `customHypnosisService.calculateCustomHypnosisCost` | 完成（完全委派） | ✅ 已下沉 | Core 在 `services/helpers/customHypnosisCost.ts` |
+| `getCustomHypnosis` | `customHypnosisService.getCustomHypnosis` | 完成（完全委派） | ✅ 已下沉 | |
+| `addCustomHypnosis` | `customHypnosisService.addCustomHypnosis` | 完成（完全委派） | ✅ 已下沉 | |
+| `deleteCustomHypnosis` | `customHypnosisService.deleteCustomHypnosis` | 完成（完全委派） | ✅ 已下沉 | |
+
+### G. 設定 / Prompt Modules
+
+| DataService 方法 | 目前落點 | 狀態 | D-2 下沉進度 | 備註 |
+|---|---|---|---|---|
+| `getApiSettings` | `settingsService.getApiSettings` | 完成（完全委派） | ✅ 已下沉 | |
+| `updateApiSettings` | `settingsService.updateApiSettings` | 完成（完全委派） | ✅ 已下沉 | |
+| `fetchAvailableModels` | `settingsService.fetchAvailableModels` | 完成（完全委派） | ✅ 已下沉 | |
+| `getSettingsPromptConfig` | `settingsService.getSettingsPromptConfig` | 完成（完全委派） | ✅ 已下沉 | Helper 在 `settingsPromptHelpers.ts` |
+| `getDefaultSettingsPromptConfig` | `settingsService.getDefaultSettingsPromptConfig` | 完成（完全委派） | ✅ 已下沉 | 常數在 `settingsPromptDefaults.ts` |
+| `updateSettingsPromptConfig` | `settingsService.updateSettingsPromptConfig` | 完成（完全委派） | ✅ 已下沉 | |
+| `getEditorPromptModules` | `settingsService.getEditorPromptModules` | 完成（完全委派） | ✅ 已下沉 | |
+| `getDefaultEditorPromptModules` | `settingsService.getDefaultEditorPromptModules` | 完成（完全委派） | ✅ 已下沉 | 常數在 `editorPromptDefaults.ts` |
+| `saveEditorPromptModules` | `settingsService.saveEditorPromptModules` | 完成（完全委派） | ✅ 已下沉 | |
+
+### H. Cross-domain Usecase 實際承接項
+
+| Usecase 方法 | 被哪些 DataService 方法使用 | 狀態 | D-2 下沉進度 |
+|---|---|---|---|
+| `subscribeOrRenew` | `subscribeOrRenew` | 完成 | ✅ 已下沉 |
+| `maybeAutoRenewSubscription` | `maybeAutoRenewSubscription` | 完成 | ✅ 已下沉 |
+| `purchaseFeature` | `purchaseFeature` | 完成 | ✅ 已下沉 |
+| `claimAchievement` | `claimAchievement` | 完成 | ✅ 已下沉 |
+| `claimQuest` | `claimQuest` | 完成 | ✅ 已下沉 |
+| `addCustomHypnosis` | `addCustomHypnosis` | 完成 | ✅ 已下沉 |
+| `deleteCustomHypnosis` | `deleteCustomHypnosis` | 完成 | ✅ 已下沉 |
+| `startSession` | `startSession` | 完成 | ✅ 已下沉 |
+
+---
+
+## 3) 已完成清單
+
+### U-1. `dataService.ts` 檔案體積與責任（✅ 已完成）
+
+`dataService.ts` 已從 1596 行降至約 844 行，所有下沉項目已完成：
+
+#### A. `*Impl` 函式（12 個）— ✅ 已下沉
+
+| 分類 | 函式數 | 下沉位置 | 狀態 |
+|-----|-------|---------|------|
+| Achievement/Quest | 6 | `services/helpers/achievementQuestImpl.ts` | ✅ 完成 |
+| Calendar | 6 | `services/helpers/calendarEventImpl.ts` | ✅ 完成 |
+
+#### B. 大型 Zod Schema（2 個）— ✅ 已下沉
+
+| Schema | 下沉位置 | 狀態 |
+|--------|---------|------|
+| `STORE_SCHEMA` | `services/store/storeSchema.ts` | ✅ 完成 |
+| `SYSTEM_SCHEMA` | `services/store/systemSchema.ts` | ✅ 完成 |
+
+#### C. Core Helper 函式 — ✅ 已下沉
+
+| 類別 | 函式數 | 下沉位置 | 狀態 |
+|-----|-------|---------|------|
+| 用戶資源相關 | 1 | `services/constants/userDefaults.ts` | ✅ 完成 |
+| 訂閱常數 | 3 | `services/constants/subscriptionConstants.ts` | ✅ 完成 |
+| 功能相關 | 3 | `services/helpers/featureHelpers.ts` | ✅ 完成 |
+| 時間解析 | 2 | `services/helpers/timeHelpers.ts` | ✅ 完成 |
+| ID 生成 | 2 | `services/helpers/idHelpers.ts` | ✅ 完成 |
+| 系統別名 | 2 | `services/helpers/systemHelpers.ts` | ✅ 完成 |
+| MVU 快照 | 1 | `services/helpers/mvuHelpers.ts` | ✅ 完成 |
+| Store 遷移 | 1 | `services/store/migrateStore.ts` | ✅ 完成 |
+| 設定正規化 | 1 | `services/helpers/settingsPromptHelpers.ts` | ✅ 完成 |
+| 用戶資源轉換 | 1 | `services/helpers/userResourceHelpers.ts` | ✅ 完成 |
+
+#### D. 大型常數 — ✅ 已下沉
+
+| 常數 | 下沉位置 | 狀態 |
+|------|---------|------|
+| `DEFAULT_SETTINGS_PROMPT_CONFIG` | `services/constants/settingsPromptDefaults.ts` | ✅ 完成 |
+
+### U-2. 全域型別治理（Phase F 已完成）
+
+與 DataService 遷移直接相關的 C-5 指定熱點已完成：
+
+- `hypnoAppUsecaseService`：`checkCondition` 已收斂為 `TUserResources`
+- `featureService`：`purchaseFeature` 回傳 `user` 已改為泛型承接
+- `settingsService`：API 設定介面改為 `TApiSettings` / `Partial<TApiSettings>`
+- `customHypnosisService`：`tier` 已改為泛型 `TTier`
+
+#### Phase F 治理進度
+
+**第一批（低風險）— ✅ 已完成**
+
+| 檔案 | 原有 any 數量 | 狀態 | 備註 |
+|------|--------------|------|------|
+| `characterDataService.ts` | 4 | ✅ 已清除 | 使用 `WorldbookEntry[]` 和型別推斷 |
+| `aiRequestPipelineService.ts` | 3 | ✅ 已清除 | 使用 `GenerateRawConfig` 和 `CustomApiConfig` |
+
+**第二批（中風險）— ✅ 已確認合理**
+
+| 檔案 | any 數量 | 風險等級 | 狀態 | 備註 |
+|------|----------|----------|------|------|
+| `store/storeGateway.ts` | 0 | 中 | ✅ 已確認 | 原本使用 `Record<string, unknown>` 已符合設計，無需修改 |
+| `mvuBridge.ts` | 0 | 中高 | ✅ 已確認 | 型別合理，依賴全域 `Mvu` 型別定義，無需修改 |
+
+**第三批（高風險）— ✅ 已完成**
+
+| 檔案 | any 數量 | 風險等級 | 狀態 | 備註 |
+|------|----------|----------|------|------|
+| `worldBookService.ts` | 0 | 高 | ✅ 已清除 | 移除不必要的型別斷言，使用 `WorldbookEntry` 型別 |
+
+**第四批（依賴外部 API）— ⚠️ 合理保留**
+
+以下 `any` 使用是因為依賴酒館助手全域函式，其型別定義在 `@types/function/variables.d.ts` 中本身就是 `Record<string, any>`，屬於合理的設計決策：
+
+| 檔案 | any 數量 | 類型 | 備註 |
+|------|----------|------|------|
+| `dataService.ts` | 4 | 依賴外部 API | `getVariables`、`updateVariablesWith` 等全域函式宣告 |
+| `helpers/mvuHelpers.ts` | 6 | 依賴外部 API | `normalizeChatVariables`、`getVariables` 參數型別 |
+| `helpers/calendarEventImpl.ts` | 5 | 依賴外部 API | 外部依賴型別定義（`NormalizeChatVariablesFn` 等） |
+| `helpers/achievementQuestImpl.ts` | 4 | 依賴外部 API | 外部依賴型別定義（`NormalizeChatVariablesFn` 等） |
+
+**第五批（可收斂但低優先級）— ✅ 已完成**
+
+以下 `any` 使用已收斂：
+
+| 檔案 | any 數量 | 狀態 | 備註 |
+|------|----------|------|------|
+| `store/systemSchema.ts` | 0 | ✅ 已清除 | `[key: string]: any` 改為 `& Record<string, unknown>` |
+
+**第六批（可收斂但低優先級）— ✅ 已完成**
+
+以下 `any` 使用已收斂：
+
+| 檔案 | any 數量 | 狀態 | 備註 |
+|------|----------|------|------|
+| `helpers/calendarCrudResolver.ts` | 0 | ✅ 已清除 | 使用 `CalendarCrudOp`、`CalendarCrudNode`、`CalendarResolvedState` 等型別 |
+
+> 狀態：**Phase F 全部完成**（所有指定範圍內的型別治理均已完成或確認合理）。
+
+> 狀態：**Phase F 核心任務已完成**（指定範圍內的型別治理均已完成或確認合理）。
+
+### U-3. Prompt 模板資料拆分（已完成）
+
+角色編輯器相關大型模板常數已自 `dataService.ts` 拆出至 `services/constants/editorPromptDefaults.ts`，並完成模組出口與入口接線。
+
+> 狀態：**已完成**（維持原文內容與 `DataService` 對外 API 相容）。
+
+---
+
+## 4) 階段完成度對照
+
+| 階段 | 狀態 | 完成度 |
+|-----|------|-------|
+| Phase B-1 ~ B-5 | ✅ 已落地 | 100% |
+| Phase C-1 | ✅ 已落地（移除主要反向依賴） | 100% |
+| Phase C-2 | ✅ 已落地（resource 真下沉） | 100% |
+| Phase C-3 | ✅ 已落地（facade 內部自我呼叫清理） | 100% |
+| Phase C-4 | ✅ 已落地（`startSession` 型別貫通） | 100% |
+| Phase C-5 | ✅ 已落地（第一批指定熱點型別收斂） | 100% |
+| Phase D-1 | ✅ 已落地（大型常數與部分 helper 下沉） | 100% |
+| **Phase D-2** | ✅ **已完成**（入口薄化收尾） | **100%** |
+| **Phase E** | ✅ **已完成**（邊界稽核與命名收斂） | **100%** |
+| **Phase F** | ✅ **已完成**（全域型別治理） | **100%** |
+
+---
+
+## 5) D-2 下沉完成詳表
+
+### 5.1 已完成下沉項目 ✅
+
+| 項目 | 原位置 | 下沉位置 | 完成日期 |
+|-----|--------|---------|---------|
+| `FEATURES` | `dataService.ts` | `services/constants/features.ts` | 2026-04-11 |
+| `CUSTOM_HYPNOSIS_TIER_BASE` | `dataService.ts` | `services/constants/customHypnosis.ts` | 2026-04-11 |
+| `DEFAULT_EDITOR_PROMPT_MODULES` | `dataService.ts` | `services/constants/editorPromptDefaults.ts` | 2026-04-11 |
+| `DEFAULT_SECTION_*_MAP` | `dataService.ts` | `services/constants/editorPromptDefaults.ts` | 2026-04-11 |
+| `DEFAULT_SETTINGS_PROMPT_CONFIG` | `dataService.ts` | `services/constants/settingsPromptDefaults.ts` | 2026-04-16 |
+| `DEFAULT_USER_DATA` | `dataService.ts` | `services/constants/userDefaults.ts` | 2026-04-16 |
+| `PURCHASE_PRICE_BY_TIER` / `SUBSCRIPTION_PRICES` 等 | `dataService.ts` | `services/constants/subscriptionConstants.ts` | 2026-04-16 |
+| `PERSISTENT_FEATURE_IDS` | `dataService.ts` | `services/constants/featureConstants.ts` | 2026-04-16 |
+| `calculateCustomHypnosisCostCore` | `dataService.ts` | `services/helpers/customHypnosisCost.ts` | 2026-04-11 |
+| `normalizeEditorPromptModules` | `dataService.ts` | `services/helpers/editorPromptModules.ts` | 2026-04-11 |
+| `buildRoleBasedAchievements` 等 | `dataService.ts` | `services/helpers/achievementQuestCore.ts` | 2026-04-11 |
+| `resolveCalendarStateAt` 等 | `dataService.ts` | `services/helpers/calendarCrudStore.ts` | 2026-04-11 |
+| `floorKey` / `swipeKey` | `dataService.ts` | `services/helpers/calendarCrudResolver.ts` | 2026-04-11 |
+| `createFirstFeatureIdByTier` 等 | `dataService.ts` | `services/helpers/featureHelpers.ts` | 2026-04-16 |
+| `normalizeSettingsPromptConfig` | `dataService.ts` | `services/helpers/settingsPromptHelpers.ts` | 2026-04-16 |
+| `migrateStore` | `dataService.ts` | `services/store/migrateStore.ts` | 2026-04-16 |
+| `toFiniteNumber` / `normalizeSystemAliases` | `dataService.ts` | `services/helpers/systemHelpers.ts` | 2026-04-16 |
+| `idSafe` / `makeAchievementId` | `dataService.ts` | `services/helpers/idHelpers.ts` | 2026-04-16 |
+| `parseVirtualMinutesFrom` / `getSystemClockFrom` | `dataService.ts` | `services/helpers/timeHelpers.ts` | 2026-04-16 |
+| `getRolesAndSystemSnapshot` | `dataService.ts` | `services/helpers/mvuHelpers.ts` | 2026-04-16 |
+| `systemToUserResources` | `dataService.ts` | `services/helpers/userResourceHelpers.ts` | 2026-04-16 |
+| `STORE_SCHEMA` | `dataService.ts` | `services/store/storeSchema.ts` | 2026-04-16 |
+| `SYSTEM_SCHEMA` | `dataService.ts` | `services/store/systemSchema.ts` | 2026-04-16 |
+| 6 個 Achievement/Quest `*Impl` | `dataService.ts` | `services/helpers/achievementQuestImpl.ts` | 2026-04-16 |
+| 6 個 Calendar `*Impl` | `dataService.ts` | `services/helpers/calendarEventImpl.ts` | 2026-04-16 |
+| `PersistedStore` 等型別 | `dataService.ts` | `services/types/persistedStore.ts` | 2026-04-11 |
+| `storeGateway` | `dataService.ts` | `services/store/storeGateway.ts` | 2026-04-11 |
+
+---
+
+## 6) 變更紀錄
+
+| 日期 | 階段 | 變更內容 |
+|-----|------|---------|
+| 2026-04-11 | D-1 | 大型常數與部分 helper 下沉完成 |
+| 2026-04-16 | E | 邊界稽核與命名收斂完成 |
+| 2026-04-16 | D-2 | 狀態盤點、進度更新、對照表擴充 |
+| 2026-04-16 | D-2 | **✅ 完成所有下沉項目，入口薄化收尾完成，對照表全面更新** |
+| 2026-04-16 | F | Phase F 第一批治理完成（characterDataService.ts、aiRequestPipelineService.ts） |

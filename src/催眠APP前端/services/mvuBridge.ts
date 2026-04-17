@@ -22,7 +22,7 @@ type WaitOptions = {
 };
 
 function isMvuDefined() {
-  return typeof (globalThis as any).Mvu !== 'undefined';
+	return typeof (globalThis as { Mvu?: typeof Mvu }).Mvu !== 'undefined';
 }
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
@@ -43,9 +43,9 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): 
 }
 
 async function safeWaitGlobalInitialized(name: string, timeoutMs: number): Promise<void> {
-  const maybeWait = (globalThis as any).waitGlobalInitialized as ((key: string) => Promise<unknown>) | undefined;
-  if (typeof maybeWait !== 'function') return;
-  await withTimeout(Promise.resolve(maybeWait(name)), timeoutMs, `waitGlobalInitialized(${name})`);
+	const maybeWait = (globalThis as { waitGlobalInitialized?: (key: string) => Promise<unknown> }).waitGlobalInitialized;
+	if (typeof maybeWait !== 'function') return;
+	await withTimeout(Promise.resolve(maybeWait(name)), timeoutMs, `waitGlobalInitialized(${name})`);
 }
 
 export async function waitForMvuReady(options: WaitOptions = {}): Promise<boolean> {
@@ -54,8 +54,8 @@ export async function waitForMvuReady(options: WaitOptions = {}): Promise<boolea
 
   if (isMvuDefined()) return true;
 
-  const maybeWait = (globalThis as any).waitGlobalInitialized as ((key: string) => Promise<unknown>) | undefined;
-  if (typeof maybeWait !== 'function') return false;
+	const maybeWait = (globalThis as { waitGlobalInitialized?: (key: string) => Promise<unknown> }).waitGlobalInitialized;
+	if (typeof maybeWait !== 'function') return false;
 
   const deadline = Date.now() + Math.max(0, timeoutMs);
   while (Date.now() < deadline) {
@@ -96,9 +96,7 @@ async function setIfChanged(mvu: Mvu.MvuData, path: string, nextValue: unknown, 
   const prev = _.get(mvu.stat_data, path);
   if (_.isEqual(prev, nextValue)) return false;
 
-  const setter = (Mvu as any).setMvuVariable as
-    | ((mvuData: Mvu.MvuData, variablePath: string, value: unknown, options?: { reason?: string }) => Promise<boolean>)
-    | undefined;
+	const setter = (Mvu as { setMvuVariable?: (mvuData: Mvu.MvuData, variablePath: string, value: unknown, options?: { reason?: string }) => Promise<boolean> }).setMvuVariable;
 
   if (typeof setter === 'function') {
     const ok = await setter(mvu, path, nextValue, { reason });
@@ -117,31 +115,31 @@ function normalizeAppOperationLogValue(value: unknown): string {
 }
 
 export const MvuBridge = {
-  getStatData: async (): Promise<Record<string, any> | null> => {
-    const data = await getMvuData();
-    if (!data) return null;
-    return (data.mvu.stat_data ?? null) as any;
-  },
+	getStatData: async (): Promise<Record<string, unknown> | null> => {
+		const data = await getMvuData();
+		if (!data) return null;
+		return data.mvu.stat_data ?? null;
+	},
 
-  getSystem: async (): Promise<Record<string, any> | null> => {
-    const data = await getMvuData();
-    if (!data) return null;
-    return (_.get(data.mvu, 'stat_data.系统') ?? null) as any;
-  },
+	getSystem: async (): Promise<Record<string, unknown> | null> => {
+		const data = await getMvuData();
+		if (!data) return null;
+		return (_.get(data.mvu, 'stat_data.系统') ?? null) as Record<string, unknown> | null;
+	},
 
-  getRoles: async (): Promise<Record<string, any> | null> => {
-    const data = await getMvuData();
-    if (!data) return null;
-    const roles = _.get(data.mvu, 'stat_data.角色');
-    return _.isPlainObject(roles) ? (roles as any) : null;
-  },
+	getRoles: async (): Promise<Record<string, unknown> | null> => {
+		const data = await getMvuData();
+		if (!data) return null;
+		const roles = _.get(data.mvu, 'stat_data.角色');
+		return _.isPlainObject(roles) ? (roles as Record<string, unknown>) : null;
+	},
 
-  getTasks: async (): Promise<Record<string, any> | null> => {
-    const data = await getMvuData();
-    if (!data) return null;
-    const tasks = _.get(data.mvu, 'stat_data.任务');
-    return _.isPlainObject(tasks) ? (tasks as any) : null;
-  },
+	getTasks: async (): Promise<Record<string, unknown> | null> => {
+		const data = await getMvuData();
+		if (!data) return null;
+		const tasks = _.get(data.mvu, 'stat_data.任务');
+		return _.isPlainObject(tasks) ? (tasks as Record<string, unknown>) : null;
+	},
 
   syncUserResources: async (user: UserResources) => {
     return enqueueMvuWrite(async () => {
@@ -207,9 +205,9 @@ export const MvuBridge = {
     });
   },
 
-  syncSubscriptionTier: async (tierLabel: string) => {
-    return enqueueMvuWrite(async () => {
-      if (typeof (globalThis as any).Mvu === 'undefined') return;
+	syncSubscriptionTier: async (tierLabel: string) => {
+		return enqueueMvuWrite(async () => {
+			if (!isMvuDefined()) return;
       const data = await getMvuData();
       if (!data) return;
 

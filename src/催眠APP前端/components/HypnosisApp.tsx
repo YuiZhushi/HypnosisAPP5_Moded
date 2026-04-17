@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { UserResources, HypnosisFeature, CustomHypnosisDef, VIP_LEVELS } from '../types';
-import { DataService, SUBSCRIPTION_PRICES } from '../services/dataService';
+import { DataService } from '../services/dataService';
+import { SUBSCRIPTION_PRICES } from '../services/constants/subscriptionConstants';
 import { MvuBridge } from '../services/mvuBridge';
 import { buildHypnosisSendMessage } from '../prompts/hypnosisSend';
 import {

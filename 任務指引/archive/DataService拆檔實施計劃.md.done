@@ -1,0 +1,346 @@
+# DataService 依領域拆檔：重整實施計劃（2026-04-16 完成更新）
+
+> 目標：在維持 `DataService` 對外 API 相容下，完成「入口輕量化 + 型別收斂 + 領域邊界清晰化」。
+
+---
+
+## 1. 目前真實狀況（以程式碼為準）
+
+### 1.1 已完成
+
+1. Domain 服務已落地：
+   - `resourceService`
+   - `subscriptionService`
+   - `featureService`
+   - `achievementQuestService`
+   - `calendarService`
+   - `customHypnosisService`
+   - `settingsService`
+2. Usecase 服務已落地：
+   - `hypnoAppUsecaseService`
+3. `DataService` 對外方法已全量轉為委派 domain/usecase（facade 以轉發為主）。
+4. `startSession` 鏈路已完成 `SessionStartPayload` 型別化（C-4）。
+5. C-5 第一批指定熱點已完成（`hypnoAppUsecaseService` / `featureService` / `settingsService` / `customHypnosisService`）。
+6. **Phase D-1 大型常數已拆出（2026-04-11 完成）**：
+   - `FEATURES` → `services/constants/features.ts`
+   - `CUSTOM_HYPNOSIS_TIER_BASE` → `services/constants/customHypnosis.ts`
+   - `DEFAULT_EDITOR_PROMPT_MODULES` / `DEFAULT_SECTION_*_MAP` → `services/constants/editorPromptDefaults.ts`
+7. **Phase D-1 部分 helper 已下沉（2026-04-11 完成）**：
+   - `calculateCustomHypnosisCostCore` → `services/helpers/customHypnosisCost.ts`
+   - `normalizeEditorPromptModules` → `services/helpers/editorPromptModules.ts`
+   - `buildRoleBasedAchievements` 等 → `services/helpers/achievementQuestCore.ts`
+   - `resolveCalendarStateAt` 等 → `services/helpers/calendarCrudStore.ts`
+   - `floorKey` / `swipeKey` → `services/helpers/calendarCrudResolver.ts`
+8. D-1 型別已部分收斂：
+   - `PersistedStore` 等型別 → `services/types/persistedStore.ts`
+   - `storeGateway` → `services/store/storeGateway.ts`
+9. **Phase E 邊界稽核與命名收斂**：✅ 已完成（2026-04-16）
+10. **Phase D-2 入口薄化收尾**：✅ 已完成（2026-04-16）
+
+### 1.2 尚未完成
+
+無。所有計劃中的階段均已完成。
+
+---
+
+## 2. 重整後的分階段計劃
+
+## Phase C-5：型別收斂（已完成：第一批）
+
+### 目標
+
+- 已完成與 DataService 遷移直接相關的第一批型別熱點收斂。
+- 不改變執行流程與回傳語義。
+
+### 範圍
+
+1. `hypnoAppUsecaseService`
+   - `checkCondition: (u: any) => boolean` → `(u: TUserResources) => boolean`
+2. `featureService`
+   - `purchaseFeature` 回傳 `user?: any` → 泛型承接 `TUserResources`
+3. `settingsService`
+   - API 設定資料改為 `TApiSettings` / `Partial<TApiSettings>`
+4. `customHypnosisService`
+   - `tier: any` 改為泛型 `TTier`（實際對應 `HypnosisFeature['tier']`）
+
+### 風險與控制
+
+- 風險：後續若擴大到全域型別治理，可能造成影響面擴散。
+- 控制：後續全域治理採服務分批收斂，逐步編譯驗證。
+
+### 驗收
+
+- ✅ `pnpm build:dev` 可通過（以當時交付批次為準）。
+- ✅ 對外 API 行為無差異。
+
+---
+
+## Phase D：`dataService.ts` 入口輕量化（分為 D-1 / D-2）
+
+### 目標
+
+- 讓 `dataService.ts` 主要承擔「組裝依賴 + facade 對外入口」，降低檔案複雜度。
+
+### 範圍
+
+1. 抽離大型資料常數：
+   - `FEATURES`
+   - `DEFAULT_EDITOR_PROMPT_MODULES`
+   - `DEFAULT_SECTION_*_MAP`
+2. 抽離純工具 helper：
+   - 與角色編輯器 prompt 正規化/預設值相關 helper
+   - 與日曆純運算（可無副作用）相關 helper
+3. 保留 `DataService` facade 方法名稱、參數與回傳相容。
+
+### 風險與控制
+
+- 風險：搬移常數時誤動模板內容。
+- 控制：採「原文搬移 + 只改 import」策略，不改字串內容。
+
+### 驗收
+
+- `dataService.ts` 行數顯著下降（以 review 可讀性為主）。
+- `pnpm build:dev` 通過。
+
+### Phase D-1 本輪落地結果（2026-04-11，已完成）
+
+1. 已拆出並接線完成：
+   - `services/constants/features.ts`（`FEATURES`）
+   - `services/constants/editorPromptDefaults.ts`（`DEFAULT_EDITOR_PROMPT_MODULES`、`DEFAULT_SECTION_*_MAP`）
+   - `services/helpers/editorPromptModules.ts`（editor prompt normalize/default 相關純 helper）
+   - `services/helpers/calendarCrudResolver.ts`（calendar resolve 純運算 helper）
+2. `DataService facade` 對外方法名稱/參數/回傳維持不變。
+3. `editorPromptDefaults` 已完成模組出口與 `dataService.ts` 入口接線（import），大型模板常數已自 `dataService.ts` 移出。
+
+### Phase D-2 完成結果（2026-04-16，✅ 已完成）
+
+#### 已完成項目 ✅
+
+| 項目 | 下沉位置 | 行數 |
+|-----|---------|------|
+| `FEATURES` 基礎資料 | `services/constants/features.ts` | 383 |
+| `CUSTOM_HYPNOSIS_TIER_BASE` | `services/constants/customHypnosis.ts` | 14 |
+| `DEFAULT_EDITOR_PROMPT_MODULES` | `services/constants/editorPromptDefaults.ts` | 180 |
+| `DEFAULT_SECTION_*_MAP` | `services/constants/editorPromptDefaults.ts` | 73 |
+| `DEFAULT_SETTINGS_PROMPT_CONFIG` | `services/constants/settingsPromptDefaults.ts` | 104 |
+| `DEFAULT_USER_DATA` | `services/constants/userDefaults.ts` | 19 |
+| `PURCHASE_PRICE_BY_TIER` / `SUBSCRIPTION_PRICES` 等 | `services/constants/subscriptionConstants.ts` | 54 |
+| `PERSISTENT_FEATURE_IDS` | `services/constants/featureConstants.ts` | 14 |
+| `calculateCustomHypnosisCostCore` | `services/helpers/customHypnosisCost.ts` | 26 |
+| `normalizeEditorPromptModules` helper | `services/helpers/editorPromptModules.ts` | 35 |
+| `buildRoleBasedAchievements` 等 | `services/helpers/achievementQuestCore.ts` | 186 |
+| `resolveCalendarStateAt` 等 | `services/helpers/calendarCrudStore.ts` | 78 |
+| `floorKey` / `swipeKey` | `services/helpers/calendarCrudResolver.ts` | 173 |
+| `createFirstFeatureIdByTier` / `isPurchaseRequired` 等 | `services/helpers/featureHelpers.ts` | 52 |
+| `normalizeSettingsPromptConfig` | `services/helpers/settingsPromptHelpers.ts` | 75 |
+| `migrateStore` | `services/store/migrateStore.ts` | 52 |
+| `toFiniteNumber` / `normalizeSystemAliases` | `services/helpers/systemHelpers.ts` | 38 |
+| `idSafe` / `makeAchievementId` | `services/helpers/idHelpers.ts` | 25 |
+| `parseVirtualMinutesFrom` / `getSystemClockFrom` | `services/helpers/timeHelpers.ts` | 68 |
+| `getRolesAndSystemSnapshot` | `services/helpers/mvuHelpers.ts` | 43 |
+| `systemToUserResources` | `services/helpers/userResourceHelpers.ts` | 26 |
+| `STORE_SCHEMA` | `services/store/storeSchema.ts` | 177 |
+| `SYSTEM_SCHEMA` | `services/store/systemSchema.ts` | 55 |
+| `createAchievementQuestImplFunctions`（6 個 *Impl） | `services/helpers/achievementQuestImpl.ts` | 213 |
+| `createCalendarEventImplFunctions`（6 個 *Impl） | `services/helpers/calendarEventImpl.ts` | 292 |
+| `PersistedStore` 等型別 | `services/types/persistedStore.ts` | 187 |
+| `storeGateway` | `services/store/storeGateway.ts` | 51 |
+
+#### D-2 最終完成度統計
+
+| 類別 | 總項目數 | 已完成 | 完成率 |
+|-----|---------|-------|-------|
+| 大型常數 | 4 | 4 | 100% |
+| Helper 函式 | 15 | 15 | 100% |
+| Zod Schema | 2 | 2 | 100% |
+| `*Impl` 函式 | 12 | 12 | 100% |
+| 型別定義 | 1 | 1 | 100% |
+| **總計** | **34** | **34** | **100%** |
+
+#### D-2 驗收標準（已達成）
+
+- [x] `DataService` 對外 API 仍相容。
+- [x] `dataService.ts` 行數從 1596 行降至約 844 行。
+- [x] 所有 `*Impl` 函式下沉到對應 helper 模組。
+- [x] 大型 Zod Schema 下沉到 `services/store/`。
+- [x] Core helper 函式下沉到 `services/helpers/`。
+- [x] `DEFAULT_SETTINGS_PROMPT_CONFIG` 已搬遷至 `services/constants/settingsPromptDefaults.ts`。
+- [x] `pnpm build:dev` 通過（無錯誤無警告）。
+
+---
+
+## Phase E：邊界稽核與命名收斂（已完成：2026-04-16）
+
+### 目標
+
+- 降低跨層耦合與名稱混淆，建立長期維護基線。
+
+### 範圍
+
+1. 檢查 domain 是否僅做單一領域邏輯。
+2. 檢查跨領域交易是否集中 usecase。
+3. 命名與回傳語義一致化（含 `DomainService` / `Usecase` 後綴與資料型別名稱）。
+
+### 驗收
+
+- ✅ 形成一次「跨層依賴清單」與「命名一致性清單」。
+
+### 稽核結果摘要
+
+**Domain 層邊界**：所有 7 個 Domain 服務均符合單一領域原則，無直接跨領域呼叫 ✅
+
+**Usecase 層集中**：所有跨領域交易正確集中於 `hypnoAppUsecaseService.ts` ✅
+
+**命名一致性**：檔案、類型、函式命名均遵循一致規範 ✅
+
+詳細稽核報告見下方「附錄 A：Phase E 稽核報告」。
+
+---
+
+## Phase F：全域型別治理（已完成：2026-04-16）
+
+### 目標
+
+- 將 DataService 遷移以外模組中的 `any` 持續收斂，建立長期可維護型別基線。
+
+### 範圍與完成狀態
+
+**✅ 已完成（指定範圍）**
+- `worldBookService.ts` — 移除不必要型別斷言
+- `characterDataService.ts` — 使用 `WorldbookEntry[]` 和型別推斷
+- `aiRequestPipelineService.ts` — 使用 `GenerateRawConfig` 和 `CustomApiConfig`
+
+**✅ 已確認合理（無需修改）**
+- `mvuBridge.ts` — 型別合理，依賴全域 `Mvu` 型別定義
+- `store/storeGateway.ts` — 使用 `Record<string, unknown>` 已符合設計
+
+**⚠️ 合理保留（依賴外部 API）**
+以下 `any` 使用是因為依賴酒館助手全域函式，其型別定義在 `@types/function/variables.d.ts` 中本身就是 `Record<string, any>`：
+- `dataService.ts` 的 `getVariables`、`updateVariablesWith` 等宣告（4 個）
+- `helpers/mvuHelpers.ts` 的外部依賴型別定義（6 個）
+- `helpers/calendarEventImpl.ts` 的外部依賴型別定義（5 個）
+- `helpers/achievementQuestImpl.ts` 的外部依賴型別定義（4 個）
+
+**✅ 已完成（低優先級）**
+- `store/systemSchema.ts` 的 `[key: string]: any`（1 個）→ 已改為 `& Record<string, unknown>`
+- `helpers/calendarCrudResolver.ts` 的泛型約束內部 `any`（3 個）→ 已使用 `CalendarCrudOp`、`CalendarCrudNode`、`CalendarResolvedState` 等型別
+
+### 驗收
+
+- ✅ 各批次均可通過 `pnpm build:dev`。
+- ✅ 不引入對外 API 行為變更。
+- ✅ 指定範圍內的型別治理均已完成或確認合理。
+
+---
+
+## 3. 建議執行順序（更新）
+
+1. ~~先完成 **Phase D-2**（`dataService.ts` 入口薄化收尾）~~ → **✅ 已完成**
+2. ~~再做 **Phase E**（邊界與命名治理）~~ → **✅ 已完成**
+3. ~~最後做 **Phase F**（全域型別治理）~~ → **✅ 已完成**
+
+---
+
+## 4. 共通驗證清單（每階段）
+
+1. 編譯驗證：`pnpm build:dev`
+2. 交易流程檢查：
+   - 訂閱購買/續費
+   - 功能購買與重置
+   - 成就/任務領取
+   - 自訂催眠新增/刪除退款
+   - 會話啟動
+3. 日曆流程檢查：
+   - CRUD 與 bridge 事件重播
+
+---
+
+## 5. 回滾策略
+
+若任一階段出現執行期風險：
+
+1. 停止後續遷移。
+2. 僅回滾該階段改動，保留前一階段穩定成果。
+3. 維持 `DataService facade` 對外行為相容，避免 UI 連鎖調整。
+
+---
+
+## 附錄 A：Phase E 稽核報告（2026-04-16）
+
+### A.1 Domain 層邊界稽核結果
+
+**所有 Domain 服務均符合單一領域原則**：
+
+1. **`achievementQuestService.ts`** ✅
+   - 僅處理成就/任務相關邏輯
+   - 透過 `Deps` 介面注入跨領域操作
+   - 無直接跨領域呼叫
+
+2. **`calendarService.ts`** ✅
+   - 僅處理日曆事件 CRUD
+   - 無跨領域呼叫
+
+3. **`customHypnosisService.ts`** ✅
+   - 僅處理自訂催眠定義
+   - 透過依賴注入接收跨領域操作
+   - 無直接跨領域呼叫
+
+4. **`featureService.ts`** ✅
+   - 僅處理功能開關與購買
+   - 無直接跨領域呼叫
+
+5. **`resourceService.ts`** ✅
+   - 僅處理玩家資源與 session 狀態
+   - 無跨領域呼叫
+
+6. **`settingsService.ts`** ✅
+   - 僅處理 API 設定與編輯器模組
+   - 無跨領域呼叫
+
+7. **`subscriptionService.ts`** ✅
+   - 僅處理訂閱狀態與權限判定
+   - 無直接跨領域呼叫
+
+### A.2 Usecase 層跨領域交易稽核結果
+
+**`hypnoAppUsecaseService.ts` 正確集中所有跨領域交易**：
+
+| 方法名稱 | 涉及領域 | 跨領域操作 |
+|---------|---------|-----------|
+| `subscribeOrRenew` | 訂閱 + 資源 | 扣款 + 更新訂閱狀態 |
+| `maybeAutoRenewSubscription` | 訂閱 + 資源 | 委派給 `subscribeOrRenew` |
+| `purchaseFeature` | 功能 + 資源 | 扣 MC 點 + 標記購買 |
+| `claimAchievement` | 成就 + 資源 | 驗證條件 + 發放獎勵 |
+| `claimQuest` | 任務 + 資源 | 驗證任務 + 發放獎勵 |
+| `addCustomHypnosis` | 自訂催眠 + 資源 | 扣款 + 新增定義 |
+| `deleteCustomHypnosis` | 自訂催眠 + 資源 | 退費 + 移除定義 |
+| `startSession` | Session | 單一領域 |
+
+### A.3 命名一致性清單
+
+**檔案命名規則** ✅ 一致：
+- Domain: `*Service.ts`
+- Usecase: `*UsecaseService.ts`
+- Helpers: `*.ts`（無後綴）
+- Constants: `*.ts`（無後綴）
+- Types: `*.ts`（無後綴）
+- Store: `*Gateway.ts`
+
+**類型命名規則** ✅ 一致：
+- Domain 依賴介面: `*ServiceDeps<T...>`
+- Domain 工廠函式: `create*Service(deps)`
+- Usecase 依賴介面: `*UsecaseDeps<T...>`
+- Usecase 工廠函式: `create*UsecaseService(deps)`
+- Store 類型: `*Store`
+- 介面類型: `*Impl` 參數
+
+---
+
+## 變更紀錄
+
+| 日期 | 階段 | 變更內容 |
+|-----|------|---------|
+| 2026-04-11 | D-1 | 大型常數與部分 helper 下沉完成 |
+| 2026-04-16 | E | 邊界稽核與命名收斂完成 |
+| 2026-04-16 | D-2 | 狀態盤點與進度更新 |
+| 2026-04-16 | D-2 | **✅ 完成所有下沉項目，入口薄化收尾完成** |

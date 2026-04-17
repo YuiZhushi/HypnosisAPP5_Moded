@@ -11,12 +11,12 @@ import type { EditorNode, NodeType } from '../types';
 
 // iframe 全域函數宣告
 declare function getCharWorldbookNames(target: string): { primary: string | null };
-declare function getWorldbook(name: string): Promise<any[]>;
+declare function getWorldbook(name: string): Promise<WorldbookEntry[]>;
 declare function updateWorldbookWith(
   worldbook_name: string,
-  updater: (worldbook: any[]) => any[] | Promise<any[]>,
+  updater: (worldbook: WorldbookEntry[]) => PartialDeep<WorldbookEntry>[] | Promise<PartialDeep<WorldbookEntry>[]>,
   options?: { render?: 'debounced' | 'immediate' },
-): Promise<any[]>;
+): Promise<WorldbookEntry[]>;
 
 // ========== Constants ==========
 
@@ -593,11 +593,11 @@ export async function loadCharacter(charName: string): Promise<LoadResult> {
     console.info(`[HypnoOS] characterDataService: 世界書名稱 = ${wbName}`);
 
     // 2. 讀取所有條目，找到角色條目
-    const entries = await getWorldbook(wbName);
-    const plotEntry = entries.find((e: any) => {
-      const m = PLOT_ENTRY_RE.exec(e.name);
-      return m && m[1] === charName;
-    });
+	const entries = await getWorldbook(wbName);
+	const plotEntry = entries.find(e => {
+		const m = PLOT_ENTRY_RE.exec(e.name);
+		return m && m[1] === charName;
+	});
 
     if (!plotEntry) {
       console.info(`[HypnoOS] characterDataService: 未找到「${charName}」的世界書條目`);
@@ -605,8 +605,8 @@ export async function loadCharacter(charName: string): Promise<LoadResult> {
       return { sectionData, rawFallbacks, behaviorData, entryUid, rawContent };
     }
 
-    entryUid = (plotEntry as any).uid ?? null;
-    rawContent = (plotEntry as any).content ?? '';
+	entryUid = plotEntry.uid?.toString() ?? null;
+	rawContent = plotEntry.content ?? '';
     console.info(`[HypnoOS] characterDataService: 找到條目 uid=${entryUid}, 內容長度=${rawContent.length}`);
 
     // 3. 拆出人設 XML 區段
@@ -1046,9 +1046,9 @@ export async function saveCharacter(
     // 4. 回寫世界書
     if (entryUid) {
       let updated = false;
-      await updateWorldbookWith(wbName, worldbook => {
-        return worldbook.map((entry: any) => {
-          const hit = String(entry?.uid) === String(entryUid);
+		await updateWorldbookWith(wbName, worldbook => {
+			return worldbook.map(entry => {
+				const hit = String(entry?.uid) === String(entryUid);
           if (hit) {
             updated = true;
             return { ...entry, content: fullContent };
