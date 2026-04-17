@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # MCP
 
 ## chrome-devtools: 自行阅读和操控酒馆网页
