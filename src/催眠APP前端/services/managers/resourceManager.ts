@@ -2,35 +2,22 @@ import type { PersistedStore } from '../types/persistedStore';
 import type { SubscriptionState } from '../access';
 import { getBodyStatsUnlocked, isSubscriptionActive } from '../access';
 import { SUBSCRIPTION_TIER_TRIAL_LABEL } from '../constants/subscriptionConstants';
-import { normalizeChatVariables as normalizeChatVariablesType } from '../store/storeGateway';
-
 import type { SessionStartPayload, UserResources } from '../../types';
 import { SUBSCRIPTION_PRICES, SUBSCRIPTION_WEEK_MINUTES } from '../constants/subscriptionConstants';
 import type { SubscriptionTier } from '../access';
+import {
+  readStoreSnapshot,
+  updateStoreWith,
+  setSubscriptionTierLabel,
+  getSystemClockCore,
+  normalizeChatVariables,
+  CHAT_OPTION,
+  getUserDataCore,
+  updateResourcesCore,
+  getVariables,
+} from './systemCoreManager';
 
-export function createResourceManager(deps: {
-  readStoreSnapshot: () => PersistedStore;
-  updateStoreWith: (updater: (store: PersistedStore) => PersistedStore | Promise<PersistedStore>) => Promise<PersistedStore>;
-  setSubscriptionTierLabel: (tierLabel: string) => Promise<void>;
-  getSystemClockCore: () => Promise<{ dateText?: string; timeText?: string; virtualMinutes: number | null }>;
-  normalizeChatVariables: any; // Using any for simplicity in this extraction, or proper type
-  getVariables: (option?: any) => any;
-  CHAT_OPTION: { type: 'chat' };
-  getUserDataCore: () => Promise<UserResources>;
-  updateResourcesCore: (patch: Partial<UserResources>) => Promise<UserResources>;
-}) {
-  const {
-    readStoreSnapshot,
-    updateStoreWith,
-    setSubscriptionTierLabel,
-    getSystemClockCore,
-    normalizeChatVariables,
-    getVariables,
-    CHAT_OPTION,
-    getUserDataCore,
-    updateResourcesCore,
-  } = deps;
-
+export function createResourceManager() {
   function getSessionEndImpl(): { endVirtualMinutes: number | null; endAtMs: number | null } {
     const store = readStoreSnapshot();
     return {

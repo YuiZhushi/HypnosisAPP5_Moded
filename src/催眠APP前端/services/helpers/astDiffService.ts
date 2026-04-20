@@ -1,4 +1,4 @@
-import { CharacterCompletionAppDiffProposal, EditorNode } from '../types';
+import { AstDiffProposal, EditorNode } from '../../types';
 
 let _diffCounter = 0;
 function nextDiffId(): string {
@@ -42,7 +42,7 @@ function findOldNodeFuzzy(oldMap: Map<string, EditorNode>, newKey: string): { no
   return null;
 }
 
-export const CharacterCompletionAppDiffService = {
+export const AstDiffService = {
   /**
    * Recursively compares old and new EditorNode arrays to build a list of diff proposals.
    */
@@ -51,8 +51,8 @@ export const CharacterCompletionAppDiffService = {
     newNodes: EditorNode[],
     sectionId: string,
     branchId?: string
-  ): CharacterCompletionAppDiffProposal[] {
-    const proposals: CharacterCompletionAppDiffProposal[] = [];
+  ): AstDiffProposal[] {
+    const proposals: AstDiffProposal[] = [];
 
     function extractValue(node: EditorNode): any {
       if (node.type === 'string') return node.value;

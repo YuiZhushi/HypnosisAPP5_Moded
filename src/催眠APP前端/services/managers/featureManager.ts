@@ -6,26 +6,20 @@ import { canUseFeature as canUseFeatureBySubscription, type AccessContext } from
 import { FEATURES, PERSISTENT_FEATURE_IDS } from '../constants/features';
 import { PURCHASE_PRICE_BY_TIER } from '../constants/subscriptionConstants';
 
+import {
+  readStoreSnapshot,
+  updateStoreWith,
+  normalizeChatVariables,
+  CHAT_OPTION,
+  getUserDataCore,
+  updateResourcesCore,
+  getVariables,
+} from './systemCoreManager';
+
 export function createFeatureManager(deps: {
-  readStoreSnapshot: () => PersistedStore;
-  updateStoreWith: (updater: (store: PersistedStore) => PersistedStore | Promise<PersistedStore>) => Promise<PersistedStore>;
-  normalizeChatVariables: any;
-  getVariables: (option?: any) => any;
-  CHAT_OPTION: { type: 'chat' };
   FIRST_FEATURE_ID_BY_TIER: Record<string, string>;
-  getUserDataCore: () => Promise<UserResources>;
-  updateResourcesCore: (patch: Partial<UserResources>) => Promise<UserResources>;
 }) {
-  const {
-    readStoreSnapshot,
-    updateStoreWith,
-    normalizeChatVariables,
-    getVariables,
-    CHAT_OPTION,
-    FIRST_FEATURE_ID_BY_TIER,
-    getUserDataCore,
-    updateResourcesCore,
-  } = deps;
+  const { FIRST_FEATURE_ID_BY_TIER } = deps;
 
   async function getFeaturesImpl(): Promise<HypnosisFeature[]> {
     const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));

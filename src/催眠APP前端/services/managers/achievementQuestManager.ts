@@ -186,27 +186,23 @@ export function mergeAchievementsWithClaimed(
   return all.map(a => ({ ...a, isClaimed: store.achievements[a.id] ?? false }));
 }
 
-// 外部依賴類型定義
-type NormalizeChatVariablesFn = (vars: any) => { system: any; store: PersistedStore };
-type GetUserDataCoreFn = () => Promise<{ mcPoints: number; money: number }>;
-type UpdateResourcesCoreFn = (patch: { money?: number }) => Promise<UserResources>;
-type UpdateStoreWithFn = (callback: (store: PersistedStore) => PersistedStore) => Promise<PersistedStore>;
+import {
+  normalizeChatVariables,
+  CHAT_OPTION,
+  updateStoreWith,
+  getUserDataCore,
+  updateResourcesCore,
+  getVariables,
+} from './systemCoreManager';
 
 /**
- * 建立 Achievement/Quest *Impl 函式的工廠函式喵~
+ * 撱箇? Achievement/Quest *Impl ?賢??極撱撘~
  */
 export function createAchievementQuestImplFunctions(deps: {
-  normalizeChatVariables: NormalizeChatVariablesFn;
-  getVariables: (option?: any) => any;
-  CHAT_OPTION: { type: 'chat' };
-  getUserDataCore: GetUserDataCoreFn;
-  updateResourcesCore: UpdateResourcesCoreFn;
-  updateStoreWith: UpdateStoreWithFn;
   toFiniteNumber: (value: unknown) => number | null;
   makeAchievementId: (prefix: string, ...parts: string[]) => string;
   getRolesAndSystemSnapshot: () => Promise<{ system: Record<string, any>; roles: Record<string, any> }>;
 }) {
-  const { normalizeChatVariables, getVariables, CHAT_OPTION, getUserDataCore, updateResourcesCore, updateStoreWith } = deps;
 
   const QUEST_DATABASE = validateQuestDb(QUEST_DB);
   const findQuestDefById = (id: string, store: PersistedStore): QuestDefinition | null =>

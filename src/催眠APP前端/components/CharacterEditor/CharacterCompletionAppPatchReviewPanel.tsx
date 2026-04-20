@@ -2,28 +2,29 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Check, X, CheckSquare, Settings, ArrowRight, CornerDownRight, Box, ChevronRight, ChevronDown } from 'lucide-react';
 import YAML from 'yaml';
 import { 
-  CharacterCompletionAppAiPatchResult, 
-  CharacterCompletionAppDiffProposal, 
-  CharacterCompletionAppReviewDecision,
-  CharacterCompletionAppApplyResult,
+  AiPatchResult, 
+  AstDiffProposal, 
+  ReviewDecision,
+  AstApplyResult,
   EditorNode,
   EDITOR_SECTIONS
 } from '../../types';
-import { CharacterCompletionAppDiffService } from '../../services/characterCompletionAppDiffService';
-import { CharacterCompletionAppMergeService } from '../../services/characterCompletionAppMergeService';
-import { yamlToTree, parseBehaviorBranchesFromRaw } from '../../services/characterDataService';
-import type { BehaviorBranch } from '../../services/characterDataService';
+import { AstDiffService } from '../../services/helpers/astDiffService';
+import { AstMergeService } from '../../services/helpers/astMergeService';
+import type { BehaviorBranch } from '../../services/helpers/behaviorBranchHelper';
+import { parseBehaviorBranchesFromRaw } from '../../services/helpers/behaviorBranchHelper';
+import { yamlToTree } from '../../services/helpers/astYamlHelper';
 
 interface CharacterCompletionAppPatchReviewPanelProps {
   mode: 'current' | 'all';
   activeTab: string;
   activeBranchId?: string;
-  patchResult: CharacterCompletionAppAiPatchResult;
+  patchResult: AiPatchResult;
   mainSectionData: Record<string, EditorNode[]>;
   mainBehaviorData: Record<string, BehaviorBranch[]>;
   onClose: () => void;
   onApply: (
-    applyResult: CharacterCompletionAppApplyResult, 
+    applyResult: AstApplyResult, 
     newSectionData: Record<string, EditorNode[]>, 
     newBehaviorData: Record<string, BehaviorBranch[]>
   ) => void;
@@ -39,14 +40,14 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
   onClose,
   onApply
 }) => {
-  const [proposals, setProposals] = useState<CharacterCompletionAppDiffProposal[]>([]);
-  const [decisions, setDecisions] = useState<Record<string, CharacterCompletionAppReviewDecision>>({});
+  const [proposals, setProposals] = useState<AstDiffProposal[]>([]);
+  const [decisions, setDecisions] = useState<Record<string, ReviewDecision>>({});
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
 
   // ===== Parser & Differ =====
   useEffect(() => {
-    let newProposals: CharacterCompletionAppDiffProposal[] = [];
+    let newProposals: AstDiffProposal[] = [];
 
     const isBehavior = EDITOR_SECTIONS.find(s => s.id === activeTab)?.category === 'behavior';
 
@@ -56,7 +57,7 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
           const parsed = YAML.parse(patchResult.yamlRaw || '{}');
           const newNodes = yamlToTree(parsed);
           const oldNodes = mainSectionData[activeTab] || [];
-          newProposals = CharacterCompletionAppDiffService.characterCompletionAppBuildDiffProposals(oldNodes, newNodes, activeTab);
+          newProposals = AstDiffService.characterCompletionAppBuildDiffProposals(oldNodes, newNodes, activeTab);
         } else {
           let isRawEjs = false;
           let parsedBranches: BehaviorBranch[] = [];
@@ -75,7 +76,7 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
                 const oldBranch = currentBranches.find(ob => ob.operator === nb.operator && ob.threshold === nb.threshold) 
                                || currentBranches.find(ob => ob.kind === 'else' && nb.kind === 'else');
                 if (oldBranch) {
-                    const p = CharacterCompletionAppDiffService.characterCompletionAppBuildDiffProposals(oldBranch.nodes || [], nb.nodes || [], activeTab, oldBranch.branchId);
+                    const p = AstDiffService.characterCompletionAppBuildDiffProposals(oldBranch.nodes || [], nb.nodes || [], activeTab, oldBranch.branchId);
                     newProposals = newProposals.concat(p);
                 }
              }
@@ -85,7 +86,7 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
              const currentBranches = mainBehaviorData[activeTab] || [];
              const activeBranch = currentBranches.find(b => b.branchId === activeBranchId) || currentBranches[0];
              const oldNodes = activeBranch?.nodes || [];
-             newProposals = CharacterCompletionAppDiffService.characterCompletionAppBuildDiffProposals(oldNodes, newNodes, activeTab, activeBranchId);
+             newProposals = AstDiffService.characterCompletionAppBuildDiffProposals(oldNodes, newNodes, activeTab, activeBranchId);
           }
         }
       } else {
@@ -124,7 +125,7 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
         for (const [secId, dataObj] of Object.entries(sectionTempData)) {
           const newNodes = yamlToTree(dataObj);
           const oldNodes = mainSectionData[secId] || [];
-          const p = CharacterCompletionAppDiffService.characterCompletionAppBuildDiffProposals(oldNodes, newNodes, secId);
+          const p = AstDiffService.characterCompletionAppBuildDiffProposals(oldNodes, newNodes, secId);
           newProposals = newProposals.concat(p);
         }
 
@@ -187,7 +188,7 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
                     const currentBranches = mainBehaviorData[secId] || [];
                     const defaultBranch = currentBranches[0];
                     const oldNodes = defaultBranch?.nodes || [];
-                    const p = CharacterCompletionAppDiffService.characterCompletionAppBuildDiffProposals(oldNodes, newNodes, secId, defaultBranch?.branchId);
+                    const p = AstDiffService.characterCompletionAppBuildDiffProposals(oldNodes, newNodes, secId, defaultBranch?.branchId);
                     newProposals = newProposals.concat(p);
                   }
                 } catch (e) {
@@ -214,11 +215,11 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
               const oldBranch = currentBranches.find(ob => ob.operator === nb.operator && ob.threshold === nb.threshold) 
                              || currentBranches.find(ob => ob.kind === 'else' && nb.kind === 'else');
               if (oldBranch) {
-                const p = CharacterCompletionAppDiffService.characterCompletionAppBuildDiffProposals(oldBranch.nodes || [], nb.nodes || [], secId, oldBranch.branchId);
+                const p = AstDiffService.characterCompletionAppBuildDiffProposals(oldBranch.nodes || [], nb.nodes || [], secId, oldBranch.branchId);
                 newProposals = newProposals.concat(p);
               } else {
                 // New branch that doesn't exist in current data — generate add proposals for all nodes
-                const p = CharacterCompletionAppDiffService.characterCompletionAppBuildDiffProposals([], nb.nodes || [], secId);
+                const p = AstDiffService.characterCompletionAppBuildDiffProposals([], nb.nodes || [], secId);
                 newProposals = newProposals.concat(p);
               }
             }
@@ -262,7 +263,7 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
             const currentBranches = mainBehaviorData[secId] || [];
             const defaultBranch = currentBranches[0];
             const oldNodes = defaultBranch?.nodes || [];
-            const p = CharacterCompletionAppDiffService.characterCompletionAppBuildDiffProposals(oldNodes, newNodes, secId, defaultBranch?.branchId);
+            const p = AstDiffService.characterCompletionAppBuildDiffProposals(oldNodes, newNodes, secId, defaultBranch?.branchId);
             newProposals = newProposals.concat(p);
           }
         }
@@ -271,7 +272,7 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
       setProposals(newProposals);
       
       // Initialize decisions
-      const initDecisions: Record<string, CharacterCompletionAppReviewDecision> = {};
+      const initDecisions: Record<string, ReviewDecision> = {};
       for (const p of newProposals) {
          initDecisions[p.id] = p.defaultDecision;
       }
@@ -285,14 +286,14 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
   }, [patchResult, mode, activeTab, activeBranchId, mainSectionData, mainBehaviorData]);
 
   // ===== Handlers =====
-  const toggleDecision = (id: string, decision?: CharacterCompletionAppReviewDecision) => {
+  const toggleDecision = (id: string, decision?: ReviewDecision) => {
     setDecisions(prev => ({
       ...prev,
       [id]: decision || (prev[id] === 'accept' ? 'reject' : 'accept')
     }));
   };
 
-  const setGroupDecision = (pathPrefix: string, decision: CharacterCompletionAppReviewDecision) => {
+  const setGroupDecision = (pathPrefix: string, decision: ReviewDecision) => {
     setDecisions(prev => {
       const next = { ...prev };
       for (const p of proposals) {
@@ -335,14 +336,14 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
     const nextSectionData = { ...mainSectionData };
     const nextBehaviorData = { ...mainBehaviorData };
 
-    const bySectionBranch: Record<string, CharacterCompletionAppDiffProposal[]> = {};
+    const bySectionBranch: Record<string, AstDiffProposal[]> = {};
     for (const p of proposals) {
       const key = `${p.sectionId}::${p.branchId || ''}`;
       bySectionBranch[key] = bySectionBranch[key] || [];
       bySectionBranch[key].push(p);
     }
 
-    const globalStats: CharacterCompletionAppApplyResult = {
+    const globalStats: AstApplyResult = {
       appliedCount: 0, rejectedCount: 0, skippedCount: 0, conflictCount: 0, updatedSections: []
     };
 
@@ -353,7 +354,7 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
       const isBehavior = EDITOR_SECTIONS.find(s => s.id === secId)?.category === 'behavior';
 
       if (!isBehavior) {
-        const out = CharacterCompletionAppMergeService.characterCompletionAppApplyApprovedProposals(
+        const out = AstMergeService.characterCompletionAppApplyApprovedProposals(
           ps, decisions, nextSectionData[secId] || []
         );
         nextSectionData[secId] = out.nodes;
@@ -365,7 +366,7 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
         const branches = nextBehaviorData[secId] || [];
         const bIdx = branches.findIndex(b => b.branchId === brId);
         if (bIdx >= 0) {
-          const out = CharacterCompletionAppMergeService.characterCompletionAppApplyApprovedProposals(
+          const out = AstMergeService.characterCompletionAppApplyApprovedProposals(
             ps, decisions, branches[bIdx].nodes || []
           );
           branches[bIdx] = { ...branches[bIdx], nodes: out.nodes, yamlRaw: '' }; // invalidate yamlRaw
