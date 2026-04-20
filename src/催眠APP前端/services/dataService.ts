@@ -5,7 +5,7 @@
  * 1. 組裝依賴
  * 2. 作為 facade 對外入口
  * 
- * 所有實作都已下沉到對應的 helper / constant / store 模組喵~
+ * 所有實作都已下沉到對應的 helper / constant / store 模組與 managers 喵~
  */
 
 import { z } from 'zod';
@@ -24,8 +24,6 @@ import {
 } from '../types';
 import {
   canSubscribeTier,
-  canUseFeature as canUseFeatureBySubscription,
-  getBodyStatsUnlocked,
   getSubscriptionUnlockThreshold,
   isSubscriptionActive,
   SUBSCRIPTION_TIERS,
@@ -35,14 +33,6 @@ import {
 } from './access';
 import { MvuBridge } from './mvuBridge';
 import { createStoreGateway } from './store/storeGateway';
-import { createHypnoAppUsecaseService } from './usecases/hypnoAppUsecaseService';
-import { createSettingsService } from './domain/settingsService';
-import { createCustomHypnosisService } from './domain/customHypnosisService';
-import { createResourceService } from './domain/resourceService';
-import { createSubscriptionService } from './domain/subscriptionService';
-import { createFeatureService } from './domain/featureService';
-import { createAchievementQuestService } from './domain/achievementQuestService';
-import { createCalendarService } from './domain/calendarService';
 
 // === 常數模組 ===
 import { CUSTOM_HYPNOSIS_TIER_BASE } from './constants/customHypnosis';
@@ -52,7 +42,7 @@ import {
   DEFAULT_SECTION_FORMATS_MAP,
   DEFAULT_SECTION_INSTRUCTIONS_MAP,
 } from './constants/editorPromptDefaults';
-import { FEATURES as FEATURES_BASE } from './constants/features';
+import { FEATURES as FEATURES_BASE, PERSISTENT_FEATURE_IDS } from './constants/features';
 import {
   DEFAULT_SETTINGS_PROMPT_CONFIG,
   cloneSettingsPromptConfig,
@@ -68,26 +58,10 @@ import {
   SUBSCRIPTION_TIER_TRIAL_LABEL,
   getSubscriptionTierLabel,
 } from './constants/subscriptionConstants';
-import { PERSISTENT_FEATURE_IDS } from './constants/featureConstants';
 
 // === Helper 模組 ===
 import { calculateCustomHypnosisCostCore } from './helpers/customHypnosisCost';
 import { normalizeEditorPromptModules as normalizeEditorPromptModulesHelper } from './helpers/editorPromptModules';
-import {
-  buildRoleBasedAchievements,
-  findQuestDef,
-  mergeAchievementsWithClaimed,
-  resolveQuestStatus,
-  validateQuestDb,
-} from './helpers/achievementQuestCore';
-import {
-  cleanupAfterRollback as cleanupAfterRollbackCalendarStore,
-  ensureCalendarCrud,
-  ensureNode,
-  getCurrentFloorAndSwipe as getCurrentFloorAndSwipeFromStoreHelper,
-  resolveCalendarStateAt as resolveCalendarStateAtStore,
-} from './helpers/calendarCrudStore';
-import { floorKey, swipeKey } from './helpers/calendarCrudResolver';
 import { toFiniteNumber, normalizeSystemAliases } from './helpers/systemHelpers';
 import { idSafe, makeAchievementId } from './helpers/idHelpers';
 import { parseVirtualMinutesFrom, getSystemClockFrom } from './helpers/timeHelpers';
@@ -95,8 +69,24 @@ import { normalizeSettingsPromptConfig } from './helpers/settingsPromptHelpers';
 import { createFirstFeatureIdByTier, isPurchaseRequired, getPurchasePricePoints } from './helpers/featureHelpers';
 import { getRolesAndSystemSnapshot } from './helpers/mvuHelpers';
 import { systemToUserResources } from './helpers/userResourceHelpers';
-import { createAchievementQuestImplFunctions } from './helpers/achievementQuestImpl';
-import { createCalendarEventImplFunctions } from './helpers/calendarEventImpl';
+
+// === Managers & Usecases ===
+import {
+  buildRoleBasedAchievements,
+  findQuestDef,
+  mergeAchievementsWithClaimed,
+  validateQuestDb,
+  createAchievementQuestImplFunctions,
+} from './managers/achievementQuestManager';
+import {
+  getCurrentFloorAndSwipe as getCurrentFloorAndSwipeFromStoreHelper,
+  resolveCalendarStateAt as resolveCalendarStateAtStore,
+  createCalendarEventImplFunctions,
+} from './managers/calendarManager';
+import { createSettingsManager } from './managers/settingsManager';
+import { createResourceManager } from './managers/resourceManager';
+import { createFeatureManager } from './managers/featureManager';
+import { createCustomHypnosisManager } from './managers/customHypnosisManager';
 
 // === Store 模組 ===
 import { STORE_SCHEMA } from './store/storeSchema';
@@ -229,6 +219,23 @@ async function updateResourcesCore(newData: Partial<UserResources>): Promise<Use
   return merged;
 }
 
+async function syncSubscriptionTierLabel(nowVirtualMinutes: number | null): Promise<void> {
+  const { system, store } = normalizeChatVariables(getVariables(CHAT_OPTION));
+  const subscription = (store.subscription as SubscriptionState | undefined) ?? null;
+  const desired = getSubscriptionTierLabel(subscription, nowVirtualMinutes);
+  if (desired === null) return;
+  if (system._催眠APP订阅等级 === desired) return;
+
+  updateVariablesWith(vars => {
+    const { system: nextSystem } = normalizeChatVariables(vars);
+    nextSystem._催眠APP订阅等级 = desired;
+    vars.系统 = nextSystem;
+    return vars;
+  }, CHAT_OPTION);
+
+  await MvuBridge.syncSubscriptionTier(desired);
+}
+
 async function getSystemClockCore(): Promise<{ dateText?: string; timeText?: string; virtualMinutes: number | null }> {
   const maybeSync = async (clock: { virtualMinutes: number | null }) => {
     try {
@@ -250,309 +257,35 @@ async function getSystemClockCore(): Promise<{ dateText?: string; timeText?: str
   return await maybeSync(getSystemClockFrom(system));
 }
 
-async function syncSubscriptionTierLabel(nowVirtualMinutes: number | null): Promise<void> {
-  const { system, store } = normalizeChatVariables(getVariables(CHAT_OPTION));
-  const subscription = (store.subscription as SubscriptionState | undefined) ?? null;
-  const desired = getSubscriptionTierLabel(subscription, nowVirtualMinutes);
-  if (desired === null) return;
-  if (system._催眠APP订阅等级 === desired) return;
+// === Managers Initialization ===
+const settingsManager = createSettingsManager({
+  readStoreSnapshot,
+  updateStoreWith,
+});
 
-  updateVariablesWith(vars => {
-    const { system: nextSystem } = normalizeChatVariables(vars);
-    nextSystem._催眠APP订阅等级 = desired;
-    vars.系统 = nextSystem;
-    return vars;
-  }, CHAT_OPTION);
-
-  await MvuBridge.syncSubscriptionTier(desired);
-}
-
-// === Usecase Service 建立 ===
-const hypnoAppUsecaseService = createHypnoAppUsecaseService<
-  PersistedStore,
-  CustomHypnosisDef,
-  Achievement,
-  QuestDefinition,
-  UserResources
->({
-  subscriptionPrices: SUBSCRIPTION_PRICES,
-  subscriptionWeekMinutes: SUBSCRIPTION_WEEK_MINUTES,
-  getUserData: () => getUserDataCore(),
-  updateResources: patch => updateResourcesCore(patch),
+const resourceManager = createResourceManager({
   readStoreSnapshot,
   updateStoreWith,
   setSubscriptionTierLabel,
-  getStoreSubscription: store => store.subscription,
-  setStoreSubscriptionAndVipStatsPurchase: (store, sub) => ({
-    ...store,
-    subscription: sub,
-    purchases: { ...store.purchases, vip1_stats: true },
-  }),
-  getStorePurchases: store => store.purchases ?? {},
-  setStorePurchased: (store, id) => ({ ...store, purchases: { ...store.purchases, [id]: true } }),
-  getFeaturePurchasePricePoints: id => {
-    const feature = FEATURES.find(f => f.id === id);
-    if (!feature) return null;
-    return getPurchasePricePoints(feature, FIRST_FEATURE_ID_BY_TIER, PURCHASE_PRICE_BY_TIER);
-  },
-  getAchievements: async () => {
-    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
-    const dynamic = await buildRoleBasedAchievements(store, {
-      getRolesAndSystemSnapshot: () => getRolesAndSystemSnapshot(normalizeChatVariables, getVariables, CHAT_OPTION),
-      toFiniteNumber,
-      makeAchievementId,
-    });
-    return mergeAchievementsWithClaimed(store, dynamic);
-  },
-  isAchievementClaimed: (store, id) => Boolean(store.achievements[id]),
-  setAchievementClaimed: (store, id) => ({ ...store, achievements: { ...store.achievements, [id]: true } }),
-  findQuestDef: (id, store) => findQuestDef(id, store, validateQuestDb(QUEST_DB)),
-  getQuestName: quest => quest.name,
-  getQuestReward: quest => quest.rewardMcPoints,
-  getTasks: () => MvuBridge.getTasks(),
-  deleteTask: taskName => MvuBridge.deleteTask(taskName),
-  setQuestClaimed: (store, id) => ({ ...store, quests: { ...store.quests, [id]: 'CLAIMED' } }),
-  getCustomHypnosisRecord: store => store.customHypnosis ?? {},
-  getCustomHypnosisLimit: () => 10,
-  calculateCustomHypnosisCost: def => calculateCustomHypnosisCostCore(def.tier, def.costType, def.costValue),
-  createCustomHypnosisEntry: (id, def, cost) => ({ ...def, id, createdAt: Date.now(), researchCost: cost }),
-  appendCustomHypnosis: (store, id, entry) => ({ ...store, customHypnosis: { ...store.customHypnosis, [id]: entry } }),
-  removeCustomHypnosisAndFeature: (store, id) => {
-    const nextHyp = { ...store.customHypnosis };
-    delete nextHyp[id];
-    const nextFeatures = { ...store.features };
-    delete nextFeatures[id];
-    return { ...store, customHypnosis: nextHyp, features: nextFeatures };
-  },
-  getCustomHypnosisResearchCost: entry => entry.researchCost,
-  getCustomHypnosisTitle: entry => entry.title,
-  markSessionStarted: (store, _payload: SessionStartPayload) => ({ ...store, hasUsedHypnosis: true }),
-  makeId: prefix => `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+  getSystemClockCore,
+  normalizeChatVariables,
+  getVariables,
+  CHAT_OPTION,
+  getUserDataCore,
+  updateResourcesCore,
 });
 
-// === Domain Services 建立 ===
-const resourceDomainService = createResourceService<UserResources, PersistedStore>({
-  getUserData: () => getUserDataCore(),
-  updateResources: patch => updateResourcesCore(patch),
-  getSystemClock: () => getSystemClockCore(),
-  startSession: payload => hypnoAppUsecaseService.startSession(payload),
+const featureManager = createFeatureManager({
   readStoreSnapshot,
   updateStoreWith,
-  getSessionEndFromStore: store => ({
-    endVirtualMinutes:
-      typeof store.sessionEndVirtualMinutes === 'number' && Number.isFinite(store.sessionEndVirtualMinutes)
-        ? store.sessionEndVirtualMinutes
-        : null,
-    endAtMs: typeof store.sessionEndAtMs === 'number' && Number.isFinite(store.sessionEndAtMs) ? store.sessionEndAtMs : null,
-  }),
-  setSessionEndToStore: (store, payload) => {
-    const next: PersistedStore = { ...store };
-    if (payload.endVirtualMinutes === null || !Number.isFinite(payload.endVirtualMinutes)) delete next.sessionEndVirtualMinutes;
-    else next.sessionEndVirtualMinutes = payload.endVirtualMinutes;
-
-    if (payload.endAtMs === null || !Number.isFinite(payload.endAtMs)) delete next.sessionEndAtMs;
-    else next.sessionEndAtMs = payload.endAtMs;
-
-    return next;
-  },
+  normalizeChatVariables,
+  getVariables,
+  CHAT_OPTION,
+  FIRST_FEATURE_ID_BY_TIER,
+  getUserDataCore,
+  updateResourcesCore,
 });
 
-const customHypnosisDomainService = createCustomHypnosisService<PersistedStore, CustomHypnosisDef, HypnosisFeature['tier']>({
-  readStoreSnapshot,
-  listFromStore: store => Object.values(store.customHypnosis ?? {}),
-  calculateCost: (tier, costType, costValue) => calculateCustomHypnosisCostCore(tier, costType, costValue),
-  addByUsecase: def => hypnoAppUsecaseService.addCustomHypnosis(def),
-  deleteByUsecase: id => hypnoAppUsecaseService.deleteCustomHypnosis(id),
-});
-
-const subscriptionDomainService = createSubscriptionService<
-  PersistedStore,
-  SubscriptionState,
-  SubscriptionTier,
-  AccessContext
->({
-  readStoreSnapshot,
-  updateStoreWith,
-  getStoreSubscription: store => (store.subscription as SubscriptionState | undefined) ?? null,
-  setStoreSubscriptionAutoRenew: (store, autoRenew) => ({
-    ...store,
-    subscription: store.subscription ? { ...store.subscription, autoRenew } : store.subscription,
-  }),
-  clearStoreSubscription: store => {
-    const next: PersistedStore = { ...store };
-    delete next.subscription;
-    return next;
-  },
-  syncSubscriptionTierLabel: tierLabel => setSubscriptionTierLabel(tierLabel),
-  getTrialTierLabel: () => SUBSCRIPTION_TIER_TRIAL_LABEL,
-  subscribeOrRenewByUsecase: params => hypnoAppUsecaseService.subscribeOrRenew(params),
-  maybeAutoRenewByUsecase: nowVirtualMinutes => hypnoAppUsecaseService.maybeAutoRenewSubscription(nowVirtualMinutes),
-  getSubscriptionUnlockThreshold: tier => getSubscriptionUnlockThreshold(tier),
-  canSubscribeTier: (tier, ctx) =>
-    canSubscribeTier({ tier, debugEnabled: ctx.debugEnabled, totalConsumedMc: ctx.totalConsumedMc }),
-  isSubscriptionActive: ctx => isSubscriptionActive(ctx),
-  getSubscriptionTiers: () => SUBSCRIPTION_TIERS,
-});
-
-const featureDomainService = createFeatureService<PersistedStore, HypnosisFeature, AccessContext, UserResources>({
-  readStoreSnapshot,
-  updateStoreWith,
-  getFeatures: async () => {
-    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
-    const predefined = FEATURES.map(f => ({
-      ...f,
-      isEnabled: store.features?.[f.id]?.isEnabled ?? f.isEnabled,
-      userNote: store.features?.[f.id]?.userNote ?? f.userNote,
-      userNumber: store.features?.[f.id]?.userNumber ?? f.userNumber,
-      purchaseRequired: isPurchaseRequired(f, FIRST_FEATURE_ID_BY_TIER),
-      purchasePricePoints: getPurchasePricePoints(f, FIRST_FEATURE_ID_BY_TIER, PURCHASE_PRICE_BY_TIER) ?? undefined,
-      isPurchased: !isPurchaseRequired(f, FIRST_FEATURE_ID_BY_TIER) || Boolean(store.purchases?.[f.id]),
-    }));
-
-    const custom: HypnosisFeature[] = Object.values(store.customHypnosis ?? {}).map(ch => ({
-      id: ch.id,
-      title: ch.title,
-      description: ch.description,
-      tier: ch.tier,
-      costType: ch.costType,
-      costValue: ch.costValue,
-      costCurrency: 'MC_ENERGY' as const,
-      notePlaceholder: ch.notePlaceholder,
-      isEnabled: store.features?.[ch.id]?.isEnabled ?? false,
-      userNote: store.features?.[ch.id]?.userNote,
-      userNumber: store.features?.[ch.id]?.userNumber,
-      purchaseRequired: false,
-      isPurchased: true,
-    }));
-
-    return [...predefined, ...custom];
-  },
-  purchaseFeatureByUsecase: async id => {
-    const exists = FEATURES.some(f => f.id === id);
-    if (!exists) return { ok: false, message: '未知功能' };
-    return await hypnoAppUsecaseService.purchaseFeature(id);
-  },
-  updateFeatureInStore: (store, id, patch) => ({
-    ...store,
-    features: { ...store.features, [id]: { ...store.features[id], ...patch } },
-  }),
-  resetFeaturesInStore: store => {
-    const preserved: PersistedStore['features'] = {};
-    for (const [id, state] of Object.entries(store.features ?? {})) {
-      if (!PERSISTENT_FEATURE_IDS.has(id)) continue;
-      preserved[id] = state;
-    }
-    return { ...store, features: preserved };
-  },
-  canUseFeature: (feature, ctx) => {
-    if (ctx.debugEnabled) return true;
-    if (feature.id === 'vip1_stats') {
-      const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
-      if (store.purchases?.vip1_stats) return true;
-    }
-    return canUseFeatureBySubscription(feature, ctx);
-  },
-  getUnlocks: async () => {
-    const { store } = normalizeChatVariables(getVariables(CHAT_OPTION));
-    const debugEnabled = Boolean(store.debugEnabled);
-    const nowVirtualMinutes = (await getSystemClockCore()).virtualMinutes;
-    const subscription = (store.subscription as SubscriptionState | undefined) ?? null;
-    const accessContext: AccessContext = { debugEnabled, subscription, nowVirtualMinutes };
-
-    const subscriptionActive = isSubscriptionActive(accessContext);
-    let vip1StatsUnlocked = Boolean(store.purchases?.vip1_stats);
-    if (!vip1StatsUnlocked && subscriptionActive) {
-      await updateStoreWith(s => ({ ...s, purchases: { ...s.purchases, vip1_stats: true } }));
-      vip1StatsUnlocked = true;
-    }
-    return { debugEnabled, bodyStatsUnlocked: getBodyStatsUnlocked({ debugEnabled, vip1StatsUnlocked }) };
-  },
-  getDebugEnabledFromStore: store => Boolean(store.debugEnabled),
-  setDebugEnabledToStore: (store, enabled) => ({ ...store, debugEnabled: enabled }),
-});
-
-const settingsDomainService = createSettingsService<
-  PersistedStore,
-  SettingsPromptTuningConfig,
-  EditorPromptModule,
-  PersistedStore['apiSettings']
->({
-  readStoreSnapshot,
-  updateStoreWith,
-  getApiSettingsFromStore: store => store.apiSettings,
-  mergeApiSettings: (store, patch) => {
-    const current = store.apiSettings ?? {
-      apiKey: '',
-      apiEndpoint: '',
-      modelName: '',
-      temperature: 0.7,
-      maxTokens: 8192,
-      topP: 1,
-      presencePenalty: 0,
-      frequencyPenalty: 0,
-      streamMode: 'non_streaming' as const,
-    };
-    return { ...store, apiSettings: { ...current, ...patch } };
-  },
-  normalizePromptConfigFromStore: store => normalizeSettingsPromptConfig(store.settingsPromptTuning),
-  getDefaultPromptConfig: () => cloneSettingsPromptConfig(DEFAULT_SETTINGS_PROMPT_CONFIG),
-  toPromptStorePatch: (next, store) => {
-    const normalized: SettingsPromptTuningConfig = {
-      modules: next.modules.map(m => ({
-        id: String(m.id),
-        title: String(m.title || m.id),
-        content: String(m.content ?? ''),
-        enabled: m.enabled !== false,
-      })),
-      moduleOrder: next.moduleOrder.map(String),
-      placeholders: next.placeholders.map(p => ({
-        key: String(p.key),
-        value: String(p.value ?? ''),
-        enabled: p.enabled !== false,
-        source: p.source ?? 'user',
-        resolverType: p.resolverType ?? 'static',
-        scope: 'app',
-      })),
-    };
-
-    const modulesRecord: NonNullable<PersistedStore['settingsPromptTuning']>['modules'] = {};
-    for (const module of normalized.modules) {
-      modulesRecord[module.id] = { ...module };
-    }
-
-    const placeholdersRecord: NonNullable<PersistedStore['settingsPromptTuning']>['placeholders'] = {};
-    for (const placeholder of normalized.placeholders) {
-      placeholdersRecord[placeholder.key] = { ...placeholder };
-    }
-
-    return {
-      ...store,
-      settingsPromptTuning: {
-        modules: modulesRecord,
-        moduleOrder: normalized.moduleOrder,
-        placeholders: placeholdersRecord,
-      },
-    };
-  },
-  normalizeEditorModulesFromStore: store => normalizeEditorPromptModulesHelper(store.editorPromptModules, DEFAULT_EDITOR_PROMPT_MODULES),
-  getDefaultEditorModules: () => DEFAULT_EDITOR_PROMPT_MODULES.map(m => ({ ...m })),
-  toEditorModulesStorePatch: (modules, store) => {
-    const record: NonNullable<PersistedStore['editorPromptModules']> = {};
-    for (const m of modules) {
-      record[m.id] = {
-        id: m.id,
-        title: m.title,
-        content: m.content,
-        type: m.type,
-        sectionId: m.sectionId,
-        order: m.order,
-      };
-    }
-    return { ...store, editorPromptModules: record };
-  },
-});
-
-// === Achievement/Quest Domain Service（使用下沉後的 Impl 函式）===
 const achievementQuestImplFns = createAchievementQuestImplFunctions({
   normalizeChatVariables,
   getVariables,
@@ -565,18 +298,6 @@ const achievementQuestImplFns = createAchievementQuestImplFunctions({
   getRolesAndSystemSnapshot: () => getRolesAndSystemSnapshot(normalizeChatVariables, getVariables, CHAT_OPTION),
 });
 
-const achievementQuestDomainService = createAchievementQuestService<Achievement, Quest>({
-  getAchievementsImpl: achievementQuestImplFns.getAchievementsImpl,
-  claimAchievementByUsecase: (id, currentPoints) => hypnoAppUsecaseService.claimAchievement(id, currentPoints),
-  getQuestsImpl: achievementQuestImplFns.getQuestsImpl,
-  acceptQuestImpl: achievementQuestImplFns.acceptQuestImpl,
-  cancelQuestImpl: achievementQuestImplFns.cancelQuestImpl,
-  claimQuestByUsecase: (id, currentPoints) => hypnoAppUsecaseService.claimQuest(id, currentPoints),
-  publishCustomQuestImpl: achievementQuestImplFns.publishCustomQuestImpl,
-  deleteCustomQuestImpl: achievementQuestImplFns.deleteCustomQuestImpl,
-});
-
-// === Calendar Domain Service（使用下沉後的 Impl 函式）===
 const calendarEventImplFns = createCalendarEventImplFunctions({
   normalizeChatVariables,
   getVariables,
@@ -585,73 +306,66 @@ const calendarEventImplFns = createCalendarEventImplFunctions({
   resolveCalendarStateAt,
   updateStoreWith,
   getChatMessages: (floor, options) => getChatMessages(floor, options),
-  getCalendarEvents: () => calendarDomainService.getCalendarEvents(),
   CALENDAR_CRUD_RESOLVE_DEBUG,
 });
 
-const calendarDomainService = createCalendarService<CustomCalendarEvent>({
-  getCalendarEventsImpl: calendarEventImplFns.getCalendarEventsImpl,
-  processCalendarBridgeEventsOnLoadImpl: calendarEventImplFns.processCalendarBridgeEventsOnLoadImpl,
-  addCalendarEventImpl: calendarEventImplFns.addCalendarEventImpl,
-  updateCalendarEventImpl: calendarEventImplFns.updateCalendarEventImpl,
-  deleteCalendarEventImpl: calendarEventImplFns.deleteCalendarEventImpl,
-  findCalendarEventByTitleAndDateImpl: calendarEventImplFns.findCalendarEventByTitleAndDateImpl,
+const customHypnosisManager = createCustomHypnosisManager({
+  readStoreSnapshot,
+  updateStoreWith,
+  getUserDataCore,
+  updateResourcesCore,
 });
 
 // === DataService Facade ===
 export const DataService = {
   getUnlocks: async (): Promise<{ debugEnabled: boolean; bodyStatsUnlocked: boolean }> => {
-    return await featureDomainService.getUnlocks();
+    return await resourceManager.getUnlocksImpl();
   },
 
-  getSubscriptionUnlockThreshold: (tier: SubscriptionTier): number =>
-    subscriptionDomainService.getSubscriptionUnlockThreshold(tier),
+  getSubscriptionUnlockThreshold: (tier: SubscriptionTier): number => getSubscriptionUnlockThreshold(tier),
 
   canSubscribeTier: (tier: SubscriptionTier, ctx: { debugEnabled: boolean; totalConsumedMc: number }): boolean =>
-    subscriptionDomainService.canSubscribeTier(tier, ctx),
+    canSubscribeTier({ tier, debugEnabled: ctx.debugEnabled, totalConsumedMc: ctx.totalConsumedMc }),
 
-  isSubscriptionActive: (ctx: AccessContext): boolean => subscriptionDomainService.isSubscriptionActive(ctx),
+  isSubscriptionActive: (ctx: AccessContext): boolean => isSubscriptionActive(ctx),
 
-  canUseFeature: (feature: HypnosisFeature, ctx: AccessContext): boolean => featureDomainService.canUseFeature(feature, ctx),
+  canUseFeature: (feature: HypnosisFeature, ctx: AccessContext): boolean => featureManager.canUseFeatureImpl(feature, ctx),
 
-  getSubscriptionTiers: (): readonly SubscriptionTier[] => subscriptionDomainService.getSubscriptionTiers(),
+  getSubscriptionTiers: (): readonly SubscriptionTier[] => SUBSCRIPTION_TIERS,
 
   getUserData: async (): Promise<UserResources> => {
-    return await resourceDomainService.getUserData();
+    return await getUserDataCore();
   },
 
   getSystemClock: async (): Promise<{ dateText?: string; timeText?: string; virtualMinutes: number | null }> => {
-    return await resourceDomainService.getSystemClock();
+    return await getSystemClockCore();
   },
 
   getSessionEnd: async (): Promise<{ endVirtualMinutes: number | null; endAtMs: number | null }> => {
-    return await resourceDomainService.getSessionEnd();
+    return resourceManager.getSessionEndImpl();
   },
 
-  setSessionEnd: async ({
-    endVirtualMinutes,
-    endAtMs,
-  }: {
+  setSessionEnd: async (payload: {
     endVirtualMinutes: number | null;
     endAtMs: number | null;
   }) => {
-    await resourceDomainService.setSessionEnd({ endVirtualMinutes, endAtMs });
+    await resourceManager.setSessionEndImpl(payload);
   },
 
   clearSessionEnd: async () => {
-    await resourceDomainService.clearSessionEnd();
+    await resourceManager.setSessionEndImpl({ endVirtualMinutes: null, endAtMs: null });
   },
 
   getSubscription: async (): Promise<SubscriptionState | null> => {
-    return await subscriptionDomainService.getSubscription();
+    return await resourceManager.getSubscriptionImpl();
   },
 
   setSubscriptionAutoRenew: async (autoRenew: boolean) => {
-    await subscriptionDomainService.setSubscriptionAutoRenew(autoRenew);
+    await resourceManager.setSubscriptionAutoRenewImpl(autoRenew);
   },
 
   clearSubscription: async () => {
-    await subscriptionDomainService.clearSubscription();
+    await resourceManager.clearSubscriptionImpl();
   },
 
   subscribeOrRenew: async ({
@@ -663,69 +377,69 @@ export const DataService = {
     nowVirtualMinutes: number | null;
     extendFromExistingIfActive?: boolean;
   }): Promise<{ ok: boolean; message?: string; subscription?: SubscriptionState | null }> => {
-    return await subscriptionDomainService.subscribeOrRenew({ tier, nowVirtualMinutes, extendFromExistingIfActive });
+    return await resourceManager.subscribeOrRenewImpl({ tier, nowVirtualMinutes, extendFromExistingIfActive });
   },
 
   maybeAutoRenewSubscription: async (
     nowVirtualMinutes: number | null,
   ): Promise<{ renewed: boolean; message?: string }> => {
-    return await subscriptionDomainService.maybeAutoRenewSubscription(nowVirtualMinutes);
+    return await resourceManager.maybeAutoRenewSubscriptionImpl(nowVirtualMinutes);
   },
 
   getFeatures: async (): Promise<HypnosisFeature[]> => {
-    return await featureDomainService.getFeatures();
+    return await featureManager.getFeaturesImpl();
   },
 
   purchaseFeature: async (id: string): Promise<{ ok: boolean; message?: string; user?: UserResources }> => {
-    return await featureDomainService.purchaseFeature(id);
+    return await featureManager.purchaseFeatureImpl(id);
   },
 
   getDebugEnabled: async (): Promise<boolean> => {
-    return await featureDomainService.getDebugEnabled();
+    return resourceManager.getDebugEnabledImpl();
   },
 
   setDebugEnabled: async (enabled: boolean) => {
-    await featureDomainService.setDebugEnabled(enabled);
+    await resourceManager.setDebugEnabledImpl(enabled);
   },
 
   updateResources: async (newData: Partial<UserResources>): Promise<UserResources> => {
-    return await resourceDomainService.updateResources(newData);
+    return await updateResourcesCore(newData);
   },
 
   startSession: async (payload: SessionStartPayload): Promise<boolean> => {
-    return await resourceDomainService.startSession(payload);
+    return await resourceManager.startSessionImpl(payload);
   },
 
   updateFeature: async (id: string, patch: { isEnabled?: boolean; userNote?: string; userNumber?: number }) => {
-    await featureDomainService.updateFeature(id, patch);
+    await featureManager.updateFeatureImpl(id, patch);
   },
 
   resetFeatures: async () => {
-    await featureDomainService.resetFeatures();
+    await featureManager.resetFeaturesImpl();
   },
 
   getAchievements: async (): Promise<Achievement[]> => {
-    return await achievementQuestDomainService.getAchievements();
+    return await achievementQuestImplFns.getAchievementsImpl();
   },
 
   getQuests: async (): Promise<Quest[]> => {
-    return await achievementQuestDomainService.getQuests();
+    return await achievementQuestImplFns.getQuestsImpl();
   },
 
   claimAchievement: async (id: string, currentPoints: number): Promise<{ success: boolean; newPoints: number }> => {
-    return await achievementQuestDomainService.claimAchievement(id, currentPoints);
+    return await achievementQuestImplFns.claimAchievementImpl(id, currentPoints);
   },
 
   acceptQuest: async (id: string): Promise<{ success: boolean; message?: string }> => {
-    return await achievementQuestDomainService.acceptQuest(id);
+    return await achievementQuestImplFns.acceptQuestImpl(id);
   },
 
   cancelQuest: async (id: string): Promise<{ success: boolean; message?: string }> => {
-    return await achievementQuestDomainService.cancelQuest(id);
+    return await achievementQuestImplFns.cancelQuestImpl(id);
   },
 
   claimQuest: async (id: string, currentPoints: number): Promise<{ success: boolean; newPoints: number }> => {
-    return await achievementQuestDomainService.claimQuest(id, currentPoints);
+    return await achievementQuestImplFns.claimQuestImpl(id, currentPoints);
   },
 
   publishCustomQuest: async (params: {
@@ -733,21 +447,21 @@ export const DataService = {
     condition: string;
     rewardMcPoints: number;
   }): Promise<{ ok: boolean; message?: string }> => {
-    return await achievementQuestDomainService.publishCustomQuest(params);
+    return await achievementQuestImplFns.publishCustomQuestImpl(params);
   },
 
   deleteCustomQuest: async (id: string): Promise<{ ok: boolean; message?: string }> => {
-    return await achievementQuestDomainService.deleteCustomQuest(id);
+    return await achievementQuestImplFns.deleteCustomQuestImpl(id);
   },
 
   // ─── Calendar Events ────────────────────────────────────────
 
   getCalendarEvents: (): CustomCalendarEvent[] => {
-    return calendarDomainService.getCalendarEvents();
+    return calendarEventImplFns.getCalendarEventsImpl();
   },
 
   processCalendarBridgeEventsOnLoad: async (): Promise<void> => {
-    await calendarDomainService.processCalendarBridgeEventsOnLoad();
+    await calendarEventImplFns.processCalendarBridgeEventsOnLoadImpl();
   },
 
   addCalendarEvent: async (params: {
@@ -756,22 +470,22 @@ export const DataService = {
     title: string;
     description?: string;
   }): Promise<{ ok: boolean; id?: string; message?: string }> => {
-    return await calendarDomainService.addCalendarEvent(params);
+    return await calendarEventImplFns.addCalendarEventImpl(params);
   },
 
   updateCalendarEvent: async (
     id: string,
     patch: { title?: string; description?: string; month?: number; day?: number },
   ): Promise<{ ok: boolean; message?: string }> => {
-    return await calendarDomainService.updateCalendarEvent(id, patch);
+    return await calendarEventImplFns.updateCalendarEventImpl(id, patch);
   },
 
   deleteCalendarEvent: async (id: string): Promise<{ ok: boolean; message?: string }> => {
-    return await calendarDomainService.deleteCalendarEvent(id);
+    return await calendarEventImplFns.deleteCalendarEventImpl(id);
   },
 
   findCalendarEventByTitleAndDate: (title: string, month: number, day: number): CustomCalendarEvent | undefined => {
-    return calendarDomainService.findCalendarEventByTitleAndDate(title, month, day);
+    return calendarEventImplFns.findCalendarEventByTitleAndDateImpl(title, month, day);
   },
 
   // --- Custom Hypnosis ---
@@ -785,60 +499,60 @@ export const DataService = {
     costType: 'ONE_TIME' | 'PER_MINUTE',
     costValue: number,
   ): number => {
-    return customHypnosisDomainService.calculateCustomHypnosisCost(tier, costType, costValue);
+    return customHypnosisManager.calculateCustomHypnosisCostImpl(tier, costType, costValue);
   },
 
   getCustomHypnosis: (): CustomHypnosisDef[] => {
-    return customHypnosisDomainService.getCustomHypnosis();
+    return customHypnosisManager.getCustomHypnosisImpl();
   },
 
   addCustomHypnosis: async (
     def: Omit<CustomHypnosisDef, 'id' | 'createdAt' | 'researchCost'>,
   ): Promise<{ ok: boolean; message?: string; id?: string }> => {
-    return await customHypnosisDomainService.addCustomHypnosis(def);
+    return await customHypnosisManager.addCustomHypnosisImpl(def);
   },
 
   deleteCustomHypnosis: async (id: string): Promise<{ ok: boolean; message?: string; refund?: number }> => {
-    return await customHypnosisDomainService.deleteCustomHypnosis(id);
+    return await customHypnosisManager.deleteCustomHypnosisImpl(id);
   },
 
   // --- API Settings (shared across all apps) ---
 
   getApiSettings: (): PersistedStore['apiSettings'] => {
-    return settingsDomainService.getApiSettings();
+    return settingsManager.getApiSettingsImpl();
   },
 
   getSettingsPromptConfig: (): SettingsPromptTuningConfig => {
-    return settingsDomainService.getSettingsPromptConfig();
+    return settingsManager.getSettingsPromptConfigImpl();
   },
 
   getDefaultSettingsPromptConfig: (): SettingsPromptTuningConfig => {
-    return settingsDomainService.getDefaultSettingsPromptConfig();
+    return settingsManager.getDefaultSettingsPromptConfigImpl();
   },
 
   updateSettingsPromptConfig: async (next: SettingsPromptTuningConfig): Promise<void> => {
-    await settingsDomainService.updateSettingsPromptConfig(next);
+    await settingsManager.updateSettingsPromptConfigImpl(next);
   },
 
   updateApiSettings: async (patch: Partial<NonNullable<PersistedStore['apiSettings']>>): Promise<void> => {
-    await settingsDomainService.updateApiSettings(patch);
+    await settingsManager.updateApiSettingsImpl(patch);
   },
 
   fetchAvailableModels: async (endpoint: string, apiKey: string): Promise<string[]> => {
-    return await settingsDomainService.fetchAvailableModels(endpoint, apiKey);
+    return await settingsManager.fetchAvailableModelsImpl(endpoint, apiKey);
   },
 
   // --- Editor Prompt Modules (Character Editor) ---
 
   getEditorPromptModules: (): EditorPromptModule[] => {
-    return settingsDomainService.getEditorPromptModules();
+    return settingsManager.getEditorPromptModulesImpl();
   },
 
   getDefaultEditorPromptModules: (): EditorPromptModule[] => {
-    return settingsDomainService.getDefaultEditorPromptModules();
+    return settingsManager.getDefaultEditorPromptModulesImpl();
   },
 
   saveEditorPromptModules: async (modules: EditorPromptModule[]): Promise<void> => {
-    await settingsDomainService.saveEditorPromptModules(modules);
+    await settingsManager.saveEditorPromptModulesImpl(modules);
   },
 };
