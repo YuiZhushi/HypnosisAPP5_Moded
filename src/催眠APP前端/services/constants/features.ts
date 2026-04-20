@@ -381,3 +381,9 @@ export const FEATURES: HypnosisFeature[] = [
     notePlaceholder: '输入要修改的规则/常识...',
   },
 ];
+
+/**
+ * 重置功能時保留的功能 ID 集合喵~
+ * 這些功能在重置後不會被清除
+ */
+export const PERSISTENT_FEATURE_IDS = new Set<string>([]);

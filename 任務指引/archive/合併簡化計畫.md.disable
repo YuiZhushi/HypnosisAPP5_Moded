@@ -1,0 +1,190 @@
+# 合併簡化計畫（修訂版）
+
+## 目標
+
+減少不必要的抽象層級，將調用鏈從 4-5 層減少到 2-3 層，提升代碼可維護性。
+
+**修訂說明**：修復原版計畫中的四個衝突/缺漏：日曆合併目標不一致、customHypnosis 兩步互斥、遺漏 resourceService/settingsService、constants 層未完整處理。
+
+---
+
+## 📋 執行步驟
+
+### Phase 1：移除純轉發的 Domain Service（9 個 → 全部刪除）
+
+> 目標：刪除幾乎只做一層轉發的 domain service 外殼；實際業務邏輯下沉到 usecase 或 dataService。
+
+| 序號 | 動作 | 說明 |
+|------|------|------|
+| 1.1 | 刪除 `domain/featureService.ts` | 純轉發；`dataService` 直接呼叫被注入的 impl 函數 |
+| 1.2 | 刪除 `domain/subscriptionService.ts` | 純轉發；兩個有邏輯的方法（clearSubscription, getSubscriptionTiers）搬到 `dataService` |
+| 1.3 | 刪除 `domain/customHypnosisService.ts` | 純轉發；`dataService` 直接呼叫 usecase 的 add/delete |
+| 1.4 | 刪除 `domain/resourceService.ts` | 純轉發；`dataService` 直接呼叫被注入的 impl 函數 |
+| 1.5 | 刪除 `domain/achievementQuestService.ts` | 純轉發；直接呼叫 usecase |
+| 1.6 | 刪除 `domain/calendarService.ts` | 純轉發；日曆邏輯已在 helpers 中，由 Phase 2 統一處理 |
+| 1.7 | **保留** `domain/settingsService.ts` | 含有 `fetchAvailableModels` 等實際邏輯，不是空殼，改名為 `services/settingsService.ts` 並扁平化 |
+
+**Phase 1 刪除文件**：
+```
+services/domain/featureService.ts
+services/domain/subscriptionService.ts
+services/domain/customHypnosisService.ts
+services/domain/resourceService.ts
+services/domain/achievementQuestService.ts
+services/domain/calendarService.ts
+```
+（最終 domain/ 目錄只剩 settingsService.ts，等 Phase 4 整理）
+
+---
+
+### Phase 2：整合分散的 Helper（三大合一）
+
+> 目標：將同一業務域的多個 helper 合成單一文件，消滅「到底要看哪個文件」的困惑。
+
+| 序號 | 動作 | 說明 |
+|------|------|------|
+| 2.1 | **日曆三合一**：`calendarCrudResolver.ts` + `calendarCrudStore.ts` + `calendarEventImpl.ts` → `helpers/calendarService.ts` | 全部日曆 CRUD 邏輯統一在一個文件 |
+| 2.2 | **成就三合一**：`achievementQuestCore.ts` + `achievementQuestImpl.ts` → `helpers/achievementQuestService.ts` | 移除 Core/Impl 層級區分 |
+| 2.3 | **自訂催眠二合一**：`customHypnosisCost.ts` 合入 `helpers/customHypnosisService.ts`（新建） | 成本計算與業務邏輯同處 |
+
+**Phase 2 刪除文件**：
+```
+services/helpers/calendarCrudResolver.ts
+services/helpers/calendarCrudStore.ts
+services/helpers/calendarEventImpl.ts
+services/helpers/achievementQuestCore.ts
+services/helpers/achievementQuestImpl.ts
+services/helpers/customHypnosisCost.ts
+```
+
+---
+
+### Phase 3：整理 Constants 層
+
+> 目標：對小型常數文件做合併，剩餘保留。
+
+| 序號 | 動作 | 說明 |
+|------|------|------|
+| 3.1 | 合併 `featureConstants.ts`（11行）→ `constants/features.ts` | 已有的空殼直接合入 |
+| 3.2 | 合併 `customHypnosis.ts`（15行）→ `helpers/customHypnosisService.ts` | 常數就近放在使用的服務旁 |
+| 3.3 | **保留** `subscriptionConstants.ts` | 含有 `getSubscriptionTierLabel` 等工具函數，有獨立存在價值 |
+| 3.4 | **保留** `userDefaults.ts` | 預設值配置，有獨立存在價值 |
+| 3.5 | **保留** `editorPromptDefaults.ts` | 體積大（60KB），內容獨立，不宜合併 |
+| 3.6 | **保留** `settingsPromptDefaults.ts` | 同上 |
+
+**Phase 3 刪除文件**：
+```
+services/constants/featureConstants.ts
+services/constants/customHypnosis.ts
+```
+
+---
+
+### Phase 4：重構 dataService.ts + 扁平化目錄
+
+> 目標：將 dataService.ts 的 300+ 行依賴注入代碼抽離，讓 Facade 職責清晰。
+
+| 序號 | 動作 | 說明 |
+|------|------|------|
+| 4.1 | 創建 `services/instances.ts` | 集中放置所有服務實例化代碼（取代 dataService 中的 300 行注入段） |
+| 4.2 | `dataService.ts` 只保留 API 方法委派 | 目標從 844 行壓縮到 ~300 行 |
+| 4.3 | 將 `domain/settingsService.ts` 移動並更名為 `services/settingsService.ts` | 扁平化後不再需要 domain/ 目錄 |
+| 4.4 | 刪除空的 `domain/` 目錄 | Phase 1 + 4.3 完成後自然清空 |
+
+---
+
+## 🔍 重要決策說明
+
+### 為什麼保留 `usecases/hypnoAppUsecaseService.ts`？
+
+這個文件有 **200 行的真實業務邏輯**（訂閱計算、成就條件判斷、金錢扣款流程等），不是空殼。它是整個重構後架構的「業務核心層」，保留理由充分。
+
+### 為什麼 `settingsService.ts` 不刪？
+
+它含有 `fetchAvailableModels`（真正的 HTTP 請求邏輯），以及 Settings Prompt / Editor Modules 的 store 讀寫邏輯。不是純轉發，有保留價值。
+
+---
+
+## 🗑️ 完整刪除清單（共 14 個文件）
+
+```
+# Phase 1：Domain 空殼
+services/domain/featureService.ts
+services/domain/subscriptionService.ts
+services/domain/customHypnosisService.ts
+services/domain/resourceService.ts
+services/domain/achievementQuestService.ts
+services/domain/calendarService.ts
+
+# Phase 2：Helper 合併後的舊文件
+services/helpers/calendarCrudResolver.ts
+services/helpers/calendarCrudStore.ts
+services/helpers/calendarEventImpl.ts
+services/helpers/achievementQuestCore.ts
+services/helpers/achievementQuestImpl.ts
+services/helpers/customHypnosisCost.ts
+
+# Phase 3：Constants 小文件合併
+services/constants/featureConstants.ts
+services/constants/customHypnosis.ts
+```
+
+---
+
+## 📊 預期效果
+
+| 指標 | 重構前 | 重構後 | 改善 |
+|------|--------|--------|------|
+| 調用鏈層級 | 4-5 層 | 2-3 層 | ~50% |
+| dataService.ts 行數 | 844 行 | ~300 行 | -64% |
+| 刪除文件數 | — | 14 個 | — |
+| domain/ 目錄文件數 | 7 個 | 0 個（目錄刪除） | — |
+| helpers/ 日曆文件數 | 3 個 | 1 個 | -67% |
+| helpers/ 成就文件數 | 3 個 | 1 個 | -67% |
+
+---
+
+## 重構後目錄結構
+
+```
+src/催眠APP前端/services/
+├── dataService.ts          # Facade（精簡後 ~300 行）
+├── instances.ts            # 服務實例化（從 dataService 抽出）
+├── settingsService.ts      # Settings 服務（從 domain/ 移出扁平化）
+├── mvuBridge.ts            # MVU 橋接
+├── access.ts               # 權限控制
+├── store/                  # Store 管理
+│   └── storeGateway.ts
+├── helpers/                # 業務 Helper
+│   ├── calendarService.ts         # ← 三合一
+│   ├── achievementQuestService.ts # ← 三合一
+│   ├── customHypnosisService.ts   # ← 二合一
+│   ├── featureHelpers.ts
+│   ├── idHelpers.ts
+│   ├── mvuHelpers.ts
+│   ├── settingsPromptHelpers.ts
+│   ├── systemHelpers.ts
+│   ├── timeHelpers.ts
+│   ├── userResourceHelpers.ts
+│   └── editorPromptModules.ts
+├── constants/              # 常數定義
+│   ├── features.ts                # ← 含 featureConstants 合入
+│   ├── subscriptionConstants.ts
+│   ├── userDefaults.ts
+│   ├── editorPromptDefaults.ts
+│   └── settingsPromptDefaults.ts
+└── usecases/               # 業務用例（保留）
+    └── hypnoAppUsecaseService.ts
+```
+
+---
+
+## ⚠️ 執行順序
+
+1. **先備份**：確保 git 已提交當前狀態
+2. **Phase 1 → 2 → 3 → 4**：依序執行，每個 Phase 後執行 `pnpm build:dev` 確認無編譯錯誤
+3. **保持功能不變**：只重構結構，不改變業務邏輯
+
+---
+
+*計畫修訂時間：2026/04/17*
