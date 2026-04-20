@@ -240,30 +240,30 @@ export const EDITOR_PROMPT_PLACEHOLDERS = [
 
 // ====== 角色資訊補全與保守審核系統 ======
 
-export interface CharacterCompletionAppAiPatchResult {
+export interface AiPatchResult {
   yamlRaw: string;
   ejsRaw: string;
   warnings: string[];
   rawText: string;
 }
 
-export type CharacterCompletionAppDiffChangeType = 'add' | 'update' | 'empty_rejected' | 'type_conflict' | 'unchanged';
+export type AstDiffChangeType = 'add' | 'update' | 'empty_rejected' | 'type_conflict' | 'unchanged';
 
-export interface CharacterCompletionAppDiffProposal {
+export interface AstDiffProposal {
   id: string; // unique literal id generated for UI mapping
   sectionId: string; // The section this diff applies to e.g. 'info' or 'arousal'
   branchId?: string; // If applicable (behavior tabs)
   path: string[]; // e.g. ['stats', 'body', 'height']
-  changeType: CharacterCompletionAppDiffChangeType;
+  changeType: AstDiffChangeType;
   oldValue: unknown;
   newValue: unknown;
   defaultDecision: 'accept' | 'reject';
   reason: string;
 }
 
-export type CharacterCompletionAppReviewDecision = 'accept' | 'reject';
+export type ReviewDecision = 'accept' | 'reject';
 
-export interface CharacterCompletionAppApplyResult {
+export interface AstApplyResult {
   appliedCount: number;
   rejectedCount: number;
   skippedCount: number;

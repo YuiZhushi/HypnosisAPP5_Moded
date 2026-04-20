@@ -5,6 +5,8 @@
  * 如果缺失則自動補入。
  */
 
+import { WorldBookRepository } from './repositories/worldBookRepository';
+
 const DEFAULT_ORDER = 23;
 const ENTRY_PREFIX = '[mvu_update]';
 const ENTRY_SUFFIX_VARIANTS = ['变量', '變量'];
@@ -141,7 +143,7 @@ function buildPlotRoleListContent(roleNames: string[], summaryMap?: Map<string, 
 }
 
 async function verifyPlotRoleListContent(wbName: string, expectedContent: string): Promise<void> {
-	const latest = await getWorldbook(wbName);
+	const latest = await WorldBookRepository.getEntries(wbName);
 	const hit = latest.find(e => isPlotRoleListEntryName(e.name));
 	if (!hit) {
 		throw new Error(`人物列表校验失败：缺少条目 (${PLOT_ROLE_LIST_ENTRY_NAME})`);
@@ -156,7 +158,7 @@ async function verifyPlotRoleListContent(wbName: string, expectedContent: string
 
 async function ensurePlotRoleListEntry(wbName: string, roleNameToEnsure: string): Promise<'pass' | 'created' | 'updated'> {
   const targetName = PLOT_ROLE_LIST_ENTRY_NAME;
-  const latestEntries = await getWorldbook(wbName);
+  const latestEntries = await WorldBookRepository.getEntries(wbName);
 	const existing = latestEntries.find(e => isPlotRoleListEntryName(e.name));
 
   const roleNamesFromMvu = collectRoleNamesFromMvuVariables();
@@ -181,7 +183,7 @@ async function ensurePlotRoleListEntry(wbName: string, roleNameToEnsure: string)
 
 		const targetUid = existing.uid;
 		let updated = false;
-		await updateWorldbookWith(
+		await WorldBookRepository.updateEntries(
 			wbName,
 			worldbook =>
 				worldbook.map(entry => {
@@ -218,7 +220,7 @@ async function ensurePlotRoleListEntry(wbName: string, roleNameToEnsure: string)
 	}
   const order = maxOrder >= 0 ? maxOrder + 1 : DEFAULT_PLOT_ORDER;
 
-  await createWorldbookEntries(wbName, [
+  await WorldBookRepository.createEntries(wbName, [
     {
       name: targetName,
       enabled: true,
@@ -257,14 +259,13 @@ export const WorldBookService = {
   checkAndEnsureEntry: async (roleName: string): Promise<WbCheckResult> => {
     try {
       // 1. 取得角色卡的 primary 世界書
-      const charWb = getCharWorldbookNames('current');
-      const wbName = charWb.primary;
+      const wbName = WorldBookRepository.getCurrentCharacterWorldbook();
       if (!wbName) {
         return { status: 'error', message: '角色卡未绑定世界书' };
       }
 
       // 2. 讀取世界書
-      const entries = await getWorldbook(wbName);
+      const entries = await WorldBookRepository.getEntries(wbName);
 
       // 3. 搜尋是否已存在對應條目（繁簡體相容）
       const targetName = buildEntryName(roleName);
@@ -292,7 +293,7 @@ export const WorldBookService = {
         const order = maxOrder >= 0 ? maxOrder + 1 : DEFAULT_ORDER;
 
         // 5. 建立條目
-        await createWorldbookEntries(wbName, [
+        await WorldBookRepository.createEntries(wbName, [
           {
             name: targetName,
             enabled: true,
@@ -342,15 +343,14 @@ export const WorldBookService = {
     const entryName = buildPlotRoleProfileEntryName(roleName);
 
     try {
-      const charWb = getCharWorldbookNames('current');
-      const wbName = charWb.primary;
+      const wbName = WorldBookRepository.getCurrentCharacterWorldbook();
       if (!wbName) {
         return { status: 'error', message: '角色卡未绑定世界书' };
       }
 
       console.info(`[HypnoOS] WorldBookService: 檢查 [mvu_plot] 條目「${entryName}」`);
 
-      const entries = await getWorldbook(wbName);
+      const entries = await WorldBookRepository.getEntries(wbName);
 
 		// 繁簡體相容搜尋
 		const existing = entries.find(e => isPlotRoleProfileEntryForRole(e.name, roleName));
@@ -373,7 +373,7 @@ export const WorldBookService = {
       // 建立預設模板內容
       const defaultContent = buildDefaultPlotContent(roleName);
 
-      await createWorldbookEntries(wbName, [
+      await WorldBookRepository.createEntries(wbName, [
         {
           name: entryName,
           enabled: true,

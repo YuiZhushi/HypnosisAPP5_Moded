@@ -2,13 +2,9 @@ import type { PersistedStore } from '../types/persistedStore';
 import type { CustomHypnosisDef, UserResources, HypnosisFeature } from '../../types';
 import { calculateCustomHypnosisCostCore } from '../helpers/customHypnosisCost';
 
-export function createCustomHypnosisManager(deps: {
-  readStoreSnapshot: () => PersistedStore;
-  updateStoreWith: (updater: (store: PersistedStore) => PersistedStore | Promise<PersistedStore>) => Promise<PersistedStore>;
-  getUserDataCore: () => Promise<UserResources>;
-  updateResourcesCore: (patch: Partial<UserResources>) => Promise<UserResources>;
-}) {
-  const { readStoreSnapshot, updateStoreWith, getUserDataCore, updateResourcesCore } = deps;
+import { readStoreSnapshot, updateStoreWith, getUserDataCore, updateResourcesCore } from './systemCoreManager';
+
+export function createCustomHypnosisManager() {
 
   function calculateCustomHypnosisCostImpl(
     tier: HypnosisFeature['tier'],

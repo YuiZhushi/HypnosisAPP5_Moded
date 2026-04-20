@@ -269,24 +269,22 @@ type GetChatMessagesFn = (floor: number, options?: { include_swipes?: boolean })
 /**
  * 建立 Calendar *Impl 函式的工廠函式喵~
  */
+import {
+  normalizeChatVariables,
+  CHAT_OPTION,
+  updateStoreWith,
+  getVariables,
+  getChatMessages,
+} from './systemCoreManager';
+
 export function createCalendarEventImplFunctions(deps: {
-  normalizeChatVariables: NormalizeChatVariablesFn;
-  getVariables: (option?: any) => any;
-  CHAT_OPTION: { type: 'chat' };
-  getCurrentFloorAndSwipe: GetCurrentFloorAndSwipeFn;
-  resolveCalendarStateAt: ResolveCalendarStateAtFn;
-  updateStoreWith: UpdateStoreWithFn;
-  getChatMessages: GetChatMessagesFn;
+  getCurrentFloorAndSwipe: () => { floor: number; swipeId: number };
+  resolveCalendarStateAt: (store: PersistedStore, targetFloor: number) => CalendarResolvedState;
   CALENDAR_CRUD_RESOLVE_DEBUG: boolean;
 }) {
   const {
-    normalizeChatVariables,
-    getVariables,
-    CHAT_OPTION,
     getCurrentFloorAndSwipe,
     resolveCalendarStateAt,
-    updateStoreWith,
-    getChatMessages,
     CALENDAR_CRUD_RESOLVE_DEBUG,
   } = deps;
 

@@ -1,44 +1,47 @@
 # 任務進度暫存
 
 ## 任務
-- 名稱：重構 dataService 與 hypnoAppUsecaseService
-- 目標：優化依賴注入，解決過度封裝，移除 hypnoAppUsecaseService，達成純 Manager 架構，精簡 dataService。
+- 名稱：重構執行計畫：終極解耦與模組化
+- 目標：解決「God Object (characterDataService.ts)」、「依賴倒置 (dataService.ts)」與「邏輯分散 (Worldbook API 操作)」問題，將實作拆分為四個階段。
 - 開始時間：2026-04-21
 
-## 待辦清單(重要細節不可缺失，可能遇見的問題要附上，步驟避免過於簡略)
-- [x] 階段一：建立 Custom Hypnosis Manager (自訂催眠邏輯模組化)
-  - [x] 詳細步驟 1-1：建立 `src/催眠APP前端/services/managers/customHypnosisManager.ts`。
-  - [x] 詳細步驟 1-2：將 `hypnoAppUsecaseService.ts` 中的 `addCustomHypnosis` 與 `deleteCustomHypnosis` 邏輯遷移至此 Manager。
-  - [x] 詳細步驟 1-3：將 `dataService.ts` 中直接匯出的自訂催眠相關函式整合進 Manager。
-  - [x] 詳細步驟 1-4：更新 `dataService.ts`，改為呼叫 `customHypnosisManager`。
-- [x] 階段二：簡化 Usecase 依賴注入 / 階段三：Usecase 職責重新分配
-  - [x] 詳細步驟 2-1：將 `subscribeOrRenew`、`maybeAutoRenewSubscription`、`startSession` 移至 `resourceManager.ts`。
-  - [x] 詳細步驟 2-2：將 `purchaseFeature` 移至 `featureManager.ts`。
-  - [x] 詳細步驟 2-3：將 `claimAchievement`、`claimQuest` 移至 `achievementQuestManager.ts`。
-  - [x] 詳細步驟 2-4：從 `dataService.ts` 移除 `createHypnoAppUsecaseService`。
-  - [x] 詳細步驟 2-5：刪除 `hypnoAppUsecaseService.ts` 檔案。
-- [x] 階段四：DataService 最終瘦身與檢查
-  - [x] 詳細步驟 4-1：檢查 `dataService.ts` 內的匯出物件 `DataService`，確保所有方法都是簡單轉發。
-  - [x] 詳細步驟 4-2：清理無用的 import 與型別定義。
-  - [x] 詳細步驟 4-3：執行 `pnpm build:dev` 確認編譯無誤。
+## 待辦清單
+- [ ] 階段一：統一 Worldbook 存取層與抽象化 (Repository Pattern)
+  - [x] 步驟 1-1：建立 Repository 層 (`worldBookRepository.ts`)
+    - 封裝 `getCharWorldbookNames`、`getWorldbook`、`updateWorldbookWith` 等全域函數呼叫
+    - 提供高階 API：`getCurrentCharacterWorldbook()`、`findEntryByName()` 等
+  - [x] 步驟 1-2：重構 `worldBookService.ts`
+    - 移除全域 API 呼叫，改用 `worldBookRepository`
+    - 保留 `checkAndEnsureEntry` 等業務邏輯
+  - [x] 步驟 1-3：重構 `characterDataService.ts` (部分)
+    - 修改 `loadCharacter` 與 `saveCharacter`，改為呼叫 `worldBookRepository`
+- [x] 階段二：拆解 God Object (`characterDataService.ts`)
+  - [x] 步驟 2-1：抽離 AST 與 YAML 轉換器 (`astYamlHelper.ts`)
+  - [x] 步驟 2-2：抽離 EJS 行為分支解析器 (`behaviorBranchHelper.ts`)
+  - [x] 步驟 2-3：抽離預設模板與常數 (`characterDefaults.ts`)
+  - [x] 步驟 2-4：瘦身 `characterDataService.ts`
+- [x] 階段三：消除 `dataService.ts` 的依賴倒置與過度封裝
+  - [x] 步驟 3-1：遷移核心資源邏輯 (`resourceManager.ts` 或 `systemCoreManager.ts`)
+  - [x] 步驟 3-2：重構 Manager 的初始化
+  - [x] 步驟 3-3：極致瘦身 `dataService.ts`
+- [x] 階段四：重新命名與清理
+  - [x] 步驟 4-1：簡化 AST 處理服務命名 (`aiPatchParser.ts`, `astDiffService.ts`, `astMergeService.ts`)
+  - [x] 步驟 4-2：更新引用路徑 (components)
+  - [x] 步驟 4-3：最終驗證 (`pnpm build:dev`)
 
 ## 進行中
-- 階段四：DataService 最終瘦身與檢查
+- 無
 
 ## 已完成
-- 階段一：建立 Custom Hypnosis Manager (自訂催眠邏輯模組化)
-- 階段二：簡化 Usecase 依賴注入 / 階段三：Usecase 職責重新分配
-- 階段四：DataService 最終瘦身與檢查
+- 階段一到四已全部完成。
 
 ## 變更紀錄
 - 2026-04-21 初始化檔案並建立待辦
-- 2026-04-21 完成階段一：建立 Custom Hypnosis Manager
-- 2026-04-21 完成階段二與階段三：移除 Usecase，改為 Manager
-- 2026-04-21 完成階段四：DataService 瘦身並檢查編譯
 
 ## 風險與阻塞
-- 可能遇到循環依賴或型別未定義錯誤。
-- 遷移過程中確保邏輯正確。
+- 無
 
 ## 用戶需要進行的檢查與確認
-- 無
+- 確認重構後程式碼能通過編譯與基本功能測試
+
+=== 全部完成 ===

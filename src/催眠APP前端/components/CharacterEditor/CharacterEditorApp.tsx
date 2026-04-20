@@ -1,19 +1,20 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { EDITOR_SECTIONS, EditorNode, CharacterCompletionAppAiPatchResult, CharacterCompletionAppApplyResult } from '../../types';
+import { EDITOR_SECTIONS, EditorNode, AiPatchResult, AstApplyResult } from '../../types';
 import { MvuBridge } from '../../services/mvuBridge';
 import { WorldBookService } from '../../services/worldBookService';
-import type { BehaviorBranch } from '../../services/characterDataService';
+import type { BehaviorBranch } from '../../services/helpers/behaviorBranchHelper';
 import {
-  buildDefaultBehaviorBranchNodes,
-  loadCharacter,
-  parseBehaviorBranchesFromRaw,
-  parseSectionYamlToNodes,
-  saveCharacter,
-  serializeBehaviorBranches,
-  serializeSectionNodesToYaml,
-  sortBehaviorBranches,
   validateBehaviorBranches,
-} from '../../services/characterDataService';
+  parseBehaviorBranchesFromRaw,
+  serializeBehaviorBranches,
+  sortBehaviorBranches,
+} from '../../services/helpers/behaviorBranchHelper';
+import {
+  parseSectionYamlToNodes,
+  serializeSectionNodesToYaml,
+} from '../../services/helpers/astYamlHelper';
+import { buildDefaultBehaviorBranchNodes } from '../../services/constants/characterDefaults';
+import { loadCharacter, saveCharacter } from '../../services/characterDataService';
 import { ArrowLeft, CheckCircle, RotateCcw, Save, Loader2, RefreshCw, Wand2, Sparkles } from 'lucide-react';
 import { NodeTree, treeReducer, TreeAction } from './NodeTree';
 import { PromptManagerPage } from './PromptManagerPage';
@@ -92,7 +93,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
 
   // ----- AI Patch State -----
   const [aiRequestMode, setAiRequestMode] = useState<'current' | 'all' | null>(null);
-  const [patchResult, setPatchResult] = useState<CharacterCompletionAppAiPatchResult | null>(null);
+  const [patchResult, setPatchResult] = useState<AiPatchResult | null>(null);
 
   // ----- Snapshot for reset -----
   const snapshotRef = useRef<{
@@ -238,13 +239,13 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
     setAiRequestMode(mode);
   }, []);
 
-  const handleAiRequestSuccess = useCallback((result: CharacterCompletionAppAiPatchResult) => {
+  const handleAiRequestSuccess = useCallback((result: AiPatchResult) => {
     console.log(`%c[HypnoOS][App] handleAiRequestSuccess triggered! Result:`, 'background: #222; color: #44cc44; font-size: 14px; font-weight: bold;', result);
     setPatchResult(result);
   }, []);
 
   const handleAiReviewApply = useCallback((
-    applyResult: CharacterCompletionAppApplyResult,
+    applyResult: AstApplyResult,
     newSectionData: Record<string, EditorNode[]>,
     newBehaviorData: Record<string, BehaviorBranch[]>
   ) => {

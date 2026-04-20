@@ -89,9 +89,6 @@ import { createFeatureManager } from './managers/featureManager';
 import { createCustomHypnosisManager } from './managers/customHypnosisManager';
 
 // === Store 模組 ===
-import { STORE_SCHEMA } from './store/storeSchema';
-import { createSystemSchema, type SystemWithStore } from './store/systemSchema';
-import { migrateStore } from './store/migrateStore';
 import {
   type CalendarCrudNode,
   type CalendarCrudOp,
@@ -103,12 +100,23 @@ import {
   type CustomCalendarEvent as PersistedCustomCalendarEvent,
 } from './types/persistedStore';
 
+// === System Core ===
+import {
+  CHAT_OPTION,
+  storeGateway,
+  normalizeChatVariables,
+  updateStoreWith,
+  readStoreSnapshot,
+  setSubscriptionTierLabel,
+  getUserDataCore,
+  updateResourcesCore,
+  getSystemClockCore,
+} from './managers/systemCoreManager';
+
 declare function getVariables(option?: any): any;
 declare function updateVariablesWith(callback: (vars: any) => void, option?: any): any;
 declare function getCurrentMessageId(): number;
 declare function getChatMessages(floor?: number, options?: { include_swipes?: boolean }): unknown[] | undefined;
-
-const CHAT_OPTION = { type: 'chat' } as const;
 
 // CalendarCRUD 渲染路徑調適開關（預設關閉；需要時手動改為 true）
 const CALENDAR_CRUD_RESOLVE_DEBUG = false;
@@ -119,25 +127,6 @@ const FIRST_FEATURE_ID_BY_TIER = createFirstFeatureIdByTier(FEATURES);
 // 匯出類型供外部使用
 export type CustomCalendarEvent = PersistedCustomCalendarEvent;
 export type { SettingsPromptTuningConfig } from './constants/settingsPromptDefaults';
-
-// === SYSTEM_SCHEMA 建立 ===
-const SYSTEM_SCHEMA = createSystemSchema(DEFAULT_USER_DATA);
-
-// === Store Gateway 建立 ===
-const storeGateway = createStoreGateway<SystemWithStore, PersistedStore>({
-  chatOption: CHAT_OPTION,
-  getVariables,
-  updateVariablesWith,
-  normalizeSystemAliases,
-  systemSchema: SYSTEM_SCHEMA,
-  storeSchema: STORE_SCHEMA,
-  migrateStore,
-  syncPersistedStore: store => MvuBridge.syncPersistedStore(store),
-});
-
-const normalizeChatVariables = storeGateway.normalizeChatVariables;
-const updateStoreWith = storeGateway.updateStoreWith;
-const readStoreSnapshot = storeGateway.readStoreSnapshot;
 
 // === Core 函式 ===
 function getCurrentFloorAndSwipe(): { floor: number; swipeId: number } {
@@ -153,168 +142,21 @@ function resolveCalendarStateAt(store: PersistedStore, targetFloor: number): Cal
   });
 }
 
-async function setSubscriptionTierLabel(tierLabel: string): Promise<void> {
-  updateVariablesWith(vars => {
-    const { system } = normalizeChatVariables(vars);
-    if (system._催眠APP订阅等级 === tierLabel) return vars;
-    system._催眠APP订阅等级 = tierLabel;
-    vars.系统 = system;
-    return vars;
-  }, CHAT_OPTION);
-  await MvuBridge.syncSubscriptionTier(tierLabel);
-}
-
-// === Core 函式（getUserDataCore, updateResourcesCore, getSystemClockCore）===
-async function getUserDataCore(): Promise<UserResources> {
-  let user: UserResources | undefined;
-  try {
-    const mvuSystem = await MvuBridge.getSystem();
-    if (mvuSystem) {
-      user = systemToUserResources(SYSTEM_SCHEMA.parse(normalizeSystemAliases(mvuSystem)));
-    }
-  } catch (err) {
-    console.warn('[HypnoOS] 读取 MVU 系统变量失败，回退到聊天变量', err);
-  }
-
-  updateVariablesWith(vars => {
-    const { system } = normalizeChatVariables(vars);
-    user ??= systemToUserResources(system);
-    return vars;
-  }, CHAT_OPTION);
-
-  if (user) {
-    updateVariablesWith(vars => {
-      const { system, store } = normalizeChatVariables(vars);
-      system._MC能量 = user!.mcEnergy;
-      system._MC能量上限 = user!.mcEnergyMax;
-      system.当前MC点 = user!.mcPoints;
-      system._累计消耗MC点 = user!.totalConsumedMc;
-      system.持有零花钱 = user!.money;
-      system.主角可疑度 = user!.suspicion;
-      system._hypnoos = store;
-      vars.系统 = system;
-      return vars;
-    }, CHAT_OPTION);
-  }
-
-  return user ?? DEFAULT_USER_DATA;
-}
-
-async function updateResourcesCore(newData: Partial<UserResources>): Promise<UserResources> {
-  const merged: UserResources = { ...(await getUserDataCore()), ...newData };
-  updateVariablesWith(vars => {
-    const { system, store } = normalizeChatVariables(vars);
-    system._MC能量 = merged.mcEnergy;
-    system._MC能量上限 = merged.mcEnergyMax;
-    system.当前MC点 = merged.mcPoints;
-    system._累计消耗MC点 = merged.totalConsumedMc;
-    system.持有零花钱 = merged.money;
-    system.主角可疑度 = merged.suspicion;
-    system._hypnoos = store;
-    vars.系统 = system;
-    return vars;
-  }, CHAT_OPTION);
-
-  await MvuBridge.syncUserResources(merged);
-  return merged;
-}
-
-async function syncSubscriptionTierLabel(nowVirtualMinutes: number | null): Promise<void> {
-  const { system, store } = normalizeChatVariables(getVariables(CHAT_OPTION));
-  const subscription = (store.subscription as SubscriptionState | undefined) ?? null;
-  const desired = getSubscriptionTierLabel(subscription, nowVirtualMinutes);
-  if (desired === null) return;
-  if (system._催眠APP订阅等级 === desired) return;
-
-  updateVariablesWith(vars => {
-    const { system: nextSystem } = normalizeChatVariables(vars);
-    nextSystem._催眠APP订阅等级 = desired;
-    vars.系统 = nextSystem;
-    return vars;
-  }, CHAT_OPTION);
-
-  await MvuBridge.syncSubscriptionTier(desired);
-}
-
-async function getSystemClockCore(): Promise<{ dateText?: string; timeText?: string; virtualMinutes: number | null }> {
-  const maybeSync = async (clock: { virtualMinutes: number | null }) => {
-    try {
-      await syncSubscriptionTierLabel(clock.virtualMinutes);
-    } catch (err) {
-      console.warn('[HypnoOS] 同步订阅等级变量失败', err);
-    }
-    return clock;
-  };
-
-  try {
-    const mvuSystem = await MvuBridge.getSystem();
-    if (mvuSystem) return await maybeSync(getSystemClockFrom(mvuSystem));
-  } catch (err) {
-    console.warn('[HypnoOS] 读取 MVU 系统时间失败，回退到聊天变量', err);
-  }
-
-  const { system } = normalizeChatVariables(getVariables(CHAT_OPTION));
-  return await maybeSync(getSystemClockFrom(system));
-}
-
 // === Managers Initialization ===
-const settingsManager = createSettingsManager({
-  readStoreSnapshot,
-  updateStoreWith,
-});
-
-const resourceManager = createResourceManager({
-  readStoreSnapshot,
-  updateStoreWith,
-  setSubscriptionTierLabel,
-  getSystemClockCore,
-  normalizeChatVariables,
-  getVariables,
-  CHAT_OPTION,
-  getUserDataCore,
-  updateResourcesCore,
-});
-
-const featureManager = createFeatureManager({
-  readStoreSnapshot,
-  updateStoreWith,
-  normalizeChatVariables,
-  getVariables,
-  CHAT_OPTION,
-  FIRST_FEATURE_ID_BY_TIER,
-  getUserDataCore,
-  updateResourcesCore,
-});
-
+const settingsManager = createSettingsManager();
+const resourceManager = createResourceManager();
+const featureManager = createFeatureManager({ FIRST_FEATURE_ID_BY_TIER });
 const achievementQuestImplFns = createAchievementQuestImplFunctions({
-  normalizeChatVariables,
-  getVariables,
-  CHAT_OPTION,
-  getUserDataCore,
-  updateResourcesCore,
-  updateStoreWith,
   toFiniteNumber,
   makeAchievementId,
   getRolesAndSystemSnapshot: () => getRolesAndSystemSnapshot(normalizeChatVariables, getVariables, CHAT_OPTION),
 });
-
 const calendarEventImplFns = createCalendarEventImplFunctions({
-  normalizeChatVariables,
-  getVariables,
-  CHAT_OPTION,
   getCurrentFloorAndSwipe,
   resolveCalendarStateAt,
-  updateStoreWith,
-  getChatMessages: (floor, options) => getChatMessages(floor, options),
   CALENDAR_CRUD_RESOLVE_DEBUG,
 });
-
-const customHypnosisManager = createCustomHypnosisManager({
-  readStoreSnapshot,
-  updateStoreWith,
-  getUserDataCore,
-  updateResourcesCore,
-});
+const customHypnosisManager = createCustomHypnosisManager();
 
 // === DataService Facade ===
 export const DataService = {

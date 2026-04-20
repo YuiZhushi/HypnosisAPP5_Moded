@@ -1,17 +1,17 @@
-import { CharacterCompletionAppDiffProposal, CharacterCompletionAppReviewDecision, CharacterCompletionAppApplyResult, EditorNode } from '../types';
-import { yamlToTree } from './characterDataService';
+import { AstDiffProposal, ReviewDecision, AstApplyResult, EditorNode } from '../../types';
+import { yamlToTree } from './astYamlHelper';
 
-export const CharacterCompletionAppMergeService = {
+export const AstMergeService = {
   /**
    * Applies accepted proposals to an EditorNode tree. Returns a mutated clone of the tree.
    */
   characterCompletionAppApplyApprovedProposals(
-    proposals: CharacterCompletionAppDiffProposal[],
-    decisions: Record<string, CharacterCompletionAppReviewDecision>,
+    proposals: AstDiffProposal[],
+    decisions: Record<string, ReviewDecision>,
     originalNodes: EditorNode[]
-  ): { nodes: EditorNode[]; stats: CharacterCompletionAppApplyResult } {
+  ): { nodes: EditorNode[]; stats: AstApplyResult } {
     const clonedNodes = JSON.parse(JSON.stringify(originalNodes)) as EditorNode[];
-    const resultStats: CharacterCompletionAppApplyResult = {
+    const resultStats: AstApplyResult = {
       appliedCount: 0,
       rejectedCount: 0,
       skippedCount: 0,
@@ -42,7 +42,7 @@ export const CharacterCompletionAppMergeService = {
     return { nodes: clonedNodes, stats: resultStats };
   },
 
-  characterCompletionAppSummarizeApplyResult(stats: CharacterCompletionAppApplyResult): string {
+  characterCompletionAppSummarizeApplyResult(stats: AstApplyResult): string {
     if (stats.appliedCount === 0) {
       return `未套用任何變更 (拒絕 ${stats.rejectedCount} 項)`;
     }
@@ -53,7 +53,7 @@ export const CharacterCompletionAppMergeService = {
 /**
  * Mutates the tree by applying the proposal. Returns true if successful.
  */
-function applyProposalToTree(tree: EditorNode[], proposal: CharacterCompletionAppDiffProposal): boolean {
+function applyProposalToTree(tree: EditorNode[], proposal: AstDiffProposal): boolean {
   if (proposal.path.length === 0) return false;
 
   const targetPath = [...proposal.path];

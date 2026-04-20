@@ -1,6 +1,6 @@
-import { CharacterCompletionAppAiPatchResult } from '../types';
+import { AiPatchResult } from '../../types';
 
-export const CharacterCompletionAppAiPatchService = {
+export const aiPatchParser = {
   /**
    * Parses the AI's raw text response to extract the YAML or EJS patches within expected tags.
    * Tolerant of misspelt tags and cleans up stray markdown headers from YAML.
@@ -8,8 +8,8 @@ export const CharacterCompletionAppAiPatchService = {
   characterCompletionAppParseAiResponse(
     rawText: string,
     expectedType: 'yaml' | 'ejs' | 'mixed'
-  ): CharacterCompletionAppAiPatchResult {
-    const result: CharacterCompletionAppAiPatchResult = {
+  ): AiPatchResult {
+    const result: AiPatchResult = {
       yamlRaw: '',
       ejsRaw: '',
       warnings: [],

@@ -5,11 +5,9 @@ import { DEFAULT_SETTINGS_PROMPT_CONFIG, cloneSettingsPromptConfig, type Setting
 import { normalizeSettingsPromptConfig } from '../helpers/settingsPromptHelpers';
 import { normalizeEditorPromptModules as normalizeEditorPromptModulesHelper } from '../helpers/editorPromptModules';
 
-export function createSettingsManager(deps: {
-  readStoreSnapshot: () => PersistedStore;
-  updateStoreWith: (updater: (store: PersistedStore) => PersistedStore | Promise<PersistedStore>) => Promise<PersistedStore>;
-}) {
-  const { readStoreSnapshot, updateStoreWith } = deps;
+import { readStoreSnapshot, updateStoreWith } from './systemCoreManager';
+
+export function createSettingsManager() {
 
   function getApiSettingsImpl(): PersistedStore['apiSettings'] {
     return readStoreSnapshot().apiSettings;

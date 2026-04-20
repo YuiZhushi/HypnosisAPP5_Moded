@@ -3,8 +3,8 @@ import { X, Send, Loader2, Info } from 'lucide-react';
 import { DataService } from '../../services/dataService';
 import { AiRequestPipelineService } from '../../services/aiRequestPipelineService';
 import { buildEditorPipelineParams } from '../../prompts/characterEditorSend';
-import { CharacterCompletionAppAiPatchService } from '../../services/characterCompletionAppAiPatchService';
-import { CharacterCompletionAppAiPatchResult, EDITOR_SECTIONS } from '../../types';
+import { aiPatchParser } from '../../services/helpers/aiPatchParser';
+import { AiPatchResult, EDITOR_SECTIONS } from '../../types';
 
 interface CharacterCompletionAppAiRequestModalProps {
   mode: 'current' | 'all';
@@ -16,7 +16,7 @@ interface CharacterCompletionAppAiRequestModalProps {
   allSectionsContent: string;
   worldbookContent: string;
   onClose: () => void;
-  onSuccess: (result: CharacterCompletionAppAiPatchResult) => void;
+  onSuccess: (result: AiPatchResult) => void;
 }
 
 export const CharacterCompletionAppAiRequestModal: React.FC<CharacterCompletionAppAiRequestModalProps> = ({
@@ -93,7 +93,7 @@ ${userInput ? `使用者額外指示：\n${userInput}` : ''}
       console.log(`%c[HypnoOS][Modal] AI Response received:`, 'color: cyan', response);
 
       if (response.ok && response.responseText) {
-        const patchResult = CharacterCompletionAppAiPatchService.characterCompletionAppParseAiResponse(
+        const patchResult = aiPatchParser.characterCompletionAppParseAiResponse(
           response.responseText,
           expectedType
         );
