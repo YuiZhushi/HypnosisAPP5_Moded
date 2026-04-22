@@ -16,6 +16,7 @@ import { STORE_SCHEMA } from '../../constants/schemas/storeSchema';
 import { createSystemSchema } from '../../constants/schemas/systemSchema';
 import { DEFAULT_USER_DATA } from '../../constants/common/userDefaults';
 import { migrateStore } from './migrateStore';
+import * as MvuBridge from '../mvu/mvuBridge';
 
 // ====== 全域函數（iframe 環境直接可用） ======
 
@@ -53,11 +54,22 @@ export function normalizeChatVariables(variables: Record<string, unknown>) {
 }
 
 /**
- * 更新 PersistedStore 並同步到 MVU
+ * 更新選項
+ */
+export type UpdateStoreOptions = {
+  /** 設為 true 可跳過 MVU 同步（用於批次操作，最後再手動同步） */
+  skipSync?: boolean;
+};
+
+/**
+ * 更新 PersistedStore，默認自動同步到 MVU。
+ *
+ * @param updater - 返回新 store 的純函數
+ * @param options - 可選配置（skipSync: true 跳過自動同步）
  */
 export async function updateStoreWith(
   updater: (store: PersistedStore) => PersistedStore,
-  syncFn?: (store: PersistedStore) => Promise<void>,
+  options?: UpdateStoreOptions,
 ): Promise<PersistedStore> {
   let nextStore: PersistedStore | undefined;
   updateVariablesWith((vars: Record<string, unknown>) => {
@@ -69,7 +81,9 @@ export async function updateStoreWith(
   }, CHAT_OPTION);
 
   const result = nextStore ?? STORE_SCHEMA.parse({});
-  if (syncFn) await syncFn(result);
+  if (!options?.skipSync) {
+    await MvuBridge.syncPersistedStore(result);
+  }
   return result;
 }
 
