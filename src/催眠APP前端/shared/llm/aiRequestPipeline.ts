@@ -212,3 +212,17 @@ export async function request(params: ComposePromptParams): Promise<RequestResul
   }
   return { ok: true, prompt, responseText: receiveRawResponse(sent.responseText ?? '', params.escapeEjs) };
 }
+
+/**
+ * 預覽便利函式：僅執行拼接 + 佔位符替換，不發送請求。
+ *
+ * 用途：
+ * - 在 UI 中預覽最終生成的提示詞
+ * - 調試佔位符替換結果
+ * - 確認模塊拼接順序是否正確
+ *
+ * @returns 拼接並替換後的完整提示詞文本
+ */
+export function previewPrompt(params: ComposePromptParams): string {
+  return composePrompt(params);
+}
