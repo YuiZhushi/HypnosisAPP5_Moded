@@ -1,6 +1,6 @@
 import YAML from 'yaml';
 import type { EditorNode, NodeType } from '../../types';
-import { SECTION_LOCKED_KEYS } from '../constants/characterDefaults';
+import { SECTION_LOCKED_KEYS } from '../constants/characterConstants';
 
 let _counter = 0;
 function nextId(): string {

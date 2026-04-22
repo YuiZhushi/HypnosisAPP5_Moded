@@ -11,7 +11,8 @@ import type { EditorNode } from '../types';
 import { WorldBookRepository } from './repositories/worldBookRepository';
 import { treeToYaml, yamlToTree } from './helpers/astYamlHelper';
 import { BehaviorBranch, sortBehaviorBranches, validateBehaviorBranches, rebuildBehaviorSection, parseEjsBranches } from './helpers/behaviorBranchHelper';
-import { DATA_KEY_TO_SECTION, SECTION_LOCKED_KEYS, buildDefaultGlobalRulesNodes } from './constants/characterDefaults';
+import { buildDefaultGlobalRulesNodes } from './constants/characterDefaults';
+import { DATA_KEY_TO_SECTION, SECTION_LOCKED_KEYS } from './constants/characterConstants';
 
 export type LoadResult = {
   sectionData: Record<string, EditorNode[]>;
