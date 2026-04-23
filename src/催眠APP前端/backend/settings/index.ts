@@ -10,8 +10,7 @@
  * 所有 Store 操作透過 shared/store/storeGateway。
  */
 
-import type { EditorPromptModule } from '../../constants/interfaces';
-import type { PersistedStore, PersistedEditorPromptRecord } from '../../constants/schemas/storeSchema';
+import type { PersistedStore } from '../../constants/schemas/storeSchema';
 import {
   DEFAULT_SETTINGS_PROMPT_CONFIG,
   cloneSettingsPromptConfig,
@@ -19,7 +18,6 @@ import {
   type SettingsPromptModule,
   type SettingsPromptPlaceholder,
 } from '../../constants/settings/settingsPromptDefaults';
-import { DEFAULT_EDITOR_PROMPT_MODULES } from '../../constants/character-editor/editorPromptDefaults';
 import { readStoreSnapshot, updateStoreWith } from '../../shared/store/storeGateway';
 import { logger } from '../../shared/debug/loggerService';
 
@@ -68,30 +66,6 @@ function normalizeSettingsPromptConfig(
   };
 }
 
-/** 正規化角色編輯器提示詞模塊 */
-function normalizeEditorPromptModules(
-  raw: PersistedStore['editorPromptModules'] | undefined,
-  defaults: EditorPromptModule[],
-): EditorPromptModule[] {
-  const defaultMap = new Map(defaults.map(m => [m.id, m]));
-  if (raw) {
-    for (const [id, persisted] of Object.entries(raw)) {
-      if (!persisted?.id) continue;
-      const base = defaultMap.get(id);
-      defaultMap.set(id, {
-        id: persisted.id,
-        title: persisted.title ?? base?.title ?? id,
-        content: persisted.content ?? base?.content ?? '',
-        type: (['fixed', 'section_content', 'section_format', 'section_instruction'].includes(persisted.type as string)
-          ? persisted.type
-          : (base?.type ?? 'fixed')) as EditorPromptModule['type'],
-        sectionId: persisted.sectionId ?? base?.sectionId,
-        order: persisted.order ?? base?.order ?? 99,
-      });
-    }
-  }
-  return Array.from(defaultMap.values()).sort((a, b) => a.order - b.order);
-}
 
 // ====== 公開 API：API 設定 ======
 
@@ -188,32 +162,3 @@ export async function updateSettingsPromptConfig(next: SettingsPromptTuningConfi
   });
 }
 
-// ====== 公開 API：角色編輯器提示詞模塊 ======
-
-/** 讀取角色編輯器提示詞模塊列表 */
-export function getEditorPromptModules(): EditorPromptModule[] {
-  return normalizeEditorPromptModules(readStoreSnapshot().editorPromptModules, DEFAULT_EDITOR_PROMPT_MODULES);
-}
-
-/** 取得預設角色編輯器提示詞模塊 */
-export function getDefaultEditorPromptModules(): EditorPromptModule[] {
-  return DEFAULT_EDITOR_PROMPT_MODULES.map(m => ({ ...m }));
-}
-
-/** 儲存角色編輯器提示詞模塊 */
-export async function saveEditorPromptModules(modules: EditorPromptModule[]): Promise<void> {
-  await updateStoreWith(store => {
-    const record: PersistedEditorPromptRecord = {};
-    for (const m of modules) {
-      record[m.id] = {
-        id: m.id,
-        title: m.title,
-        content: m.content,
-        type: m.type,
-        sectionId: m.sectionId,
-        order: m.order,
-      };
-    }
-    return { ...store, editorPromptModules: record };
-  });
-}

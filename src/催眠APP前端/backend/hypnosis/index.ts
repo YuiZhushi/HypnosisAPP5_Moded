@@ -357,3 +357,6 @@ export async function setDebugEnabled(enabled: boolean): Promise<void> {
     store => ({ ...store, debugEnabled: enabled }),
   );
 }
+
+// 提示詞構造（催眠 APP 獨立管理）
+export { buildHypnosisSendMessage } from './promptBuilder';

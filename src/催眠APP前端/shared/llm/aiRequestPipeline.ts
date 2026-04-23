@@ -12,17 +12,13 @@
 
 import { logger } from '../debug/loggerService';
 
-// ====== 類型 ======
+// ====== 類型（從 constants/interfaces.ts 統一導入） ======
 
-export type PromptModule = { id: string; content: string };
-export type PlaceholderValue = string | number | boolean | null | undefined;
-
-export type ComposePromptParams = {
-  modules: PromptModule[];
-  moduleOrder?: string[];
-  placeholders?: Record<string, PlaceholderValue>;
-  escapeEjs?: boolean;
-};
+import type {
+  PromptModule,
+  PlaceholderValue,
+  ComposePromptParams,
+} from '../../constants/interfaces';
 
 export type SendResult = {
   ok: boolean;

@@ -1,10 +1,9 @@
-// ====== 大型模板（TODO: 日後手動搬遷到 constants/character-editor/plotTemplate.ts） ======
-
 /**
- * ⚠ 此函數包含 ~230 行的模板字串。
- *   重構完成後，請將此函數搬遷到 constants/character-editor/plotTemplate.ts。
+ * 預設人設模板 — 用於建立新角色的 [mvu_plot] 世界書條目
+ *
+ * 此函數包含 ~230 行的模板字串，用於生成新角色的預設人設 + 行為指導 YAML。
  */
-function buildDefaultPlotContent(name: string): string {
+export function buildDefaultPlotContent(name: string): string {
   return `<${name}人设>
 \`\`\`yaml
 ${name}:

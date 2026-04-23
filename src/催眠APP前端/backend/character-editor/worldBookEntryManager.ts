@@ -13,6 +13,7 @@
 
 import * as WBRepo from '../../shared/worldbook/worldBookRepository';
 import { logger } from '../../shared/debug/loggerService';
+import { buildDefaultPlotContent } from '../../constants/character-editor/plotTemplate';
 
 // ====== 常數 ======
 
@@ -263,12 +264,7 @@ export async function checkAndEnsureEntry(roleName: string): Promise<WbCheckResu
   }
 }
 
-/**
- * 檢查並建立 [mvu_plot] 人設條目
- *
- * ⚠ TODO: buildDefaultPlotContent() 包含大型模板字串（~230行）。
- *   目前暫時放在此檔案底部，日後由用戶手動搬遷到獨立常數檔。
- */
+/** 檢查並建立 [mvu_plot] 人設條目 */
 export async function checkAndEnsurePlotEntry(roleName: string): Promise<WbCheckResult> {
   const entryName = buildPlotRoleProfileEntryName(roleName);
   try {

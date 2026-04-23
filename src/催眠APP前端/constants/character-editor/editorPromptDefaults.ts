@@ -1,4 +1,5 @@
 import type { EditorPromptModule } from '../interfaces';
+import { EDITOR_SECTIONS } from './editorSections';
 
 // ====== 角色編輯器預設提示詞模塊（18 個） ======
 

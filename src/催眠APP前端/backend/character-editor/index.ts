@@ -63,8 +63,8 @@ export { parseAiResponse } from './aiPatchParser';
 export { buildDiffProposals } from './astDiffEngine';
 export { applyApprovedProposals, summarizeApplyResult } from './astMergeEngine';
 
-// 提示詞構造
-export { buildEditorPipelineParams } from './editorPromptBuilder';
+// 提示詞構造（角色編輯器獨立管理，不依賴 Settings APP）
+export { buildEditorPipelineParams, getEditorModules, getDefaultEditorModules, saveEditorModules } from './editorPromptBuilder';
 
 // ====== 類型 ======
 
@@ -264,7 +264,6 @@ export async function saveCharacter(
       { secId: 'alert', title: '警戒度指导' },
       { secId: 'affection', title: '好感度指导' },
       { secId: 'obedience', title: '服从度指导' },
-      { secId: 'global', title: '全局行为规则' },
     ];
 
     behaviorParts.push('### 当前状态');
@@ -294,7 +293,19 @@ export async function saveCharacter(
       }
     }
 
-    if (!rawFallbacks.global) {
+    // 全局行為規則（獨立處理，避免與迴圈重複）
+    const globalBranches = behaviorData.global;
+    if (globalBranches && globalBranches.length > 0) {
+      const validation = validateBehaviorBranches('global', globalBranches, charName);
+      if (!validation.ok) throw new Error((validation as { message: string }).message);
+      behaviorParts.push('### 全局行为规则');
+      behaviorParts.push(rebuildBehaviorSection('global', globalBranches, charName));
+      behaviorParts.push('');
+    } else if (rawFallbacks.global) {
+      behaviorParts.push('### 全局行为规则');
+      behaviorParts.push(rawFallbacks.global);
+      behaviorParts.push('');
+    } else {
       const globalNodes = sectionData.global;
       if (globalNodes && globalNodes.length > 0) {
         behaviorParts.push('### 全局行为规则');

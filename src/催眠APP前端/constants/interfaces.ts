@@ -246,3 +246,19 @@ export interface AccessContext {
   subscription: SubscriptionState | null;
   nowVirtualMinutes: number | null;
 }
+
+// ====== LLM 提示詞管道類型 ======
+
+/** 提示詞模塊（id + content） */
+export type PromptModule = { id: string; content: string };
+
+/** 佔位符值（字串/數字/布林/null/undefined） */
+export type PlaceholderValue = string | number | boolean | null | undefined;
+
+/** 提示詞組裝參數（供 aiRequestPipeline 使用） */
+export type ComposePromptParams = {
+  modules: PromptModule[];
+  moduleOrder?: string[];
+  placeholders?: Record<string, PlaceholderValue>;
+  escapeEjs?: boolean;
+};
