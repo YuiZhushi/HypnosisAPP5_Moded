@@ -1,0 +1,522 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { UserResources, Achievement, Quest } from '../../constants/interfaces';
+import { waitForMvuReady } from '../../shared/mvu/mvuBridge';
+import {
+  getAchievements,
+  getQuests,
+  claimAchievement,
+  acceptQuest,
+  cancelQuest,
+  claimQuest,
+  publishCustomQuest,
+  deleteCustomQuest,
+} from '../../backend/achievement';
+
+import {
+  Trophy,
+  Scroll,
+  ArrowLeft,
+  CheckCircle,
+  Lock,
+  X,
+  Gift,
+  Hourglass,
+  Star,
+  ChevronRight,
+  AlertCircle,
+  Plus,
+  Trash2,
+} from 'lucide-react';
+
+interface AchievementAppProps {
+  userData: UserResources;
+  onUpdateUser: (data: UserResources) => void;
+  onBack: () => void;
+}
+
+export const AchievementApp: React.FC<AchievementAppProps> = ({ userData, onUpdateUser, onBack }) => {
+  const [activeTab, setActiveTab] = useState<'ACHIEVEMENTS' | 'QUESTS'>('ACHIEVEMENTS');
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [quests, setQuests] = useState<Quest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState<string | null>(null);
+  const refreshTimerRef = useRef<number | null>(null);
+
+  const [showPublishForm, setShowPublishForm] = useState(false);
+  const [newQuestName, setNewQuestName] = useState('');
+  const [newQuestCondition, setNewQuestCondition] = useState('');
+  const [newQuestReward, setNewQuestReward] = useState<number>(1);
+  const [publishing, setPublishing] = useState(false);
+
+  const refreshCurrentTab = async () => {
+    try {
+      if (activeTab === 'ACHIEVEMENTS') {
+        const achData = await getAchievements();
+        setAchievements(achData);
+      } else {
+        const questData = await getQuests();
+        setQuests(questData);
+      }
+    } catch (err) {
+      console.warn('[HypnoOS] 成就/任务刷新失败', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const requestRefresh = () => {
+    if (refreshTimerRef.current !== null) return;
+    setLoading(true);
+    refreshTimerRef.current = window.setTimeout(() => {
+      refreshTimerRef.current = null;
+      void refreshCurrentTab();
+    }, 100);
+  };
+
+  useEffect(() => {
+    let stopped = false;
+
+    requestRefresh();
+
+    let stops: Array<{ stop: () => void }> = [];
+    void (async () => {
+      try {
+        const ready = await waitForMvuReady({ timeoutMs: 5000, pollMs: 150 });
+        if (!ready) return;
+        if (stopped) return;
+        stops = [
+          // @ts-ignore
+          eventOn(Mvu.events.VARIABLE_INITIALIZED, requestRefresh),
+          // @ts-ignore
+          eventOn(Mvu.events.VARIABLE_UPDATE_ENDED, requestRefresh),
+        ];
+      } catch {
+        // ignore: not in tavern env
+      }
+    })();
+
+    return () => {
+      stopped = true;
+      if (refreshTimerRef.current !== null) {
+        window.clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
+      stops.forEach(s => s.stop());
+    };
+  }, [activeTab]);
+
+  const handleClaimAchievement = async (ach: Achievement) => {
+    if (ach.isClaimed) return;
+    if (!ach.checkCondition(userData)) return;
+
+    const result = await claimAchievement(ach.id, userData.mcPoints);
+    if (result.success) {
+      onUpdateUser({ ...userData, mcPoints: result.newPoints });
+      setAchievements(prev => prev.map(a => (a.id === ach.id ? { ...a, isClaimed: true } : a)));
+    }
+  };
+
+  const handleAcceptQuest = async (quest: Quest) => {
+    const result = await acceptQuest(quest.id);
+    if (!result.success) {
+      setNotice(`接取失败：${result.message || '未知原因'}`);
+      setTimeout(() => setNotice(null), 2500);
+      return;
+    }
+    setNotice(`已接取任务：${quest.title}`);
+    setTimeout(() => setNotice(null), 2000);
+    setQuests(prev => prev.map(q => (q.id === quest.id ? { ...q, status: 'ACTIVE' } : q)));
+    requestRefresh();
+  };
+
+  const handleCancelQuest = async (quest: Quest) => {
+    const result = await cancelQuest(quest.id);
+    if (!result.success) {
+      setNotice(`取消失败：${result.message || '未知原因'}`);
+      setTimeout(() => setNotice(null), 2500);
+      return;
+    }
+    setNotice(`已取消任务：${quest.title}`);
+    setTimeout(() => setNotice(null), 1500);
+    setQuests(prev => prev.map(q => (q.id === quest.id ? { ...q, status: 'AVAILABLE' } : q)));
+    requestRefresh();
+  };
+
+  const handleClaimQuest = async (quest: Quest) => {
+    const result = await claimQuest(quest.id, userData.mcPoints);
+    if (!result.success) {
+      setNotice('任务尚未完成');
+      setTimeout(() => setNotice(null), 2000);
+      return;
+    }
+    onUpdateUser({ ...userData, mcPoints: result.newPoints });
+    setNotice(`任务完成：+${quest.rewardMcPoints} PT`);
+    setTimeout(() => setNotice(null), 2000);
+    requestRefresh();
+  };
+
+  const handlePublishQuest = async () => {
+    setPublishing(true);
+    try {
+      const result = await publishCustomQuest({
+        name: newQuestName,
+        condition: newQuestCondition,
+        rewardMcPoints: newQuestReward,
+      });
+      if (!result.ok) {
+        setNotice(`发布失败：${result.message || '未知原因'}`);
+        setTimeout(() => setNotice(null), 3000);
+        return;
+      }
+      const cost = newQuestReward * 800;
+      onUpdateUser({ ...userData, money: userData.money - cost });
+      setNotice(`任务发布成功！花费 ¥${cost}`);
+      setTimeout(() => setNotice(null), 2500);
+      setShowPublishForm(false);
+      setNewQuestName('');
+      setNewQuestCondition('');
+      setNewQuestReward(1);
+      requestRefresh();
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handleDeleteCustomQuest = async (quest: Quest) => {
+    const result = await deleteCustomQuest(quest.id);
+    if (!result.ok) {
+      setNotice(`删除失败：${result.message || '未知原因'}`);
+      setTimeout(() => setNotice(null), 2500);
+      return;
+    }
+    const refund = quest.rewardMcPoints * 800;
+    onUpdateUser({ ...userData, money: userData.money + refund });
+    setNotice(`已删除任务「${quest.title}」，退款 ¥${refund}`);
+    setTimeout(() => setNotice(null), 2500);
+    requestRefresh();
+  };
+
+  const sortedAchievements = [...achievements].sort((a, b) => {
+    const aUnlocked = a.checkCondition(userData);
+    const bUnlocked = b.checkCondition(userData);
+
+    if (aUnlocked && !a.isClaimed && (!bUnlocked || b.isClaimed)) return -1;
+    if (bUnlocked && !b.isClaimed && (!aUnlocked || a.isClaimed)) return 1;
+
+    if (!aUnlocked && !a.isClaimed && b.isClaimed) return -1;
+    if (!bUnlocked && !b.isClaimed && a.isClaimed) return 1;
+
+    return 0;
+  });
+
+  const activeQuestCount = quests.filter(q => q.status === 'ACTIVE' || q.status === 'COMPLETED').length;
+
+  return (
+    <div className="h-full flex flex-col bg-slate-900 text-white animate-fade-in relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/10 rounded-full blur-[80px] pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-600/10 rounded-full blur-[80px] pointer-events-none"></div>
+
+      <div className="px-4 py-4 pt-6 flex items-center justify-between z-10 bg-slate-900/80 backdrop-blur-md border-b border-white/5">
+        <div className="flex items-center gap-3">
+          <button onClick={onBack} className="p-2 rounded-full hover:bg-white/10 transition-colors">
+            <ArrowLeft className="text-gray-300" size={20} />
+          </button>
+          <h1 className="text-lg font-bold tracking-wide">成就和任务</h1>
+        </div>
+        <div className="flex items-center gap-1.5 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
+          <Star size={14} className="text-amber-400 fill-amber-400" />
+          <span className="text-sm font-bold text-amber-100">{userData.mcPoints}</span>
+        </div>
+      </div>
+
+      <div className="flex p-4 gap-4 z-10">
+        <button
+          onClick={() => setActiveTab('ACHIEVEMENTS')}
+          className={`flex-1 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 flex items-center justify-center gap-2
+            ${
+              activeTab === 'ACHIEVEMENTS'
+                ? 'bg-linear-to-r from-indigo-600 to-purple-600 shadow-lg text-white'
+                : 'bg-white/5 text-gray-400 hover:bg-white/10'
+            }`}
+        >
+          <Trophy size={16} /> 成就列表
+        </button>
+        <button
+          onClick={() => setActiveTab('QUESTS')}
+          className={`flex-1 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 flex items-center justify-center gap-2
+            ${
+              activeTab === 'QUESTS'
+                ? 'bg-linear-to-r from-amber-600 to-orange-600 shadow-lg text-white'
+                : 'bg-white/5 text-gray-400 hover:bg-white/10'
+            }`}
+        >
+          <Scroll size={16} /> 任务
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 pb-8 space-y-4 no-scrollbar z-10">
+        {loading && <div className="text-center text-gray-500 py-10">Loading data...</div>}
+        {!loading && notice && (
+          <div className="px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-xs text-white/80">{notice}</div>
+        )}
+
+        {!loading && activeTab === 'ACHIEVEMENTS' && (
+          <div className="space-y-3">
+            {sortedAchievements.map(ach => {
+              const isUnlocked = ach.checkCondition(userData);
+              return (
+                <div
+                  key={ach.id}
+                  className={`
+                    relative p-4 rounded-2xl border transition-all duration-300
+                    ${
+                      ach.isClaimed
+                        ? 'bg-slate-800/50 border-white/5 opacity-60'
+                        : isUnlocked
+                          ? 'bg-indigo-900/20 border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.15)]'
+                          : 'bg-slate-800/30 border-white/5'
+                    }
+                 `}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-start gap-3">
+                      <div className={`p-2 rounded-lg ${isUnlocked ? 'bg-indigo-500/20' : 'bg-gray-700/30'}`}>
+                        {ach.isClaimed ? (
+                          <CheckCircle size={20} className="text-gray-400" />
+                        ) : isUnlocked ? (
+                          <Trophy size={20} className="text-indigo-400" />
+                        ) : (
+                          <Lock size={20} className="text-gray-500" />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className={`font-bold text-sm ${isUnlocked ? 'text-white' : 'text-gray-400'}`}>
+                          {ach.title}
+                        </h3>
+                        <p className="text-xs text-gray-400 mt-1 pr-4">{ach.description}</p>
+                      </div>
+                    </div>
+
+                    {ach.isClaimed ? (
+                      <span className="text-xs font-medium text-gray-500 py-1 px-2">已领取</span>
+                    ) : isUnlocked ? (
+                      <button
+                        onClick={() => handleClaimAchievement(ach)}
+                        className="bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow-lg flex items-center gap-1 animate-pulse"
+                      >
+                        <Gift size={12} />领 {ach.rewardMcPoints} PT
+                      </button>
+                    ) : (
+                      <div className="flex flex-col items-end">
+                        <span className="text-xs font-bold text-indigo-400/50">+{ach.rewardMcPoints} PT</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {!loading && activeTab === 'QUESTS' && (
+          <div className="space-y-3 animate-fade-in">
+            <div className="flex items-center justify-between text-[11px] text-white/60 px-1">
+              <div className="flex items-center gap-2">
+                <Scroll size={14} className="text-white/60" />
+                <span>可接取/进行中任务</span>
+              </div>
+              <div className="text-white/60">
+                同时进行：<span className="text-white font-bold">{activeQuestCount}</span>/3
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowPublishForm(v => !v)}
+              className={`w-full py-2.5 rounded-xl font-medium text-sm transition-all duration-300 flex items-center justify-center gap-2 border ${
+                showPublishForm
+                  ? 'bg-amber-600/20 border-amber-500/30 text-amber-200'
+                  : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
+              }`}
+            >
+              <Plus size={16} /> {showPublishForm ? '收起' : '发布自定义任务'}
+            </button>
+
+            {showPublishForm && (
+              <div className="p-4 rounded-2xl border border-amber-500/20 bg-amber-900/10 space-y-3 animate-fade-in">
+                <div>
+                  <label className="text-[11px] text-white/60 mb-1 block">任务名称</label>
+                  <input
+                    type="text"
+                    value={newQuestName}
+                    onChange={e => setNewQuestName(e.target.value)}
+                    placeholder="输入任务名称..."
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-amber-500/50"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] text-white/60 mb-1 block">完成条件</label>
+                  <input
+                    type="text"
+                    value={newQuestCondition}
+                    onChange={e => setNewQuestCondition(e.target.value)}
+                    placeholder="输入完成条件..."
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-amber-500/50"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] text-white/60 mb-1 block">奖励 MC 点数</label>
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={newQuestReward}
+                    onChange={e => setNewQuestReward(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className={`text-xs font-bold ${userData.money < newQuestReward * 800 ? 'text-red-400' : 'text-amber-200/80'}`}>
+                    花费：¥{newQuestReward * 800}
+                    {userData.money < newQuestReward * 800 && (
+                      <span className="ml-2 text-red-400/80 font-normal">（零花钱不足，当前 ¥{userData.money}）</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => void handlePublishQuest()}
+                    disabled={
+                      publishing ||
+                      !newQuestName.trim() ||
+                      !newQuestCondition.trim() ||
+                      newQuestReward <= 0 ||
+                      userData.money < newQuestReward * 800
+                    }
+                    className="flex-1 py-2 rounded-lg font-bold text-sm transition-all duration-200 bg-linear-to-r from-amber-600 to-orange-600 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110"
+                  >
+                    {publishing ? '发布中...' : '发布任务'}
+                  </button>
+                  <button
+                    onClick={() => setShowPublishForm(false)}
+                    className="px-4 py-2 rounded-lg text-sm text-white/60 bg-white/5 border border-white/10 hover:bg-white/10"
+                  >
+                    取消
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {quests.map(q => {
+              const statusLabel =
+                q.status === 'COMPLETED'
+                  ? '可提交'
+                  : q.status === 'ACTIVE'
+                    ? '进行中'
+                    : q.status === 'CLAIMED'
+                      ? '已完成'
+                      : '可接取';
+              const icon =
+                q.status === 'COMPLETED' ? (
+                  <Gift size={18} className="text-amber-300" />
+                ) : q.status === 'ACTIVE' ? (
+                  <Hourglass size={18} className="text-white/70" />
+                ) : q.status === 'CLAIMED' ? (
+                  <Lock size={18} className="text-gray-500" />
+                ) : (
+                  <Scroll size={18} className="text-white/70" />
+                );
+
+              const canAccept = q.status === 'AVAILABLE' && activeQuestCount < 3;
+              const canClaim = q.status === 'COMPLETED';
+              const canCancel = q.status === 'ACTIVE' || q.status === 'COMPLETED';
+
+              return (
+                <div
+                  key={q.id}
+                  className={`
+                    relative p-4 rounded-2xl border transition-all duration-300
+                    ${
+                      q.status === 'COMPLETED'
+                        ? 'bg-amber-900/15 border-amber-500/25 shadow-[0_0_15px_rgba(245,158,11,0.12)]'
+                        : q.status === 'ACTIVE'
+                          ? 'bg-white/5 border-white/10'
+                          : q.status === 'CLAIMED'
+                            ? 'bg-slate-800/40 border-white/5 opacity-60'
+                            : 'bg-slate-800/30 border-white/5'
+                    }
+                 `}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-white/5 border border-white/10">{icon}</div>
+                      <div>
+                        <h3 className="font-bold text-sm text-white flex items-center gap-2">
+                          {q.title}
+                          {q.isCustom && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold">
+                              自定义
+                            </span>
+                          )}
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 border border-white/10 text-white/70">
+                            {statusLabel}
+                          </span>
+                        </h3>
+                        <p className="text-xs text-gray-400 mt-1 pr-4">完成条件：{q.description}</p>
+                        <div className="text-[10px] text-amber-200/80 mt-2 font-bold">奖励：+{q.rewardMcPoints} PT</div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-2">
+                      {canAccept && (
+                        <button
+                          onClick={() => void handleAcceptQuest(q)}
+                          className="bg-white/10 hover:bg-white/15 text-white text-xs font-bold py-1.5 px-3 rounded-lg border border-white/10"
+                        >
+                          接取
+                        </button>
+                      )}
+                      {q.status === 'AVAILABLE' && !canAccept && (
+                        <span className="text-[10px] text-white/50">已满(3)</span>
+                      )}
+                      {canClaim && (
+                        <button
+                          onClick={() => void handleClaimQuest(q)}
+                          className="bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold py-1.5 px-3 rounded-lg shadow-lg flex items-center gap-1"
+                        >
+                          <Gift size={12} /> 提交
+                        </button>
+                      )}
+                      {canCancel && (
+                        <button
+                          onClick={() => void handleCancelQuest(q)}
+                          className="bg-white/5 hover:bg-white/10 text-white/80 text-[11px] font-semibold py-1 px-2 rounded-lg border border-white/10 flex items-center gap-1"
+                        >
+                          <X size={12} /> 取消
+                        </button>
+                      )}
+                      {q.status === 'CLAIMED' && <span className="text-[10px] text-white/50">锁定</span>}
+                      {q.isCustom && q.status === 'AVAILABLE' && (
+                        <button
+                          onClick={() => void handleDeleteCustomQuest(q)}
+                          className="bg-red-500/10 hover:bg-red-500/20 text-red-300 text-[11px] font-semibold py-1 px-2 rounded-lg border border-red-500/20 flex items-center gap-1"
+                        >
+                          <Trash2 size={11} /> 删除(退款)
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {quests.length === 0 && (
+              <div className="p-5 rounded-2xl border border-white/10 bg-white/5 text-xs text-white/60">
+                当前没有可用任务。
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

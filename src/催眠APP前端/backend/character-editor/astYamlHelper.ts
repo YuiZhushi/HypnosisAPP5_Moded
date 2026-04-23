@@ -6,7 +6,8 @@
  */
 
 import YAML from 'yaml';
-import type { EditorNode, NodeType } from '../../constants/interfaces';
+import type { EditorNode } from '../../constants/interfaces';
+import type { NodeType } from '../../constants/types';
 import { SECTION_LOCKED_KEYS } from '../../constants/character-editor/characterConstants';
 
 // ====== ID 生成 ======

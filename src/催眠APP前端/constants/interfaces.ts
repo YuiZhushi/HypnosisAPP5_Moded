@@ -10,17 +10,18 @@ import type {
   CostType,
   CostCurrency,
   QuestStatus,
-  NodeType,
   AiAppId,
   PromptTemplateScope,
   PromptContextId,
   AstDiffChangeType,
-  ReviewDecision,
   EditorPromptModuleType,
   EditorSectionCategory,
   StreamMode,
   SubscriptionTier,
+  NodeType,
 } from './types';
+
+export type { ReviewDecision } from './types';
 
 // ====== 用戶資源 ======
 
@@ -124,7 +125,6 @@ export interface Quest {
 
 // ====== 角色編輯器 ======
 
-/** 遞迴樹節點 */
 export interface EditorNode {
   id: string;
   key: string;

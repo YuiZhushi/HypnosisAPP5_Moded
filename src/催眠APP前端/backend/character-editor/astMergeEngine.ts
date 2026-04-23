@@ -5,7 +5,8 @@
  * 將用戶審核過的 AstDiffProposal 套用回 EditorNode 樹。
  */
 
-import type { AstDiffProposal, AstApplyResult, EditorNode, ReviewDecision } from '../../constants/interfaces';
+import type { AstDiffProposal, AstApplyResult, EditorNode } from '../../constants/interfaces';
+import type { ReviewDecision } from '../../constants/types';
 import { yamlToTree } from './astYamlHelper';
 
 // ====== 公開 API ======
@@ -91,7 +92,7 @@ function applyProposalToTree(tree: EditorNode[], proposal: AstDiffProposal): boo
     const newItemsNodes = yamlToTree([proposal.newValue]);
     if (newItemsNodes.length > 0) {
       const newNode = newItemsNodes[0];
-      delete (newNode as Record<string, unknown>).key;
+      delete (newNode as unknown as Record<string, unknown>).key;
       currentList.push(newNode);
     }
     return true;

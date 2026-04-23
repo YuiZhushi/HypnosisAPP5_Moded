@@ -12,8 +12,9 @@
  * 所有 Store 操作透過 shared/store/storeGateway。
  */
 
-import type { Achievement, Quest, QuestStatus, UserResources } from '../../constants/interfaces';
-import type { PersistedStore, CustomQuestDef } from '../../constants/schemas/storeSchema';
+import type { Achievement, Quest, UserResources } from '../../constants/interfaces';
+import type { QuestStatus } from '../../constants/types';
+import type { PersistedStore } from '../../constants/schemas/storeSchema';
 import { STATIC_ACHIEVEMENTS, ACHIEVEMENT_THRESHOLDS } from '../../constants/achievement/achievementDb';
 import { QUEST_DB, type QuestDefinition } from '../../constants/achievement/questDb';
 import { normalizeChatVariables, readStoreSnapshot, updateStoreWith, CHAT_OPTION } from '../../shared/store/storeGateway';
