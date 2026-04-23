@@ -1,9 +1,6 @@
 # 酒馆助手前端界面或脚本编写
 
-@.cursor/rules/项目基本概念.mdc
-@.cursor/rules/mcp.mdc
-@.cursor/rules/酒馆变量.mdc
-@.cursor/rules/前端界面.mdc
-@.cursor/rules/脚本.mdc
-@.cursor/rules/mvu变量框架.mdc
-@.cursor/rules/mvu角色卡.mdc
+@/.clinerules/*為規則檔案，必須先讀取後再進行下一步操作。
+@/.agents/skills/* 為技能檔案，必須先讀取後再進行下一步操作。
+
+## 用戶的語言為繁體中文，所有計畫、回覆、筆記、文件皆為繁體中文。
