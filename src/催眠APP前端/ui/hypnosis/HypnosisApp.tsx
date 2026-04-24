@@ -30,6 +30,7 @@ import {
 } from '../../backend/hypnosis';
 
 import { getSystemClock, getUserData, updateResources } from '../../shared/store/resourceSync';
+import { logger } from '../../shared/debug/loggerService';
 import {
   isSubscriptionActive,
   canSubscribeTier,
@@ -472,7 +473,7 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
           void clearSessionEnd();
         }
       } catch (err) {
-        console.warn('[HypnoOS] 恢复催眠状态失败', err);
+        logger.warn('恢复催眠状态失败', err);
       }
     })();
     return () => {
@@ -508,7 +509,7 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
           void MvuBridge.appendThisTurnAppOperationLog(`自动续订 VIP${nextSub.tier.slice(3)}（-¥${price.toLocaleString()}）`);
         }
       } catch (err) {
-        console.warn('[HypnoOS] 订阅/时间同步失败', err);
+        logger.warn('订阅/时间同步失败', err);
       }
     };
 
@@ -801,7 +802,7 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
       const clock = await getSystemClock();
       if (clock.virtualMinutes !== null) endVirtualMinutes = clock.virtualMinutes + duration;
     } catch (err) {
-      console.warn('[HypnoOS] 读取系统时间失败，回退到本地倒计时', err);
+      logger.warn('读取系统时间失败，回退到本地倒计时', err);
     }
     const endAtMs = Date.now() + duration * 60 * 1000;
     await setSessionEnd({ endVirtualMinutes, endAtMs });
@@ -826,7 +827,7 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
       });
       onUpdateUser(persisted);
     } catch (err) {
-      console.warn('[HypnoOS] 资源扣除持久化失败', err);
+      logger.warn('资源扣除持久化失败', err);
       onUpdateUser({
         ...userData,
         mcEnergy: newEnergy,
@@ -850,7 +851,7 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
         await triggerSlash('/trigger');
       }
     } catch (err) {
-      console.warn('[HypnoOS] 催眠发送失败', err);
+      logger.warn('催眠发送失败', err);
     }
 
     await startSession({
@@ -904,7 +905,7 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
       });
       onUpdateUser(persisted);
     } catch (err) {
-      console.warn('[HypnoOS] 购买能量持久化失败', err);
+      logger.warn('购买能量持久化失败', err);
       onUpdateUser({
         ...userData,
         money: nextMoney,
@@ -930,7 +931,7 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
       });
       onUpdateUser(persisted);
     } catch (err) {
-      console.warn('[HypnoOS] 提升能量上限持久化失败', err);
+      logger.warn('提升能量上限持久化失败', err);
       onUpdateUser({
         ...userData,
         mcPoints: nextPoints,
@@ -958,7 +959,7 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
       });
       onUpdateUser(persisted);
     } catch (err) {
-      console.warn('[HypnoOS] 充值点数持久化失败', err);
+      logger.warn('充值点数持久化失败', err);
       onUpdateUser({
         ...userData,
         mcPoints: nextPoints,
@@ -1787,7 +1788,7 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
                         });
                         onUpdateUser(persisted);
                       } catch (err) {
-                        console.warn('[HypnoOS] 补齐资源持久化失败', err);
+                        logger.warn('补齐资源持久化失败', err);
                         onUpdateUser({
                           ...userData,
                           money: nextMoney,

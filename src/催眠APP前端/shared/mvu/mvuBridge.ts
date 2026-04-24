@@ -9,6 +9,7 @@
 
 import _ from 'lodash';
 import type { UserResources } from '../../constants/interfaces';
+import { logger } from '../debug/loggerService';
 
 const UPDATE_REASON = '催眠APP前端';
 const THIS_TURN_APP_OPERATION_LOG_PATH = '本轮APP操作';
@@ -68,7 +69,7 @@ export async function waitForMvuReady(options: WaitOptions = {}): Promise<boolea
 
 // ====== 內部工具 ======
 
-function getMessageVariableOption(): VariableOption {
+export function getMessageVariableOption(): VariableOption {
   try {
     return { type: 'message', message_id: getCurrentMessageId() };
   } catch {
@@ -83,12 +84,12 @@ async function getMvuData(): Promise<{ mvu: Mvu.MvuData; option: VariableOption 
     const option = getMessageVariableOption();
     return { mvu: Mvu.getMvuData(option), option };
   } catch (err) {
-    console.warn('[HypnoOS] Mvu 未就绪，跳过变量同步', err);
+    logger.warn('Mvu 未就绪，跳过变量同步', err);
     return null;
   }
 }
 
-async function setIfChanged(mvu: Mvu.MvuData, path: string, nextValue: unknown, reason = UPDATE_REASON) {
+export async function setIfChanged(mvu: Mvu.MvuData, path: string, nextValue: unknown, reason = UPDATE_REASON) {
   const prev = _.get(mvu.stat_data, path);
   if (_.isEqual(prev, nextValue)) return false;
 
@@ -102,6 +103,13 @@ async function setIfChanged(mvu: Mvu.MvuData, path: string, nextValue: unknown, 
 
   _.set(mvu.stat_data, path, nextValue);
   return true;
+}
+
+export function pickExistingPath(statData: Record<string, any>, paths: readonly string[]): string {
+  for (const p of paths) {
+    if (_.has(statData, p)) return p;
+  }
+  return paths[0];
 }
 
 function normalizeAppOperationLogValue(value: unknown): string {
@@ -214,7 +222,7 @@ export async function resetThisTurnAppOperationLog() {
       if (changed) await Mvu.replaceMvuData(mvu, option);
       return changed;
     } catch (err) {
-      console.warn('[HypnoOS] 本轮APP操作重置失败', err);
+      logger.warn('本轮APP操作重置失败', err);
       return false;
     }
   });
@@ -235,7 +243,7 @@ export async function appendThisTurnAppOperationLog(entry: string) {
       if (changed) await Mvu.replaceMvuData(mvu, option);
       return changed;
     } catch (err) {
-      console.warn('[HypnoOS] 本轮APP操作写入失败', err);
+      logger.warn('本轮APP操作写入失败', err);
       return false;
     }
   });

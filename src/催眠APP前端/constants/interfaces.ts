@@ -21,8 +21,6 @@ import type {
   NodeType,
 } from './types';
 
-export type { ReviewDecision } from './types';
-
 // ====== 用戶資源 ======
 
 /** 用戶資源數據結構（對應酒館變量 系統.*） */

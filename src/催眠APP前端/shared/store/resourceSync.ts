@@ -16,6 +16,7 @@ import { DEFAULT_USER_DATA } from '../../constants/common/userDefaults';
 import { getSubscriptionTierLabel } from '../../constants/hypnosis/subscription';
 import { normalizeChatVariables, CHAT_OPTION, SYSTEM_SCHEMA } from './storeGateway';
 import * as MvuBridge from '../mvu/mvuBridge';
+import { logger } from '../debug/loggerService';
 
 // ====== 輔助函式 ======
 
@@ -96,7 +97,7 @@ export async function getUserData(): Promise<UserResources> {
       user = systemToUserResources(SYSTEM_SCHEMA.parse(normalizeSystemAliases(mvuSystem)));
     }
   } catch (err) {
-    console.warn('[HypnoOS] 读取 MVU 系统变量失败，回退到聊天变量', err);
+    logger.warn('读取 MVU 系统变量失败，回退到聊天变量', err);
   }
 
   updateVariablesWith((vars: Record<string, unknown>) => {
@@ -152,7 +153,7 @@ export async function updateResources(newData: Partial<UserResources>): Promise<
  */
 export async function getSystemClock(): Promise<{ dateText?: string; timeText?: string; virtualMinutes: number | null }> {
   const maybeSync = async (clock: { virtualMinutes: number | null }) => {
-    try { await syncSubscriptionTierLabel(clock.virtualMinutes); } catch (err) { console.warn('[HypnoOS] 同步订阅等级变量失败', err); }
+    try { await syncSubscriptionTierLabel(clock.virtualMinutes); } catch (err) { logger.warn('同步订阅等级变量失败', err); }
     return clock;
   };
 
@@ -160,7 +161,7 @@ export async function getSystemClock(): Promise<{ dateText?: string; timeText?: 
     const mvuSystem = await MvuBridge.getSystem();
     if (mvuSystem) return await maybeSync(getSystemClockFrom(mvuSystem));
   } catch (err) {
-    console.warn('[HypnoOS] 读取 MVU 系统时间失败，回退到聊天变量', err);
+    logger.warn('读取 MVU 系统时间失败，回退到聊天变量', err);
   }
 
   const { system } = normalizeChatVariables(getVariables(CHAT_OPTION));

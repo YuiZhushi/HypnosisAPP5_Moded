@@ -5,6 +5,8 @@ import { getEditorModules, saveEditorModules, getDefaultEditorModules, buildEdit
 import { EditorPromptModule } from '../../constants/interfaces';
 import { EDITOR_PROMPT_PLACEHOLDERS, EDITOR_SECTIONS } from '../../constants/character-editor/editorSections';
 
+import { logger } from '../../shared/debug/loggerService';
+
 // ====== Toast (reuse pattern from CharacterEditorApp) ======
 
 const Toast: React.FC<{ message: string; type: 'success' | 'error' | 'info'; onDone: () => void }> = ({ message, type, onDone }) => {
@@ -90,7 +92,7 @@ export const PromptManagerPage: React.FC<PromptManagerPageProps> = ({
           setWorldbookContent(entry?.content ?? '(未找到角色世界書條目)');
         }
       } catch (err) {
-        console.warn('[HypnoOS] PromptManager: 讀取世界書條目失敗', err);
+        logger.warn('PromptManager: 讀取世界書條目失敗', err);
         if (!cancelled) setWorldbookContent('(讀取失敗)');
       }
     };
@@ -153,7 +155,7 @@ export const PromptManagerPage: React.FC<PromptManagerPageProps> = ({
       await saveEditorModules(modules);
       setToast({ message: '✓ 提示詞模塊已儲存', type: 'success' });
     } catch (err) {
-      console.error('[HypnoOS] PromptManager: 儲存失敗', err);
+      logger.error('PromptManager: 儲存失敗', err);
       setToast({ message: '儲存失敗', type: 'error' });
     } finally {
       setSaving(false);
@@ -217,7 +219,7 @@ export const PromptManagerPage: React.FC<PromptManagerPageProps> = ({
       const composed = AiRequestPipelineService.composePrompt(params);
       setPreviewText(composed);
     } catch (err) {
-      console.error('[HypnoOS] PromptManager: 預覽失敗', err);
+      logger.error('PromptManager: 預覽失敗', err);
       setToast({ message: `預覽失敗: ${err instanceof Error ? err.message : '未知錯誤'}`, type: 'error' });
     }
   }, [buildPipelineParams]);
@@ -234,7 +236,7 @@ export const PromptManagerPage: React.FC<PromptManagerPageProps> = ({
         setToast({ message: `✗ 發送失敗: ${result.error}`, type: 'error' });
       }
     } catch (err) {
-      console.error('[HypnoOS] PromptManager: 發送失敗', err);
+      logger.error('PromptManager: 發送失敗', err);
       setToast({ message: '發送失敗', type: 'error' });
     } finally {
       setSending(false);

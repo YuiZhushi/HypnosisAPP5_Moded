@@ -10,6 +10,8 @@ import { PromptManagerPage } from './PromptManagerPage';
 import { CharacterCompletionAppAiRequestModal } from './CharacterCompletionAppAiRequestModal';
 import { CharacterCompletionAppPatchReviewPanel } from './CharacterCompletionAppPatchReviewPanel';
 
+import { logger } from '../../shared/debug/loggerService';
+
 // ========= Toast =========
 
 const Toast: React.FC<{ message: string; type: 'success' | 'error' | 'info'; onDone: () => void }> = ({ message, type, onDone }) => {
@@ -175,7 +177,6 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
           return { ...prev, [sectionId]: nextList };
         });
         setActiveBehaviorBranchBySection(prev => {
-          const current = behaviorData[sectionId] ?? [];
           const next = sortBehaviorBranches(parsedBranches);
           const prevId = prev[sectionId];
           const keep = prevId && next.some(b => b.branchId === prevId) ? prevId : next[0]?.branchId ?? '';
@@ -224,12 +225,12 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
 
   // ----- AI Patch Handlers -----
   const openAiRequestModal = useCallback((mode: 'current' | 'all') => {
-    console.log(`%c[HypnoOS][App] openAiRequestModal CLICKED! Mode: ${mode}`, 'background: #222; color: #bada55; font-size: 14px; font-weight: bold;');
+    logger.info(`openAiRequestModal CLICKED! Mode: ${mode}`);
     setAiRequestMode(mode);
   }, []);
 
   const handleAiRequestSuccess = useCallback((result: AiPatchResult) => {
-    console.log(`%c[HypnoOS][App] handleAiRequestSuccess triggered! Result:`, 'background: #222; color: #44cc44; font-size: 14px; font-weight: bold;', result);
+    logger.info(`handleAiRequestSuccess triggered! Result:`, result);
     setPatchResult(result);
   }, []);
 
@@ -308,7 +309,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
       setRefreshing(true);
     }
 
-    console.info(`[HypnoOS] CharacterEditor: 重新載入角色「${charName}」資料`);
+    logger.info(`CharacterEditor: 重新載入角色「${charName}」資料`);
     const result = await loadCharacter(charName);
     setSectionData(result.sectionData);
     setRawFallbacks(result.rawFallbacks);
@@ -341,7 +342,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
     const secCount = Object.keys(result.sectionData).length;
     const rawCount = Object.keys(result.rawFallbacks).length;
     const branchCount = Object.values(result.behaviorData).reduce((sum, arr) => sum + arr.length, 0);
-    console.info(`[HypnoOS] CharacterEditor: 重新載入完成 - ${secCount} 個分區有樹資料, ${rawCount} 個分區有原始文字, 行為分支=${branchCount}`);
+    logger.info(`CharacterEditor: 重新載入完成 - ${secCount} 個分區有樹資料, ${rawCount} 個分區有原始文字, 行為分支=${branchCount}`);
 
     if (showNotFoundToast && secCount === 0 && rawCount === 0 && !result.entryUid) {
       setToast({ message: `未找到「${charName}」的世界書條目`, type: 'info' });
@@ -359,17 +360,17 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
     let cancelled = false;
     const load = async () => {
       try {
-        console.info('[HypnoOS] CharacterEditor: 開始載入角色清單');
+        logger.info('CharacterEditor: 開始載入角色清單');
         const roles = await MvuBridge.getRoles();
         if (cancelled) return;
         const names = roles ? Object.keys(roles) : [];
-        console.info(`[HypnoOS] CharacterEditor: 找到 ${names.length} 個角色`);
+        logger.info(`CharacterEditor: 找到 ${names.length} 個角色`);
         setCharacters(names);
         if (names.length > 0 && !selectedCharacter) {
           setSelectedCharacter(names[0]);
         }
       } catch (err) {
-        console.warn('[HypnoOS] CharacterEditor: 載入角色清單失敗', err);
+        logger.warn('CharacterEditor: 載入角色清單失敗', err);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -393,7 +394,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
         });
         if (cancelled) return;
       } catch (err) {
-        console.error('[HypnoOS] CharacterEditor: 載入角色資料失敗', err);
+        logger.error('CharacterEditor: 載入角色資料失敗', err);
         setToast({ message: '載入失敗: ' + (err instanceof Error ? err.message : '未知錯誤'), type: 'error' });
       }
     };
@@ -405,10 +406,10 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
   // ----- Handlers -----
   const handleCheckWorldbook = async () => {
     if (!selectedCharacter) return;
-    console.info(`[HypnoOS] CharacterEditor: 檢查世界書條目「${selectedCharacter}」`);
+    logger.info(`CharacterEditor: 檢查世界書條目「${selectedCharacter}」`);
     try {
       const result = await checkAndEnsurePlotEntry(selectedCharacter);
-      console.info(`[HypnoOS] CharacterEditor: 檢查結果 status=${result.status}`);
+      logger.info(`CharacterEditor: 檢查結果 status=${result.status}`);
       if (result.status === 'pass') {
         setToast({ message: `✓ 條目已存在`, type: 'success' });
       } else if (result.status === 'created') {
@@ -423,7 +424,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
         setToast({ message: `✗ ${result.message}`, type: 'error' });
       }
     } catch (err) {
-      console.error('[HypnoOS] CharacterEditor: 檢查世界書失敗', err);
+      logger.error('CharacterEditor: 檢查世界書失敗', err);
       setToast({ message: '檢查失敗', type: 'error' });
     }
   };
@@ -431,7 +432,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
   const handleSave = async () => {
     if (!selectedCharacter) return;
     setSaving(true);
-    console.info(`[HypnoOS] CharacterEditor: 儲存世界書條目「${selectedCharacter}」`);
+    logger.info(`CharacterEditor: 儲存世界書條目「${selectedCharacter}」`);
     try {
       for (const secId of ['arousal', 'alert', 'affection', 'obedience']) {
         const list = behaviorData[secId] ?? [];
@@ -465,7 +466,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
 
       const ok = await saveCharacter(selectedCharacter, sectionData, rawFallbacks, behaviorData, entryUid);
       if (ok) {
-        console.info('[HypnoOS] CharacterEditor: 儲存成功，開始重新解析最新資料');
+        logger.info('CharacterEditor: 儲存成功，開始重新解析最新資料');
         try {
           await reloadCharacterData(selectedCharacter, {
             setGlobalLoading: false,
@@ -475,14 +476,14 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
           });
           setToast({ message: '✓ 已儲存並重新解析', type: 'success' });
         } catch (reloadErr) {
-          console.error('[HypnoOS] CharacterEditor: 儲存後重新解析失敗', reloadErr);
+          logger.error('CharacterEditor: 儲存後重新解析失敗', reloadErr);
           setToast({ message: '已儲存，但重新解析失敗', type: 'error' });
         }
       } else {
         setToast({ message: '儲存失敗：條目不存在，請先檢查世界書', type: 'error' });
       }
     } catch (err) {
-      console.error('[HypnoOS] CharacterEditor: 儲存失敗', err);
+      logger.error('CharacterEditor: 儲存失敗', err);
       setToast({ message: '儲存失敗', type: 'error' });
     } finally {
       setSaving(false);
@@ -687,7 +688,7 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
       });
       setToast({ message: '✓ 已重新解析最新資料', type: 'success' });
     } catch (err) {
-      console.error('[HypnoOS] CharacterEditor: 手動刷新解析失敗', err);
+      logger.error('CharacterEditor: 手動刷新解析失敗', err);
       setToast({ message: '✗ 重新解析失敗', type: 'error' });
     }
   };
@@ -695,11 +696,11 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
   // F4: 重置本區
   const handleResetSection = () => {
     if (!snapshotRef.current) {
-      console.warn('[HypnoOS] CharacterEditor: 無快照可供重置');
+      logger.warn('CharacterEditor: 無快照可供重置');
       setToast({ message: '無法重置：缺少原始資料快照', type: 'info' });
       return;
     }
-    console.info(`[HypnoOS] CharacterEditor: 重置分區「${activeTab}」`);
+    logger.info(`CharacterEditor: 重置分區「${activeTab}」`);
     if (isBehaviorTab) {
       setBehaviorData(prev => ({
         ...prev,
@@ -823,8 +824,8 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
                 <Wand2 size={12} /> 提示詞管理
               </button>
               <button
-                onClick={(e) => {
-                  console.log('%c[HypnoOS][UI] "AI 當前分區" Button onClick fired!', 'color: yellow; padding: 2px;');
+                onClick={() => {
+                  logger.info('"AI 當前分區" Button onClick fired!');
                   openAiRequestModal('current');
                 }}
                 className="flex items-center gap-1 bg-purple-500/10 hover:bg-purple-500/20 shadow-[0_0_8px_rgba(168,85,247,0.1)] text-purple-400 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-colors"
@@ -833,8 +834,8 @@ export const CharacterEditorApp: React.FC<{ onBack: () => void }> = ({ onBack })
                 <Sparkles size={12} /> AI 當前分區
               </button>
               <button
-                onClick={(e) => {
-                  console.log('%c[HypnoOS][UI] "AI 全部分區" Button onClick fired!', 'color: pink; padding: 2px;');
+                onClick={() => {
+                  logger.info('"AI 全部分區" Button onClick fired!');
                   openAiRequestModal('all');
                 }}
                 className="flex items-center gap-1 bg-pink-500/10 hover:bg-pink-500/20 shadow-[0_0_8px_rgba(236,72,153,0.1)] text-pink-400 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-colors"

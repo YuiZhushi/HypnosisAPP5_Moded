@@ -11,6 +11,8 @@ import { ReviewDecision } from '../../constants/types';
 import { EDITOR_SECTIONS } from '../../constants/character-editor/editorSections';
 import { buildDiffProposals, applyApprovedProposals, BehaviorBranch, parseBehaviorBranchesFromRaw, yamlToTree } from '../../backend/character-editor';
 
+import { logger } from '../../shared/debug/loggerService';
+
 interface CharacterCompletionAppPatchReviewPanelProps {
   mode: 'current' | 'all';
   activeTab: string;
@@ -62,7 +64,7 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
                 parsedBranches = parseBehaviorBranchesFromRaw(patchResult.ejsRaw);
                 isRawEjs = true;
              } catch (e) {
-                console.warn('[HypnoOS] parseBehaviorBranchesFromRaw failed', e);
+                logger.warn('parseBehaviorBranchesFromRaw failed', e);
              }
           }
           
@@ -131,7 +133,7 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
         
         if (hasRawEjsTags) {
           // === Raw EJS path: split by ## section headers, parse each independently ===
-          console.info('[HypnoOS] AiPatchReview: ejsRaw contains raw EJS tags, using direct branch parsing');
+          logger.info('AiPatchReview: ejsRaw contains raw EJS tags, using direct branch parsing');
           const rawEjsBranchesData: Record<string, BehaviorBranch[]> = {};
           
           // Helper: map a section title string to a behavior section ID
@@ -170,10 +172,10 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
               if (secId && sectionBody.includes('<%')) {
                 try {
                   const branches = parseBehaviorBranchesFromRaw(sectionBody);
-                  console.info(`[HypnoOS] AiPatchReview: Parsed ${branches.length} branches for section "${headerMatches[i].title}" -> ${secId}`);
+                  logger.info(`AiPatchReview: Parsed ${branches.length} branches for section "${headerMatches[i].title}" -> ${secId}`);
                   rawEjsBranchesData[secId] = (rawEjsBranchesData[secId] || []).concat(branches);
                 } catch (e) {
-                  console.warn(`[HypnoOS] AiPatchReview: Failed to parse EJS branches for section "${headerMatches[i].title}"`, e);
+                  logger.warn(`AiPatchReview: Failed to parse EJS branches for section "${headerMatches[i].title}"`, e);
                 }
               } else if (secId && sectionBody) {
                 // Non-EJS behavior section (like global rules) — try YAML parse
@@ -188,7 +190,7 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
                     newProposals = newProposals.concat(p);
                   }
                 } catch (e) {
-                  console.warn(`[HypnoOS] AiPatchReview: Failed to parse YAML for behavior section "${headerMatches[i].title}"`, e);
+                  logger.warn(`AiPatchReview: Failed to parse YAML for behavior section "${headerMatches[i].title}"`, e);
                 }
               }
             }
@@ -197,10 +199,10 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
             // Attempt to infer section from activeTab or default to arousal
             try {
               const branches = parseBehaviorBranchesFromRaw(ejsRaw);
-              console.info(`[HypnoOS] AiPatchReview: Parsed ${branches.length} branches from entire ejsRaw (no headers)`);
+              logger.info(`AiPatchReview: Parsed ${branches.length} branches from entire ejsRaw (no headers)`);
               rawEjsBranchesData['arousal'] = branches; // Fallback
             } catch (e) {
-              console.warn('[HypnoOS] AiPatchReview: Failed to parse entire ejsRaw as branches', e);
+              logger.warn('AiPatchReview: Failed to parse entire ejsRaw as branches', e);
             }
           }
           
@@ -226,7 +228,7 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
           try {
             ejsParsed = YAML.parse(ejsRaw);
           } catch (e) {
-            console.warn("[HypnoOS] failed to parse ejsRaw for all mode as YAML", e);
+            logger.warn("failed to parse ejsRaw for all mode as YAML", e);
           }
           
           const behaviorTempData: Record<string, any> = {};
@@ -275,7 +277,7 @@ export const CharacterCompletionAppPatchReviewPanel: React.FC<CharacterCompletio
       setDecisions(initDecisions);
 
     } catch(e) {
-      console.error('[HypnoOS] AiPatchReview: Parse error', e);
+      logger.error('AiPatchReview: Parse error', e);
       // Just set empty
       setProposals([]);
     }

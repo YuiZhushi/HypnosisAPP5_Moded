@@ -13,6 +13,7 @@ import { UserResources } from './constants/interfaces';
 import { AppMode } from './constants/types';
 import { Activity, Calendar, HelpCircle, Trophy, Globe, Settings, PenSquare } from 'lucide-react';
 
+import { logger } from './shared/debug/loggerService';
 import { getUserData, updateResources, getSystemClock } from './shared/store/resourceSync';
 import { getUnlocks } from './backend/hypnosis';
 import { processCalendarBridgeEventsOnLoad } from './backend/calendar';
@@ -67,7 +68,7 @@ const App = () => {
         if (stopped) return;
         setUserData(data);
       } catch (err) {
-        console.warn('[HypnoOS] 初始化用户数据失败，将重试', err);
+        logger.warn('初始化用户数据失败，将重试', err);
         if (stopped) return;
         if (attempt >= 10) {
           setUserData(FALLBACK_USER_DATA);
@@ -97,7 +98,7 @@ const App = () => {
       const unlocks = await getUnlocks();
       setBodyStatsUnlocked(unlocks.bodyStatsUnlocked);
     } catch (err) {
-      console.warn('[HypnoOS] 读取解锁状态失败', err);
+      logger.warn('读取解锁状态失败', err);
       setBodyStatsUnlocked(false);
     }
   };
@@ -113,7 +114,7 @@ const App = () => {
       const data = await withTimeout(getUserData(), 4000, 'getUserData');
       setUserData(data);
     } catch (err) {
-      console.warn('[HypnoOS] 刷新用户数据失败', err);
+      logger.warn('刷新用户数据失败', err);
     } finally {
       userRefreshInFlightRef.current = false;
     }
@@ -134,7 +135,7 @@ const App = () => {
         setSystemDateText(clock.dateText);
         setBodyStatsUnlocked(unlocks.bodyStatsUnlocked);
       } catch (err) {
-        console.warn('[HypnoOS] 刷新主页信息失败', err);
+        logger.warn('刷新主页信息失败', err);
       }
     };
 
@@ -301,7 +302,7 @@ const HomeScreen = ({
       setNotice('已插入');
       window.setTimeout(() => setNotice(null), 1500);
     } catch (err) {
-      console.warn('[HypnoOS] 插入匿名版标签失败', err);
+      logger.warn('插入匿名版标签失败', err);
       setNotice('插入失败');
       window.setTimeout(() => setNotice(null), 1500);
     }

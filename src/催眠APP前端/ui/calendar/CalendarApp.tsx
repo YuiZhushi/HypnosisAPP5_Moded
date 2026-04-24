@@ -3,6 +3,7 @@ import { ArrowLeft, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Pencil,
 import * as MvuBridge from '../../shared/mvu/mvuBridge';
 import { waitForMvuReady } from '../../shared/mvu/mvuBridge';
 import { getCalendarEvents, addCalendarEvent, updateCalendarEvent, deleteCalendarEvent, processAiCalendarOps } from '../../backend/calendar';
+import { logger } from '../../shared/debug/loggerService';
 import type { CustomCalendarEvent } from '../../constants/schemas/storeSchema';
 
 export const CalendarApp = ({ onBack }: { onBack: () => void }) => <CalendarDarkApp onBack={onBack} />;
@@ -222,7 +223,7 @@ const CalendarDarkApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       if (currentMsgId >= 0) lastProcessedMsgRef.current = currentMsgId;
       if (changed) refreshCustomEvents();
     } catch (err) {
-      console.warn('[HypnoOS] AI日历操作处理失败', err);
+      logger.warn('AI日历操作处理失败', err);
     }
   }, [refreshCustomEvents]);
 

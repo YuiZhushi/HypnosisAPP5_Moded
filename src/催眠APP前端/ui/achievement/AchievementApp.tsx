@@ -28,6 +28,8 @@ import {
   Trash2,
 } from 'lucide-react';
 
+import { logger } from '../../shared/debug/loggerService';
+
 interface AchievementAppProps {
   userData: UserResources;
   onUpdateUser: (data: UserResources) => void;
@@ -58,7 +60,7 @@ export const AchievementApp: React.FC<AchievementAppProps> = ({ userData, onUpda
         setQuests(questData);
       }
     } catch (err) {
-      console.warn('[HypnoOS] 成就/任务刷新失败', err);
+      logger.warn('成就/任务刷新失败', err);
     } finally {
       setLoading(false);
     }

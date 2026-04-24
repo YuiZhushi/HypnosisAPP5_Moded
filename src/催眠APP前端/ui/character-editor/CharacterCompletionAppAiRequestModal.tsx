@@ -5,6 +5,8 @@ import { buildEditorPipelineParams, parseAiResponse } from '../../backend/charac
 import { AiPatchResult } from '../../constants/interfaces';
 import { EDITOR_SECTIONS } from '../../constants/character-editor/editorSections';
 
+import { logger } from '../../shared/debug/loggerService';
+
 interface CharacterCompletionAppAiRequestModalProps {
   mode: 'current' | 'all';
   activeTab: string;
@@ -37,12 +39,12 @@ export const CharacterCompletionAppAiRequestModal: React.FC<CharacterCompletionA
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    console.log(`%c[HypnoOS][Modal] CharacterCompletionAppAiRequestModal MOUNTED! Mode: ${mode}`, 'background: #333; color: #ffeb3b; font-size: 14px; font-weight: bold;');
-    return () => console.log(`%c[HypnoOS][Modal] CharacterCompletionAppAiRequestModal UNMOUNTED!`, 'background: #333; color: #ff9800;');
+    logger.info(`CharacterCompletionAppAiRequestModal MOUNTED! Mode: ${mode}`);
+    return () => logger.info(`CharacterCompletionAppAiRequestModal UNMOUNTED!`);
   }, [mode]);
 
   const handleSend = useCallback(async () => {
-    console.log(`%c[HypnoOS][Modal] handleSend CLICKED!`, 'background: #333; color: #00bcd4; font-size: 14px; font-weight: bold;');
+    logger.info(`handleSend CLICKED!`);
     setSending(true);
     setErrorMsg('');
     try {
@@ -84,9 +86,9 @@ ${userInput ? `使用者額外指示：\n${userInput}` : ''}
         worldbookEntry: worldbookContent,
       });
 
-      console.log(`%c[HypnoOS][Modal] Sending AI Request with params:`, 'color: cyan', params);
+      logger.info(`Sending AI Request with params:`, params);
       const response = await AiRequestPipelineService.request(params);
-      console.log(`%c[HypnoOS][Modal] AI Response received:`, 'color: cyan', response);
+      logger.info(`AI Response received:`, response);
 
       if (response.ok && response.responseText) {
         const patchResult = parseAiResponse(
@@ -99,7 +101,7 @@ ${userInput ? `使用者額外指示：\n${userInput}` : ''}
       }
 
     } catch (err) {
-      console.error('[HypnoOS] AiRequestModal: 發送失敗', err);
+      logger.error('AiRequestModal: 發送失敗', err);
       setErrorMsg(`發生例外錯誤：${err instanceof Error ? err.message : '未知錯誤'}`);
     } finally {
       setSending(false);

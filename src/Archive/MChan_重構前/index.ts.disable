@@ -1,6 +1,6 @@
 import App from './ui/App.vue';
 import './index.scss';
-import { installConsoleBridge, logRuntime } from '../util/logger';
+import { installConsoleBridge, logRuntime } from '../../util/logger';
 
 function init() {
   createApp(App).mount('#app');

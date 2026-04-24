@@ -110,4 +110,5 @@ export const Schema = z.object({
 
 $(() => {
   registerMvuSchema(Schema);
+  console.info('[HypnoOS][MVU Schema] loaded?');
 });

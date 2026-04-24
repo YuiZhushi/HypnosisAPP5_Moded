@@ -15,6 +15,7 @@ import { getRoleSnapshot, getOrderedStatEntries, STAT_ORDER, BAR_STATS, type Rol
 import { getUnlocks } from '../../backend/hypnosis';
 import { checkAndEnsureEntry } from '../../backend/character-editor';
 import { waitForMvuReady } from '../../shared/mvu/mvuBridge';
+import { logger } from '../../shared/debug/loggerService';
 
 function extractScalar(value: unknown): string {
   if (value === null || value === undefined) return '—';
@@ -125,7 +126,7 @@ export const BodyStatsApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         return nextNames[0] ?? null;
       });
     } catch (err) {
-      console.warn('[HypnoOS] 身体检测读取失败', err);
+      logger.warn('身体检测读取失败', err);
       setError('读取失败：请稍后重试');
     } finally {
       setLoading(false);
@@ -159,7 +160,7 @@ export const BodyStatsApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         if (stopped) return;
         setVipUnlocked(unlocks.bodyStatsUnlocked);
       } catch (err) {
-        console.warn('[HypnoOS] 读取功能解锁状态失败', err);
+        logger.warn('读取功能解锁状态失败', err);
       }
     })();
     return () => {
