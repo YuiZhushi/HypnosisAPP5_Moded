@@ -22,7 +22,7 @@ import { CUSTOM_HYPNOSIS_TIER_BASE } from '../../constants/hypnosis/customHypnos
 import { isSubscriptionActive, getBodyStatsUnlocked, canUseFeature as canUseFeatureBySubscription } from '../../shared/access/accessControl';
 import { normalizeChatVariables, readStoreSnapshot, updateStoreWith, CHAT_OPTION } from '../../shared/store/storeGateway';
 import { getUserData, updateResources, getSystemClock, setSubscriptionTierLabel } from '../../shared/store/resourceSync';
-import { logger } from '../../shared/debug/loggerService';
+import { logger } from '../../../催眠APP共用/debug/loggerService';
 
 // ====== 內部工具 ======
 

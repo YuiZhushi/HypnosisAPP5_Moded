@@ -7,7 +7,7 @@
 
 import { applyDailySettlement } from './OS/dailySettlement';
 import { getMessageVariableOption } from '../催眠APP前端/shared/mvu/mvuBridge';
-import { logger } from '../催眠APP前端/shared/debug/loggerService';
+import { logger } from '../催眠APP共用/debug/loggerService';
 
 $(() => {
   (async () => {
@@ -20,23 +20,21 @@ $(() => {
       return;
     }
 
-    let isSelfApplying = false;
+    let isSettling = false;
 
     eventOn(Mvu.events.VARIABLE_UPDATE_ENDED, async (after: Mvu.MvuData, before: Mvu.MvuData) => {
-      if (isSelfApplying) {
-        isSelfApplying = false;
-        return;
-      }
+      if (isSettling) return;
 
+      isSettling = true;
       try {
         const changed = await applyDailySettlement(after, before);
-        if (!changed) return;
-
-        isSelfApplying = true;
-        await Mvu.replaceMvuData(after, getMessageVariableOption());
+        if (changed) {
+          await Mvu.replaceMvuData(after, getMessageVariableOption());
+        }
       } catch (err) {
         logger.error('每日結算失敗', err);
-        isSelfApplying = false;
+      } finally {
+        isSettling = false;
       }
     });
   })();

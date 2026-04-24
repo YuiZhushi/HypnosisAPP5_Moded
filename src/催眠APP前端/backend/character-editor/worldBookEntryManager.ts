@@ -12,7 +12,7 @@
  */
 
 import * as WBRepo from '../../shared/worldbook/worldBookRepository';
-import { logger } from '../../shared/debug/loggerService';
+import { logger } from '../../../催眠APP共用/debug/loggerService';
 import { buildDefaultPlotContent } from '../../constants/character-editor/plotTemplate';
 
 // ====== 常數 ======

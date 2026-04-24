@@ -9,7 +9,7 @@
 
 import _ from 'lodash';
 import type { UserResources } from '../../constants/interfaces';
-import { logger } from '../debug/loggerService';
+import { logger } from '../../../催眠APP共用/debug/loggerService';
 
 const UPDATE_REASON = '催眠APP前端';
 const THIS_TURN_APP_OPERATION_LOG_PATH = '本轮APP操作';

@@ -1,5 +1,7 @@
 // 监听酒馆关键事件并桥接到 chat 变量（供 iframe 内 HypnoOS 读取）
 
+import { logger } from '../催眠APP共用/debug/loggerService';
+
 function toFloor(messageId: unknown): number | null {
   const n = Number(messageId);
   if (!Number.isFinite(n)) return null;
@@ -24,7 +26,7 @@ function updateBridge(mutator: (bridge: any) => void) {
 }
 
 $(() => {
-  console.info('[HypnoOS][Listener_Bridge] loaded?');
+  logger.info('[Listener_Bridge] loaded?');
 
   // 刪除樓層：event payload 為被刪樓層 id（最小刪除起點）
   eventOn(tavern_events.MESSAGE_DELETED, (message_id: unknown) => {
@@ -32,12 +34,12 @@ $(() => {
       const floor = toFloor(message_id);
       if (floor === null) return;
 
-      console.info('[HypnoOS][Listener_Bridge] MESSAGE_DELETED', { message_id, floor });
+      logger.info('[Listener_Bridge] MESSAGE_DELETED', { message_id, floor });
       updateBridge(bridge => {
         bridge.deleteFloor = { triggered: true, deleteFrom: floor };
       });
     } catch (err) {
-      console.error('[HypnoOS][Listener_Bridge] MESSAGE_DELETED failed', err);
+      logger.error('[Listener_Bridge] MESSAGE_DELETED failed', err);
     }
   });
 
@@ -47,12 +49,12 @@ $(() => {
       const floor = toFloor(message_id);
       if (floor === null) return;
 
-      console.info('[HypnoOS][Listener_Bridge] MESSAGE_SWIPED', { message_id, floor });
+      logger.info('[Listener_Bridge] MESSAGE_SWIPED', { message_id, floor });
       updateBridge(bridge => {
         bridge.switchSwipe = { triggered: true, floor };
       });
     } catch (err) {
-      console.error('[HypnoOS][Listener_Bridge] MESSAGE_SWIPED failed', err);
+      logger.error('[Listener_Bridge] MESSAGE_SWIPED failed', err);
     }
   });
 
@@ -64,7 +66,7 @@ $(() => {
       const newSwipeId = toFloor(event_data && event_data.newSwipeId);
       if (floor === null || swipeId === null || newSwipeId === null) return;
 
-      console.info('[HypnoOS][Listener_Bridge] MESSAGE_SWIPE_DELETED', {
+      logger.info('[Listener_Bridge] MESSAGE_SWIPE_DELETED', {
         message_id: event_data && event_data.messageId,
         floor,
         swipeId,
@@ -80,7 +82,7 @@ $(() => {
         };
       });
     } catch (err) {
-      console.error('[HypnoOS][Listener_Bridge] MESSAGE_SWIPE_DELETED failed', err);
+      logger.error('[Listener_Bridge] MESSAGE_SWIPE_DELETED failed', err);
     }
   });
 });

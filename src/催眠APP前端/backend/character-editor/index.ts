@@ -23,7 +23,7 @@ import type { EditorNode } from '../../constants/interfaces';
 import { DATA_KEY_TO_SECTION, SECTION_LOCKED_KEYS } from '../../constants/character-editor/characterConstants';
 import { buildDefaultGlobalRulesNodes } from '../../constants/character-editor/characterDefaults';
 import * as WBRepo from '../../shared/worldbook/worldBookRepository';
-import { logger } from '../../shared/debug/loggerService';
+import { logger } from '../../../催眠APP共用/debug/loggerService';
 
 import { yamlToTree, treeToYaml } from './astYamlHelper';
 import {

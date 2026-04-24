@@ -5,7 +5,7 @@ import { buildEditorPipelineParams, parseAiResponse } from '../../backend/charac
 import { AiPatchResult } from '../../constants/interfaces';
 import { EDITOR_SECTIONS } from '../../constants/character-editor/editorSections';
 
-import { logger } from '../../shared/debug/loggerService';
+import { logger } from '../../../催眠APP共用/debug/loggerService';
 
 interface CharacterCompletionAppAiRequestModalProps {
   mode: 'current' | 'all';

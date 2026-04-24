@@ -5,7 +5,7 @@
  * 避免在多個 Service 中重複宣告和直接依賴全域函數。
  */
 
-import { logger } from '../debug/loggerService';
+import { logger } from '../../../催眠APP共用/debug/loggerService';
 
 /** 取得當前角色卡的主世界書名稱 */
 export function getCurrentCharacterWorldbook(): string | null {

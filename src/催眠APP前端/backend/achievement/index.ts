@@ -20,7 +20,7 @@ import { QUEST_DB, type QuestDefinition } from '../../constants/achievement/ques
 import { normalizeChatVariables, readStoreSnapshot, updateStoreWith, CHAT_OPTION } from '../../shared/store/storeGateway';
 import { getUserData, updateResources } from '../../shared/store/resourceSync';
 import * as MvuBridge from '../../shared/mvu/mvuBridge';
-import { logger } from '../../shared/debug/loggerService';
+import { logger } from '../../../催眠APP共用/debug/loggerService';
 
 // ====== 內部工具 ======
 

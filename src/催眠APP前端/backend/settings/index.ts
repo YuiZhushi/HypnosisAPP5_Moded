@@ -19,7 +19,7 @@ import {
   type SettingsPromptPlaceholder,
 } from '../../constants/settings/settingsPromptDefaults';
 import { readStoreSnapshot, updateStoreWith } from '../../shared/store/storeGateway';
-import { logger } from '../../shared/debug/loggerService';
+import { logger } from '../../../催眠APP共用/debug/loggerService';
 
 // ====== 內部工具 ======
 

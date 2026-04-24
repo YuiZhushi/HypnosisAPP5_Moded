@@ -3,7 +3,7 @@ import { ArrowLeft, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Pencil,
 import * as MvuBridge from '../../shared/mvu/mvuBridge';
 import { waitForMvuReady } from '../../shared/mvu/mvuBridge';
 import { getCalendarEvents, addCalendarEvent, updateCalendarEvent, deleteCalendarEvent, processAiCalendarOps } from '../../backend/calendar';
-import { logger } from '../../shared/debug/loggerService';
+import { logger } from '../../../催眠APP共用/debug/loggerService';
 import type { CustomCalendarEvent } from '../../constants/schemas/storeSchema';
 
 export const CalendarApp = ({ onBack }: { onBack: () => void }) => <CalendarDarkApp onBack={onBack} />;

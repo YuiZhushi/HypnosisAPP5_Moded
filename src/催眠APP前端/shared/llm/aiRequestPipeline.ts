@@ -10,7 +10,7 @@
  * 各 APP 的業務提示詞構造由各自 APP 自身的 backend/${APP_NAME}/promptBuilder.ts 負責。
  **/
 
-import { logger } from '../debug/loggerService';
+import { logger } from '../../../催眠APP共用/debug/loggerService';
 
 // ====== 類型（從 constants/interfaces.ts 統一導入） ======
 

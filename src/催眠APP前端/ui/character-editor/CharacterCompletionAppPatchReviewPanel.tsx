@@ -11,7 +11,7 @@ import { ReviewDecision } from '../../constants/types';
 import { EDITOR_SECTIONS } from '../../constants/character-editor/editorSections';
 import { buildDiffProposals, applyApprovedProposals, BehaviorBranch, parseBehaviorBranchesFromRaw, yamlToTree } from '../../backend/character-editor';
 
-import { logger } from '../../shared/debug/loggerService';
+import { logger } from '../../../催眠APP共用/debug/loggerService';
 
 interface CharacterCompletionAppPatchReviewPanelProps {
   mode: 'current' | 'all';

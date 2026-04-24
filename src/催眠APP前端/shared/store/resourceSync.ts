@@ -16,7 +16,7 @@ import { DEFAULT_USER_DATA } from '../../constants/common/userDefaults';
 import { getSubscriptionTierLabel } from '../../constants/hypnosis/subscription';
 import { normalizeChatVariables, CHAT_OPTION, SYSTEM_SCHEMA } from './storeGateway';
 import * as MvuBridge from '../mvu/mvuBridge';
-import { logger } from '../debug/loggerService';
+import { logger } from '../../../催眠APP共用/debug/loggerService';
 
 // ====== 輔助函式 ======
 

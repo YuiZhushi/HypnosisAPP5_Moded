@@ -28,7 +28,7 @@ import {
   Trash2,
 } from 'lucide-react';
 
-import { logger } from '../../shared/debug/loggerService';
+import { logger } from '../../../催眠APP共用/debug/loggerService';
 
 interface AchievementAppProps {
   userData: UserResources;

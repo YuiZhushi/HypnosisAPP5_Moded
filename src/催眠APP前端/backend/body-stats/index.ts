@@ -10,7 +10,7 @@
  */
 
 import * as MvuBridge from '../../shared/mvu/mvuBridge';
-import { logger } from '../../shared/debug/loggerService';
+import { logger } from '../../../催眠APP共用/debug/loggerService';
 
 // ====== 類型 ======
 

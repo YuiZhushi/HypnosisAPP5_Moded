@@ -8,7 +8,7 @@
  * 被 backend/hypnosis/promptBuilder.ts 等業務模組調用。
  */
 
-import { logger } from '../debug/loggerService';
+import { logger } from '../../../催眠APP共用/debug/loggerService';
 
 /**
  * 發送消息到聊天並觸發 AI 回覆

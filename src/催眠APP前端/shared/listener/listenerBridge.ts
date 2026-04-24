@@ -16,7 +16,7 @@
  *   附加值路徑：  `系統._events.<eventId>.payload`   (unknown)
  */
 
-import { logger } from '../debug/loggerService';
+import { logger } from '../../../催眠APP共用/debug/loggerService';
 
 // ====== 類型 ======
 

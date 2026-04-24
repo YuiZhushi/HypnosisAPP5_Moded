@@ -30,7 +30,7 @@ import {
 } from '../../backend/hypnosis';
 
 import { getSystemClock, getUserData, updateResources } from '../../shared/store/resourceSync';
-import { logger } from '../../shared/debug/loggerService';
+import { logger } from '../../../催眠APP共用/debug/loggerService';
 import {
   isSubscriptionActive,
   canSubscribeTier,

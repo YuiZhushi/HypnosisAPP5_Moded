@@ -15,7 +15,7 @@ import { getRoleSnapshot, getOrderedStatEntries, STAT_ORDER, BAR_STATS, type Rol
 import { getUnlocks } from '../../backend/hypnosis';
 import { checkAndEnsureEntry } from '../../backend/character-editor';
 import { waitForMvuReady } from '../../shared/mvu/mvuBridge';
-import { logger } from '../../shared/debug/loggerService';
+import { logger } from '../../../催眠APP共用/debug/loggerService';
 
 function extractScalar(value: unknown): string {
   if (value === null || value === undefined) return '—';

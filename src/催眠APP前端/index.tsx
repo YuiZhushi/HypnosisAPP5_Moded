@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { logger } from './shared/debug/loggerService';
+import { logger } from '../催眠APP共用/debug/loggerService';
 import App from './App';
 import './index.css';
 import * as MvuBridge from './shared/mvu/mvuBridge';

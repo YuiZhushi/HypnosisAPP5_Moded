@@ -13,7 +13,7 @@ import { UserResources } from './constants/interfaces';
 import { AppMode } from './constants/types';
 import { Activity, Calendar, HelpCircle, Trophy, Globe, Settings, PenSquare } from 'lucide-react';
 
-import { logger } from './shared/debug/loggerService';
+import { logger } from '../催眠APP共用/debug/loggerService';
 import { getUserData, updateResources, getSystemClock } from './shared/store/resourceSync';
 import { getUnlocks } from './backend/hypnosis';
 import { processCalendarBridgeEventsOnLoad } from './backend/calendar';

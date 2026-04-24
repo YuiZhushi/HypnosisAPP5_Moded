@@ -23,7 +23,7 @@ import type {
 import { DEFAULT_CALENDAR_CRUD, normalizeCalendarCrudStore } from '../../constants/schemas/storeSchema';
 import { normalizeChatVariables, readStoreSnapshot, updateStoreWith, CHAT_OPTION } from '../../shared/store/storeGateway';
 import * as MvuBridge from '../../shared/mvu/mvuBridge';
-import { logger } from '../../shared/debug/loggerService';
+import { logger } from '../../../催眠APP共用/debug/loggerService';
 
 // ====== CRUD 引擎（純函數） ======
 

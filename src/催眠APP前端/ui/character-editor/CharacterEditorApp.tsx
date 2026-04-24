@@ -10,7 +10,7 @@ import { PromptManagerPage } from './PromptManagerPage';
 import { CharacterCompletionAppAiRequestModal } from './CharacterCompletionAppAiRequestModal';
 import { CharacterCompletionAppPatchReviewPanel } from './CharacterCompletionAppPatchReviewPanel';
 
-import { logger } from '../../shared/debug/loggerService';
+import { logger } from '../../../催眠APP共用/debug/loggerService';
 
 // ========= Toast =========
 

@@ -5,7 +5,7 @@ import { getEditorModules, saveEditorModules, getDefaultEditorModules, buildEdit
 import { EditorPromptModule } from '../../constants/interfaces';
 import { EDITOR_PROMPT_PLACEHOLDERS, EDITOR_SECTIONS } from '../../constants/character-editor/editorSections';
 
-import { logger } from '../../shared/debug/loggerService';
+import { logger } from '../../../催眠APP共用/debug/loggerService';
 
 // ====== Toast (reuse pattern from CharacterEditorApp) ======
 
