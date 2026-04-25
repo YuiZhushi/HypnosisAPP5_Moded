@@ -1096,13 +1096,3 @@ _%>
 @@if variables.哈基米.好感度 > 50 && variables.哈基米.好感度 < 90
 哈基米认为{{user}}是朋友
 ```
-
----
-
-## 在 HypnoOS 中的應用 (AI Pipeline)
-
-若在前端應用 (React) 中需要調用 AI 並使用這些提示詞模板，應避免直接向聊天室發送字串。請透過 `shared/ai/aiRequestPipelineService.ts` 統一處理：
-
-1. 將提示詞模板存放在 `constants/` 或 `backend/`。
-2. 使用 `aiRequestPipelineService.ts` 進行請求組裝、發送與接收。
-3. 如果需要修改世界書，請透過 `shared/worldbook/worldBookRepository.ts` 進行。
