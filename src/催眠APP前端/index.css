@@ -73,3 +73,40 @@ select.hypno-select option {
   color: #e2e0f0;
   padding: 0.4rem 0.6rem;
 }
+
+/* Custom Hypno Scrollbar with a soft glow and gradient */
+.hypno-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.hypno-scrollbar::-webkit-scrollbar-track {
+  background: rgba(30, 27, 46, 0.3);
+  border-radius: 10px;
+}
+.hypno-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #a78bfa 0%, #7c3aed 100%);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.hypno-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #c4b5fd 0%, #8b5cf6 100%);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+}
+/* Firefox Support */
+.hypno-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #7c3aed rgba(30, 27, 46, 0.3);
+}
+
+/* Hide number input spinners globally */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}

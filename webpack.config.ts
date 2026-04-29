@@ -58,7 +58,15 @@ function glob_script_files() {
       }
 
       const normalized = file.replace(/\\/g, '/');
-      const exclude_dirs = ['src/角色卡示例', 'src/界面示例', 'src/脚本示例', '示例/角色卡示例', '示例/界面示例', '示例/脚本示例'];
+      const exclude_dirs = [
+        'src/角色卡示例',
+        'src/界面示例',
+        'src/脚本示例',
+        '示例/角色卡示例',
+        '示例/界面示例',
+        '示例/脚本示例',
+        'src/Archive',
+      ];
       return !exclude_dirs.some(dir => normalized.startsWith(`${dir}/`) || normalized === dir);
     })
     .forEach(file => {

@@ -8,3 +8,5 @@
 ### 工作流程與規劃 (Workflow & Planning)
 
 在進行結構變更或破壞性重構之前，務必使用 `TodoWrite` 產生並呈現執行計畫。
+
+如果需要向用戶確認細節，禁用 `AskUserQuestion`。因為`AskUserQuestion`無法輸入建議與圖片，且會中斷對話流程，請直接在對話最後用繁體中文詢問。

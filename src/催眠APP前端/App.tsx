@@ -187,7 +187,7 @@ const App = () => {
 
     switch (currentApp) {
       case AppMode.HYPNOSIS:
-        return <HypnosisApp userData={userData} onUpdateUser={updateUser} onExit={() => setCurrentApp(AppMode.HOME)} />;
+        return <HypnosisApp onBack={() => setCurrentApp(AppMode.HOME)} />;
       case AppMode.BODY_STATS:
         if (!bodyStatsUnlocked)
           return (
