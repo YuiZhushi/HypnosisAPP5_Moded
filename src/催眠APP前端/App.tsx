@@ -244,7 +244,7 @@ const App = () => {
 
         {/* Home Indicator (iOS style) - Always visible except in immersive hypnosis */}
         {/* You might want to hide this in apps too if full immersion is desired, but standard is usually visible */}
-        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1/3 h-1 bg-white/20 rounded-full z-50 pointer-events-none mb-2"></div>
+        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1/3 h-1 bg-white/20 rounded-full z-50 pointer-events-none mb-1"></div>
       </div>
     </div>
   );
