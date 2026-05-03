@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { MockApi, RuntimeData } from './mockData';
 import { HypnosisUseTab } from './HypnosisUseTab';
+import { HypnosisManageTab } from './HypnosisManageTab';
+import { HypnosisEquipmentTab } from './HypnosisEquipmentTab';
+import { HypnosisProfileTab } from './HypnosisProfileTab';
 import {
-  Zap, Coins, Star, Crown, ChevronLeft, Bell,
+  ChevronLeft, Bell,
   Monitor, Activity, FileText, Image as ImageIcon, AlignCenter,
   Volume2, Music, Smartphone, Coffee, Box, Wind, Cloud,
-  Maximize, Radio, Wifi, Cpu, Eye, Settings, Wrench, User
+  Maximize, Radio, Wifi, Cpu, Eye, Settings, Wrench, User, Crown
 } from 'lucide-react';
 
 const IconMap: Record<string, React.FC<any>> = {
@@ -37,8 +40,8 @@ export const useHypnosisRuntimeData = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (isReload = false) => {
+    if (!isReload) setLoading(true);
     try {
       const [user, system, equipment, hypnosis, combos, chars] = await Promise.all([
         MockApi.getUserInfo(),
@@ -60,7 +63,7 @@ export const useHypnosisRuntimeData = () => {
     } catch (err) {
       setError(err as Error);
     } finally {
-      setLoading(false);
+      if (!isReload) setLoading(false);
     }
   };
 
@@ -68,7 +71,7 @@ export const useHypnosisRuntimeData = () => {
     loadData();
   }, []);
 
-  return { data, loading, error, reload: loadData };
+  return { data, loading, error, reload: () => loadData(true) };
 };
 
 export const HypnosisApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
@@ -109,7 +112,7 @@ export const HypnosisApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     if (!data?.user.vipEndVirtualMinutes) return '---';
     const now = new Date();
     const endDate = new Date(now.getTime() + data.user.vipEndVirtualMinutes * 60 * 1000);
-    return `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+    return `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')} ${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
   })();
 
   // MC energy percentage
@@ -178,9 +181,9 @@ export const HypnosisApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       {/* ============================================ */}
       <div className="flex-1 overflow-y-auto hypno-scrollbar relative">
         {activeTab === 'use' && <HypnosisUseTab data={data} reload={reload} vipEndDate={vipEndDate} mcPercent={mcPercent} formatMoney={formatMoney} />}
-        {activeTab === 'manage' && <PlaceholderTab title="催眠管理區" />}
-        {activeTab === 'equipment' && <PlaceholderTab title="設備管理區" />}
-        {activeTab === 'profile' && <PlaceholderTab title="詳細用戶資料區" />}
+        {activeTab === 'manage' && <HypnosisManageTab data={data} reload={reload} vipEndDate={vipEndDate} mcPercent={mcPercent} formatMoney={formatMoney} />}
+        {activeTab === 'equipment' && <HypnosisEquipmentTab data={data} reload={reload} formatMoney={formatMoney} />}
+        {activeTab === 'profile' && <HypnosisProfileTab data={data} reload={reload} vipEndDate={vipEndDate} mcPercent={mcPercent} formatMoney={formatMoney} />}
       </div>
 
       {/* ============================================ */}
@@ -245,19 +248,6 @@ const BottomTabButton: React.FC<{
 );
 
 
-
-// ==========================================
-// Placeholder Tab (佔位用)
-// ==========================================
-const PlaceholderTab: React.FC<{ title: string }> = ({ title }) => (
-  <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-    <div className="w-14 h-14 rounded-full bg-[#13102a] border border-purple-800/30 flex items-center justify-center mb-3">
-      <Settings size={22} className="text-purple-900" />
-    </div>
-    <h3 className="text-base font-semibold text-gray-400 mb-1">{title}</h3>
-    <p className="text-sm text-gray-600">此區域尚未實作</p>
-  </div>
-);
 
 // ====== ICON ======
 // --- SVG Logo Component ---

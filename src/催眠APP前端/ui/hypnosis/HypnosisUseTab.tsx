@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { RuntimeData, HypnosisDef, MockApi } from './mockData';
 import {
-  Zap, Coins, Star, Eye, List, Play, ChevronDown,
+  Zap, Coins, Star, Eye, List, Play,
   X, AlertTriangle, Bookmark, Check
 } from 'lucide-react';
 
@@ -143,7 +143,7 @@ export const HypnosisUseTab: React.FC<{
     return sum + def.energyCost * (def.isPermanent ? 1 : dur);
   }, 0);
 
-  const handleLaunchHypnosis = () => {
+  const handleLaunchHypnosis = async () => {
     const launchData = enabledItems.map(({ id, state, def }) => {
       const targets = [...state.targets, state.customTarget].filter(Boolean);
       return {
@@ -155,7 +155,14 @@ export const HypnosisUseTab: React.FC<{
       };
     });
     console.log('[HypnoOS] 啟動催眠，選中項目:', launchData, '總消耗:', totalMcCost);
-    // TODO: 之後在這裡接上實際發送功能
+
+    if (data && totalMcCost > 0) {
+      await MockApi.updateUserResource({ mcEnergy: data.user.mcEnergy - totalMcCost });
+    }
+
+    await MockApi.sendHypnosis(launchData);
+
+    if (reload) reload();
     setShowConfirm(false);
   };
 
@@ -398,7 +405,7 @@ const HypnosisItemCard: React.FC<{
   charNames: string[];
   onToggle: () => void;
   onUpdate: (patch: Partial<HypnosisItemState>) => void;
-}> = ({ id, def, state, charNames, onToggle, onUpdate }) => {
+}> = ({ def, state, charNames, onToggle, onUpdate }) => {
   const costLabel = def.isOneTime
     ? `總計: ${def.energyCost} MC`
     : `消耗: ${def.energyCost} MC / 分鐘`;
@@ -541,7 +548,7 @@ const SavedCombosModal: React.FC<{
   });
 
   return (
-    <div className="absolute inset-0 z-50 bg-black/80 flex flex-col overflow-hidden">
+    <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4">
         {/* 標題 */}
         <div className="flex items-center justify-between mb-4">
@@ -625,7 +632,7 @@ const AddComboConfirmModal: React.FC<{
   const canSave = name.trim().length > 0 && enabledItems.length > 0;
 
   return (
-    <div className="absolute inset-0 z-50 bg-black/80 flex flex-col overflow-hidden">
+    <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4">
         {/* 標題 */}
         <div className="flex items-center justify-between mb-4">
@@ -738,7 +745,8 @@ const ConfirmModal: React.FC<{
     const missing = getMissingEquipment(method, ownedEquipments, equipmentDefs);
     const targets = [...state.targets, state.customTarget].filter(Boolean);
     const hasTarget = targets.length > 0;
-    const cost = def.isOneTime ? def.energyCost : def.energyCost * (state.duration || 10);
+    const dur = typeof state.duration === 'number' ? state.duration : 10;
+    const cost = def.isOneTime ? def.energyCost : def.energyCost * (def.isPermanent ? 1 : dur);
     return { id, def, state, method, missing, hasTarget, targets, cost };
   });
 
@@ -749,7 +757,7 @@ const ConfirmModal: React.FC<{
   const canLaunch = enabledItems.length > 0 && energyOk && uniqueMissing.length === 0 && !hasTargetIssue;
 
   return (
-    <div className="absolute inset-0 z-50 bg-black/80 flex flex-col overflow-hidden">
+    <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4">
         {/* 標題 */}
         <div className="flex items-center justify-between mb-4">

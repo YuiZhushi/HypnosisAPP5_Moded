@@ -882,14 +882,14 @@ export const TestCharDataInput: Record<string, MockcharData> = {
 export const defaultMockUserData: MockUserData = {
   userName: '測試用玩家名',
   money: 102830,
-  mcEnergy: 190000,
-  mcEnergyMax: 200000,
-  mcPoints: 200,
+  mcEnergy: 1900,
+  mcEnergyMax: 2000,
+  mcPoints: 500,
   totalConsumedMc: 500,
-  vipTier: 4,
+  vipTier: 3,
   vipEndVirtualMinutes: 10056, // 一週
   vipAutoRenew: true,
-  suspicion: 0,
+  suspicion: 10,
 
   ownedHypnosis: {
     trial_basic: { enabled: true },
@@ -1017,11 +1017,59 @@ export const MockApi = {
   },
 
   /**
-   * 模擬更新用戶資料 (例如購買、裝備)
+   * 模擬更新用戶資源 (金錢、MC 能量、PTS 等)
    */
-  async updateUserData(patch: Partial<MockUserData>): Promise<void> {
+  async updateUserResource(patch: Partial<Pick<MockUserData, 'money' | 'mcEnergy' | 'mcEnergyMax' | 'mcPoints' | 'totalConsumedMc' | 'suspicion' | 'vipTier' | 'vipEndVirtualMinutes' | 'vipAutoRenew'>>): Promise<void> {
     await delay(300);
+
+    // 如果有消耗 MC 能量，則自動累加到 totalConsumedMc
+    if (patch.mcEnergy !== undefined && patch.mcEnergy < mockDatabase.mcEnergy) {
+      const consumed = mockDatabase.mcEnergy - patch.mcEnergy;
+      patch.totalConsumedMc = (patch.totalConsumedMc ?? mockDatabase.totalConsumedMc) + consumed;
+    }
+
     mockDatabase = { ...mockDatabase, ...patch };
+  },
+
+  /**
+   * 模擬更新擁有的催眠狀態
+   */
+  async updateUserOwnedHypnosis(id: string, enabled: boolean, settings?: any): Promise<void> {
+    await delay(200);
+    mockDatabase.ownedHypnosis[id] = { enabled, settings: settings || mockDatabase.ownedHypnosis[id]?.settings };
+  },
+
+  /**
+   * 模擬更新擁有的設備狀態
+   */
+  async updateUserOwnedEquipments(id: string, enabled: boolean, settings?: any): Promise<void> {
+    await delay(200);
+    mockDatabase.ownedEquipments[id] = { enabled, settings: settings || mockDatabase.ownedEquipments[id]?.settings };
+  },
+
+  /**
+   * 模擬更新擁有的組合狀態
+   */
+  async updateUserOwnedCombos(id: string, enabled: boolean, settings?: any): Promise<void> {
+    await delay(200);
+    mockDatabase.ownedCombos[id] = { enabled, settings: settings || mockDatabase.ownedCombos[id]?.settings };
+  },
+
+  /**
+   * 模擬發送催眠指令
+   */
+  async sendHypnosis(launchData: any[]): Promise<void> {
+    await delay(500);
+    console.log('[MockApi] 模擬發送催眠指令:', launchData);
+  },
+
+  /**
+   * 模擬儲存自製催眠
+   */
+  async saveNewHypnosis(id: string, def: HypnosisDef): Promise<void> {
+    await delay(300);
+    TestCustomHypnosisInput[id] = def;
+    // 製作出的催眠不會直接歸入已購買，而是需要玩家在去商店購買才會擁有
   },
 
   /**
@@ -1033,6 +1081,56 @@ export const MockApi = {
     TestComboDataInput[comboId] = comboDef;
     // 更新用戶擁有的組合
     mockDatabase.ownedCombos[comboId] = { enabled: true };
+  },
+
+  /**
+   * 模擬更新已存在的催眠組合內容
+   */
+  async updateCombo(comboId: string, comboDef: ComboDef): Promise<void> {
+    await delay(200);
+    if (TestComboDataInput[comboId]) {
+      TestComboDataInput[comboId] = comboDef;
+    }
+  },
+
+  /**
+   * 模擬刪除催眠組合
+   */
+  async deleteCombo(comboId: string): Promise<void> {
+    await delay(200);
+    delete TestComboDataInput[comboId];
+    if (mockDatabase.ownedCombos[comboId]) {
+      delete mockDatabase.ownedCombos[comboId];
+    }
+  },
+
+  /**
+   * 模擬刪除自訂催眠
+   */
+  async deleteHypnosis(id: string): Promise<void> {
+    await delay(200);
+    // 1. 從 TestCustomHypnosisInput 中刪除
+    if (TestCustomHypnosisInput[id]) {
+      delete TestCustomHypnosisInput[id];
+    }
+    // 2. 從 mockDatabase.ownedHypnosis 中移除
+    if (mockDatabase.ownedHypnosis[id]) {
+      delete mockDatabase.ownedHypnosis[id];
+    }
+    // 3. 從所有包含此催眠的組合中移除
+    for (const comboId in TestComboDataInput) {
+      if (TestComboDataInput[comboId].includedHypnosis[id]) {
+        delete TestComboDataInput[comboId].includedHypnosis[id];
+
+        // 如果移除後組合變為空，則刪除整個組合
+        if (Object.keys(TestComboDataInput[comboId].includedHypnosis).length === 0) {
+          delete TestComboDataInput[comboId];
+          if (mockDatabase.ownedCombos[comboId]) {
+            delete mockDatabase.ownedCombos[comboId];
+          }
+        }
+      }
+    }
   }
 };
 
