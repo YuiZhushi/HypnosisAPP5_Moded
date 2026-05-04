@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { RuntimeData, EquipmentDef, MockApi } from './mockData';
 import {
-  Wrench, ShoppingCart, Check, X, AlertTriangle, Eye, Zap, Coins, Star, Power, Monitor, Activity, FileText, Image as ImageIcon, AlignCenter, Volume2, Music, Smartphone, Coffee, Box, Wind, Cloud, Maximize, Radio, Wifi, Cpu
+  Wrench, ShoppingCart, X, AlertTriangle, Eye, Zap, Coins, Star, Monitor, Activity, FileText, Image as ImageIcon, AlignCenter, Volume2, Music, Smartphone, Coffee, Box, Wind, Cloud, Maximize, Radio, Wifi, Cpu
 } from 'lucide-react';
 
 const IconMap: Record<string, React.FC<any>> = {
@@ -28,8 +28,7 @@ type EquipmentSubTab = 'installed' | 'shop';
 export const HypnosisEquipmentTab: React.FC<{
   data: RuntimeData | null;
   reload: () => void;
-  formatMoney: (val: number) => string;
-}> = ({ data, reload, formatMoney }) => {
+}> = ({ data, reload }) => {
   const [activeSubTab, setActiveSubTab] = useState<EquipmentSubTab>('installed');
 
   if (!data) return null;
@@ -37,55 +36,20 @@ export const HypnosisEquipmentTab: React.FC<{
   return (
     <div className="flex flex-col h-full relative overflow-hidden">
       {/* ============================================ */}
-      {/* 快捷用戶資料卡 */}
-      {/* ============================================ */}
-      <div className="px-4.5 pt-2 pb-2">
-        <div className="bg-[#13102a] rounded-xl border border-purple-800/30 px-3 py-2.5">
-          <div className="flex items-center gap-2.5 mb-2">
-            <div className="w-9 h-9 rounded-full bg-[#1a1530] flex items-center justify-center border border-gray-600/40 overflow-hidden shrink-0">
-              <Eye size={18} className="text-gray-400" />
-            </div>
-            <span className="font-bold text-white text-sm leading-tight truncate">
-              {data.user.userName || '催眠大師'}
-            </span>
-          </div>
-          <div className="flex items-stretch gap-1.5">
-            <div className="flex-1 bg-[#0c0a1e] rounded-lg border border-purple-900/30 px-2 py-1.5">
-              <div className="flex items-center gap-1">
-                <Zap size={11} className="text-cyan-400 shrink-0" />
-                <span className="text-[9px] text-gray-500">MC 能量</span>
-                <span className="text-[10px] font-mono text-white font-semibold ml-auto">{data.user.mcEnergy}/{data.user.mcEnergyMax}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 bg-[#0c0a1e] rounded-lg border border-purple-900/30 px-2 py-1.5">
-              <Coins size={11} className="text-yellow-400 shrink-0" />
-              <span className="text-[9px] text-gray-500">金幣</span>
-              <span className="text-[10px] font-mono text-white font-semibold ml-0.5">{formatMoney(data.user.money || 0)}</span>
-            </div>
-            <div className="flex items-center gap-1 bg-[#0c0a1e] rounded-lg border border-purple-900/30 px-2 py-1.5">
-              <Star size={11} className="text-purple-400 shrink-0" />
-              <span className="text-[9px] text-gray-500">催眠點</span>
-              <span className="text-[10px] font-mono text-white font-semibold ml-0.5">{data.user.mcPoints} PT</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ============================================ */}
       {/* 內部導航列 (Sub-navigation) */}
       {/* ============================================ */}
-      <div className="px-4 pt-3 pb-2 shrink-0">
-        <div className="flex bg-[#13102a] rounded-xl border border-purple-900/30 p-1">
+      <div className="px-3 md:px-4 pt-3 md:pt-4 py-2 md:py-2 shrink-0">
+        <div className="flex bg-[#13102a] rounded-xl border border-purple-900/30 p-0.5 md:p-1">
           <SubTabButton
             active={activeSubTab === 'installed'}
             onClick={() => setActiveSubTab('installed')}
-            icon={<Wrench size={14} />}
+            icon={<Wrench className="w-[13px] h-[13px] md:w-3.5 md:h-3.5" />}
             label="已安裝設備"
           />
           <SubTabButton
             active={activeSubTab === 'shop'}
             onClick={() => setActiveSubTab('shop')}
-            icon={<ShoppingCart size={14} />}
+            icon={<ShoppingCart className="w-[13px] h-[13px] md:w-3.5 md:h-3.5" />}
             label="設備商店"
           />
         </div>
@@ -94,7 +58,7 @@ export const HypnosisEquipmentTab: React.FC<{
       {/* ============================================ */}
       {/* 內容區塊 */}
       {/* ============================================ */}
-      <div className="flex-1 overflow-y-auto px-4 pb-24 no-scrollbar">
+      <div className="flex-1 overflow-y-auto px-3 md:px-4 pb-20 md:pb-24 flex flex-col gap-3 md:gap-4 no-scrollbar">
         {activeSubTab === 'installed' && (
           <InstalledEquipmentSection data={data} reload={reload} />
         )}
@@ -115,7 +79,7 @@ const SubTabButton: React.FC<{
   return (
     <button
       onClick={onClick}
-      className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] font-semibold transition-all ${
+      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 md:py-2 rounded-lg text-[10px] md:text-[11px] font-semibold transition-all ${
         active
           ? 'bg-purple-600 text-white shadow-md shadow-purple-900/20'
           : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
@@ -162,26 +126,26 @@ const InstalledEquipmentSection: React.FC<{
           尚未安裝任何設備
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1.5 md:gap-2">
           {installedEquipments.map(({ id, def, enabled }) => {
             const IconComp = IconMap[def.icon] || Box;
             return (
               <div
                 key={id}
-                className="bg-[#13102a] rounded-xl border border-purple-900/25 px-3.5 py-3 flex flex-col gap-2"
+                className="bg-[#13102a] rounded-xl border border-purple-900/25 px-3 md:px-3.5 py-2.5 md:py-3 flex flex-col gap-1.5 md:gap-2"
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${enabled ? 'bg-purple-900/30 border-purple-500/50 text-purple-400' : 'bg-[#0c0a1e] border-gray-700 text-gray-500'}`}>
-                      <IconComp size={16} />
+                  <div className="flex items-center gap-2 md:gap-2.5">
+                    <div className={`w-7 md:w-8 h-7 md:h-8 rounded-lg flex items-center justify-center border ${enabled ? 'bg-purple-900/30 border-purple-500/50 text-purple-400' : 'bg-[#0c0a1e] border-gray-700 text-gray-500'}`}>
+                      <IconComp className="w-3.5 h-3.5 md:w-4 md:h-4" />
                     </div>
                     <div>
-                      <div className="font-semibold text-sm text-white leading-none mb-1">{def.name}</div>
+                      <div className="font-semibold text-[13px] md:text-sm text-white leading-none mb-1">{def.name}</div>
                       <div className="flex gap-1.5 items-center">
-                        <span className="text-[10px] text-gray-400 bg-[#0c0a1e] px-1.5 py-0.5 rounded border border-gray-800">
+                        <span className="text-[9px] md:text-[10px] text-gray-400 bg-[#0c0a1e] px-1 md:px-1.5 py-0.5 rounded border border-gray-800">
                           {def.type === 'technology' ? '技術' : '硬體'}
                         </span>
-                        <span className="text-[10px] text-gray-400 bg-[#0c0a1e] px-1.5 py-0.5 rounded border border-gray-800">
+                        <span className="text-[9px] md:text-[10px] text-gray-400 bg-[#0c0a1e] px-1 md:px-1.5 py-0.5 rounded border border-gray-800">
                           VIP {def.tier}
                         </span>
                       </div>
@@ -190,16 +154,16 @@ const InstalledEquipmentSection: React.FC<{
                   <button
                     onClick={() => handleToggle(id, enabled)}
                     disabled={isProcessing}
-                    className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
+                    className={`relative w-10 md:w-11 h-5 md:h-6 rounded-full transition-colors shrink-0 ${
                       enabled ? 'bg-purple-500' : 'bg-gray-700'
                     } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                    <div className={`absolute top-[2px] w-4 h-4 md:w-5 md:h-5 rounded-full bg-white shadow transition-transform ${
                       enabled ? 'translate-x-[22px]' : 'translate-x-0.5'
                     }`} />
                   </button>
                 </div>
-                <div className="text-[11px] text-gray-400 bg-[#0c0a1e] p-2 rounded-lg border border-purple-900/10 leading-relaxed">
+                <div className="text-[10px] md:text-[11px] text-gray-400 bg-[#0c0a1e] p-1.5 md:p-2 rounded-lg border border-purple-900/10 leading-relaxed">
                   {def.description}
                   {def.usageCostRate > 0 && (
                     <div className="mt-1 text-amber-400/80 font-medium">
@@ -242,7 +206,7 @@ const EquipmentShopSection: React.FC<{
           沒有可購買的設備
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1.5 md:gap-2">
           {availableEquipments.map(({ id, def }) => {
             const IconComp = IconMap[def.icon] || Box;
             const isLocked = def.tier > data.user.vipTier;
@@ -250,55 +214,55 @@ const EquipmentShopSection: React.FC<{
             const canAffordMoney = def.cost.money === undefined || data.user.money >= def.cost.money;
             const canAffordPts = def.cost.pts === undefined || data.user.mcPoints >= def.cost.pts;
             const canAffordMc = def.cost.mc === undefined || data.user.mcEnergy >= def.cost.mc;
-            const canAfford = canAffordMoney && canAffordPts && canAffordMc;
+            // canAfford is kept for reference if needed, though not directly used in the list view
 
             return (
               <div
                 key={id}
                 onClick={() => !isLocked && setSelectedEquipment({ id, def })}
-                className={`bg-[#13102a] rounded-xl border px-3.5 py-3 flex items-center justify-between transition-colors ${
+                className={`bg-[#13102a] rounded-xl border px-3 md:px-3.5 py-2.5 md:py-3 flex items-center justify-between transition-colors ${
                   isLocked ? 'border-gray-800 opacity-50 cursor-not-allowed' : 'border-purple-900/25 cursor-pointer hover:border-purple-500/40'
                 }`}
               >
-                <div className="flex items-center gap-3 min-w-0 pr-2">
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border ${isLocked ? 'bg-[#0c0a1e] border-gray-800 text-gray-600' : 'bg-purple-900/20 border-purple-500/30 text-purple-400'}`}>
-                    <IconComp size={18} />
+                <div className="flex items-center gap-2 md:gap-3 min-w-0 pr-2">
+                  <div className={`w-8 md:w-9 h-8 md:h-9 rounded-lg flex items-center justify-center shrink-0 border ${isLocked ? 'bg-[#0c0a1e] border-gray-800 text-gray-600' : 'bg-purple-900/20 border-purple-500/30 text-purple-400'}`}>
+                    <IconComp className="w-[14px] h-[14px] md:w-[18px] md:h-[18px]" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-sm text-white mb-0.5">{def.name}</div>
-                    <div className="flex gap-1.5 items-center">
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded border ${isLocked ? 'bg-red-900/20 border-red-800 text-red-500' : 'bg-[#0c0a1e] border-gray-800 text-gray-400'}`}>
+                    <div className="font-semibold text-[13px] md:text-sm text-white mb-0.5">{def.name}</div>
+                    <div className="flex gap-1 md:gap-1.5 items-center">
+                      <span className={`text-[8px] md:text-[9px] px-1 md:px-1.5 py-0.5 rounded border ${isLocked ? 'bg-red-900/20 border-red-800 text-red-500' : 'bg-[#0c0a1e] border-gray-800 text-gray-400'}`}>
                         VIP {def.tier}
                       </span>
-                      {isLocked && <span className="text-[9px] text-red-500 font-medium">權限不足</span>}
+                      {isLocked && <span className="text-[8px] md:text-[9px] text-red-500 font-medium">權限不足</span>}
                     </div>
                   </div>
                 </div>
 
                 <div className="flex flex-col items-end gap-1 shrink-0">
                   {def.cost.pts !== undefined && (
-                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md border ${
+                    <span className={`text-[9px] md:text-[10px] font-medium px-1.5 md:px-2 py-0.5 rounded-md border ${
                       canAffordPts ? 'bg-purple-900/30 text-purple-400 border-purple-500/30' : 'bg-red-900/30 text-red-400 border-red-500/30'
                     }`}>
                       {def.cost.pts} PTS
                     </span>
                   )}
                   {def.cost.money !== undefined && (
-                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md border ${
+                    <span className={`text-[9px] md:text-[10px] font-medium px-1.5 md:px-2 py-0.5 rounded-md border ${
                       canAffordMoney ? 'bg-yellow-900/30 text-yellow-400 border-yellow-500/30' : 'bg-red-900/30 text-red-400 border-red-500/30'
                     }`}>
                       ¥{def.cost.money.toLocaleString()}
                     </span>
                   )}
                   {def.cost.mc !== undefined && (
-                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md border ${
+                    <span className={`text-[9px] md:text-[10px] font-medium px-1.5 md:px-2 py-0.5 rounded-md border ${
                       canAffordMc ? 'bg-cyan-900/30 text-cyan-400 border-cyan-500/30' : 'bg-red-900/30 text-red-400 border-red-500/30'
                     }`}>
                       {def.cost.mc} MC
                     </span>
                   )}
                   {Object.keys(def.cost).length === 0 && (
-                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-md border bg-emerald-900/30 text-emerald-400 border-emerald-500/30">
+                    <span className="text-[9px] md:text-[10px] font-medium px-1.5 md:px-2 py-0.5 rounded-md border bg-emerald-900/30 text-emerald-400 border-emerald-500/30">
                       免費
                     </span>
                   )}
@@ -341,7 +305,7 @@ const EquipmentShopDetailModal: React.FC<{
   reload: () => void;
   onClose: () => void;
   onPurchase: () => void;
-}> = ({ id, def, data, reload, onClose, onPurchase }) => {
+}> = ({ def, data, onClose, onPurchase }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const IconComp = IconMap[def.icon] || Box;
 
@@ -353,35 +317,35 @@ const EquipmentShopDetailModal: React.FC<{
   const handlePurchase = async () => {
     if (isProcessing) return;
     setIsProcessing(true);
-    await onPurchase();
+    onPurchase();
     setIsProcessing(false);
   };
 
   return (
     <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4">
-        <div className="flex items-center justify-between mb-4">
+      <div className="flex-1 overflow-y-auto px-3 md:px-4 pt-3 md:pt-4 pb-3 md:pb-4">
+        <div className="flex items-center justify-between mb-3 md:mb-4">
           <div className="flex items-center gap-2">
             <ShoppingCart size={18} className="text-purple-400" />
-            <span className="text-base font-bold text-white">購買設備</span>
+            <span className="text-[14px] md:text-base font-bold text-white">購買設備</span>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
             <X size={20} />
           </button>
         </div>
 
-        <div className="bg-[#13102a] rounded-xl border border-purple-900/25 p-5 flex flex-col gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-purple-900/20 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0">
-              <IconComp size={28} />
+        <div className="bg-[#13102a] rounded-xl border border-purple-900/25 p-4 md:p-5 flex flex-col gap-3 md:gap-4">
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className="w-12 md:w-14 h-12 md:h-14 rounded-xl bg-purple-900/20 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0">
+              <IconComp className="w-6 h-6 md:w-7 md:h-7" />
             </div>
             <div>
-              <div className="text-lg text-white font-bold mb-1">{def.name}</div>
-              <div className="flex gap-2 items-center">
-                <span className="text-[11px] text-gray-400 bg-[#0c0a1e] px-2 py-0.5 rounded border border-gray-800">
+              <div className="text-base md:text-lg text-white font-bold mb-1">{def.name}</div>
+              <div className="flex gap-1.5 md:gap-2 items-center">
+                <span className="text-[10px] md:text-[11px] text-gray-400 bg-[#0c0a1e] px-1.5 md:px-2 py-0.5 rounded border border-gray-800">
                   {def.type === 'technology' ? '技術' : '硬體'}
                 </span>
-                <span className="text-[11px] text-gray-400 bg-[#0c0a1e] px-2 py-0.5 rounded border border-gray-800">
+                <span className="text-[10px] md:text-[11px] text-gray-400 bg-[#0c0a1e] px-1.5 md:px-2 py-0.5 rounded border border-gray-800">
                   VIP {def.tier}
                 </span>
               </div>
@@ -389,53 +353,53 @@ const EquipmentShopDetailModal: React.FC<{
           </div>
 
           <div>
-            <div className="text-[10px] text-gray-500 mb-1">設備描述</div>
-            <div className="text-[12px] text-gray-300 leading-relaxed bg-[#0c0a1e] p-3 rounded-lg border border-purple-900/20">
+            <div className="text-[9px] md:text-[10px] text-gray-500 mb-1">設備描述</div>
+            <div className="text-[11px] md:text-[12px] text-gray-300 leading-relaxed bg-[#0c0a1e] p-2.5 md:p-3 rounded-lg border border-purple-900/20">
               {def.description}
             </div>
           </div>
 
           {def.usageCostRate > 0 && (
             <div>
-              <div className="text-[10px] text-gray-500 mb-1">啟動消耗</div>
-              <div className="text-xs text-amber-400 font-semibold bg-amber-900/10 border border-amber-900/30 p-2 rounded-lg inline-block">
+              <div className="text-[9px] md:text-[10px] text-gray-500 mb-1">啟動消耗</div>
+              <div className="text-[11px] md:text-xs text-amber-400 font-semibold bg-amber-900/10 border border-amber-900/30 p-1.5 md:p-2 rounded-lg inline-block">
                 每次/每分鐘消耗 {def.usageCostRate} {def.usageCostType.join('/')}
               </div>
             </div>
           )}
 
-          <div className="mt-2 pt-4 border-t border-purple-900/20">
-            <div className="text-[10px] text-gray-500 mb-2">購買花費</div>
-            <div className="flex flex-wrap gap-2">
+          <div className="mt-1.5 md:mt-2 pt-3 md:pt-4 border-t border-purple-900/20">
+            <div className="text-[9px] md:text-[10px] text-gray-500 mb-1.5 md:mb-2">購買花費</div>
+            <div className="flex flex-wrap gap-1.5 md:gap-2">
               {def.cost.pts !== undefined && (
-                <div className={`text-xs font-semibold px-3 py-2 rounded-lg border ${
+                <div className={`text-[11px] md:text-xs font-semibold px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg border ${
                   canAffordPts ? 'bg-purple-900/30 text-purple-400 border-purple-500/30' : 'bg-red-900/30 text-red-400 border-red-500/30'
                 }`}>
                   {def.cost.pts} PTS
                 </div>
               )}
               {def.cost.money !== undefined && (
-                <div className={`text-xs font-semibold px-3 py-2 rounded-lg border ${
+                <div className={`text-[11px] md:text-xs font-semibold px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg border ${
                   canAffordMoney ? 'bg-yellow-900/30 text-yellow-400 border-yellow-500/30' : 'bg-red-900/30 text-red-400 border-red-500/30'
                 }`}>
                   ¥{def.cost.money.toLocaleString()}
                 </div>
               )}
               {def.cost.mc !== undefined && (
-                <div className={`text-xs font-semibold px-3 py-2 rounded-lg border ${
+                <div className={`text-[11px] md:text-xs font-semibold px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg border ${
                   canAffordMc ? 'bg-cyan-900/30 text-cyan-400 border-cyan-500/30' : 'bg-red-900/30 text-red-400 border-red-500/30'
                 }`}>
                   {def.cost.mc} MC
                 </div>
               )}
               {Object.keys(def.cost).length === 0 && (
-                <div className="text-xs font-semibold px-3 py-2 rounded-lg border bg-emerald-900/30 text-emerald-400 border-emerald-500/30">
+                <div className="text-[11px] md:text-xs font-semibold px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg border bg-emerald-900/30 text-emerald-400 border-emerald-500/30">
                   免費
                 </div>
               )}
             </div>
             {!canAfford && (
-              <div className="text-[11px] text-red-400 mt-3 flex items-center gap-1.5">
+              <div className="text-[10px] md:text-[11px] text-red-400 mt-2 md:mt-3 flex items-center gap-1 md:gap-1.5">
                 <AlertTriangle size={14} />
                 您的資源不足，無法購買此設備。
               </div>
@@ -444,18 +408,18 @@ const EquipmentShopDetailModal: React.FC<{
         </div>
       </div>
 
-      <div className="px-4 pb-4 flex gap-3 shrink-0">
+      <div className="px-3 md:px-4 pb-3 md:pb-4 flex gap-2 md:gap-3 shrink-0">
         <button
           onClick={onClose}
           disabled={isProcessing}
-          className="flex-1 py-3 rounded-xl border border-gray-600/50 text-gray-300 font-medium text-sm hover:bg-gray-800/50 transition-colors disabled:opacity-50"
+          className="flex-1 py-2.5 md:py-3 rounded-xl border border-gray-600/50 text-gray-300 font-medium text-[13px] md:text-sm hover:bg-gray-800/50 transition-colors disabled:opacity-50"
         >
           取消
         </button>
         <button
           onClick={handlePurchase}
           disabled={!canAfford || isProcessing}
-          className="flex-1 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:grayscale relative overflow-hidden"
+          className="flex-1 py-2.5 md:py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-[13px] md:text-sm flex items-center justify-center gap-1.5 md:gap-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:grayscale relative overflow-hidden"
         >
           {isProcessing ? (
             <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />

@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { RuntimeData, HypnosisDef, MockApi } from './mockData';
 import {
   List, Bookmark, ShoppingCart, Hammer, Check, X,
-  AlertTriangle, ChevronDown, Play, Zap, Coins, Star, Eye, Crown
+  AlertTriangle, Crown
 } from 'lucide-react';
 
 type ManageSubTab = 'owned' | 'combos' | 'shop' | 'craft';
@@ -10,10 +10,7 @@ type ManageSubTab = 'owned' | 'combos' | 'shop' | 'craft';
 export const HypnosisManageTab: React.FC<{
   data: RuntimeData | null;
   reload: () => void;
-  vipEndDate: string;
-  mcPercent: number;
-  formatMoney: (val: number) => string;
-}> = ({ data, reload, vipEndDate, mcPercent, formatMoney }) => {
+}> = ({ data, reload }) => {
   const [activeSubTab, setActiveSubTab] = useState<ManageSubTab>('owned');
 
   if (!data) return null;
@@ -21,78 +18,32 @@ export const HypnosisManageTab: React.FC<{
   return (
     <div className="flex flex-col h-full relative overflow-hidden">
       {/* ============================================ */}
-      {/* 快捷用戶資料卡 */}
-      {/* ============================================ */}
-      <div className="px-4.5 pt-2 pb-2">
-        <div className="bg-[#13102a] rounded-xl border border-purple-800/30 px-3 py-2.5">
-          <div className="flex items-center gap-2.5 mb-2">
-            <div className="w-9 h-9 rounded-full bg-[#1a1530] flex items-center justify-center border border-gray-600/40 overflow-hidden shrink-0">
-              <Eye size={18} className="text-gray-400" />
-            </div>
-            <span className="font-bold text-white text-sm leading-tight truncate">
-              {data.user.userName || '催眠大師'}
-            </span>
-            <div className="ml-auto flex flex-col items-end gap-px shrink-0">
-              <span className="text-[10px] text-gray-500">到期: {vipEndDate}</span>
-              {data.user.vipAutoRenew ? (
-                <span className="text-[10px] text-emerald-400 font-medium underline decoration-emerald-400/50">自動續訂開啟</span>
-              ) : (
-                <span className="text-[10px] text-gray-500 font-medium">自動續訂關閉</span>
-              )}
-            </div>
-          </div>
-          <div className="flex items-stretch gap-1.5">
-            <div className="flex-1 bg-[#0c0a1e] rounded-lg border border-purple-900/30 px-2 py-1.5">
-              <div className="flex items-center gap-1">
-                <Zap size={11} className="text-cyan-400 shrink-0" />
-                <span className="text-[9px] text-gray-500">MC 能量</span>
-                <span className="text-[10px] font-mono text-white font-semibold ml-auto">{data.user.mcEnergy}/{data.user.mcEnergyMax}</span>
-              </div>
-              <div className="mt-1 w-full h-[3px] bg-[#1a1530] rounded-full overflow-hidden">
-                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${mcPercent}%`, background: 'linear-gradient(90deg, #a855f7, #c084fc)' }} />
-              </div>
-            </div>
-            <div className="flex items-center gap-1 bg-[#0c0a1e] rounded-lg border border-purple-900/30 px-2 py-1.5">
-              <Coins size={11} className="text-yellow-400 shrink-0" />
-              <span className="text-[9px] text-gray-500">金幣</span>
-              <span className="text-[10px] font-mono text-white font-semibold ml-0.5">{formatMoney(data.user.money || 0)}</span>
-            </div>
-            <div className="flex items-center gap-1 bg-[#0c0a1e] rounded-lg border border-purple-900/30 px-2 py-1.5">
-              <Star size={11} className="text-purple-400 shrink-0" />
-              <span className="text-[9px] text-gray-500">催眠點</span>
-              <span className="text-[10px] font-mono text-white font-semibold ml-0.5">{data.user.mcPoints} PT</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ============================================ */}
       {/* 內部導航列 (Sub-navigation) */}
       {/* ============================================ */}
-      <div className="px-4 pt-3 pb-2 shrink-0">
-        <div className="flex bg-[#13102a] rounded-xl border border-purple-900/30 p-1">
+      <div className="px-3 md:px-4 pt-3 md:pt-4 py-2 md:py-2 shrink-0">
+        <div className="flex bg-[#13102a] rounded-xl border border-purple-900/30 p-0.5 md:p-1">
           <SubTabButton
             active={activeSubTab === 'owned'}
             onClick={() => setActiveSubTab('owned')}
-            icon={<List size={14} />}
+            icon={<List className="w-[13px] h-[13px] md:w-3.5 md:h-3.5" />}
             label="已擁有"
           />
           <SubTabButton
             active={activeSubTab === 'combos'}
             onClick={() => setActiveSubTab('combos')}
-            icon={<Bookmark size={14} />}
+            icon={<Bookmark className="w-[13px] h-[13px] md:w-3.5 md:h-3.5" />}
             label="組合"
           />
           <SubTabButton
             active={activeSubTab === 'shop'}
             onClick={() => setActiveSubTab('shop')}
-            icon={<ShoppingCart size={14} />}
+            icon={<ShoppingCart className="w-[13px] h-[13px] md:w-3.5 md:h-3.5" />}
             label="商店"
           />
           <SubTabButton
             active={activeSubTab === 'craft'}
             onClick={() => setActiveSubTab('craft')}
-            icon={<Hammer size={14} />}
+            icon={<Hammer className="w-[13px] h-[13px] md:w-3.5 md:h-3.5" />}
             label="製作"
           />
         </div>
@@ -101,7 +52,7 @@ export const HypnosisManageTab: React.FC<{
       {/* ============================================ */}
       {/* 內容區塊 */}
       {/* ============================================ */}
-      <div className="flex-1 overflow-y-auto px-4 pb-24 no-scrollbar">
+      <div className="flex-1 overflow-y-auto px-3 md:px-4 pb-20 md:pb-24 flex flex-col gap-3 md:gap-4 no-scrollbar">
         {activeSubTab === 'owned' && (
           <OwnedHypnosisSection data={data} reload={reload} />
         )}
@@ -128,7 +79,7 @@ const SubTabButton: React.FC<{
   return (
     <button
       onClick={onClick}
-      className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] font-semibold transition-all ${
+      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 md:py-2 rounded-lg text-[10px] md:text-[11px] font-semibold transition-all ${
         active
           ? 'bg-purple-600 text-white shadow-md shadow-purple-900/20'
           : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
@@ -171,7 +122,7 @@ const OwnedHypnosisSection: React.FC<{
           <button
             key={tier}
             onClick={() => setActiveVipTab(tier)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
+            className={`px-2.5 md:px-3 py-1 md:py-1.5 rounded-lg text-[11px] md:text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
               activeVipTab === tier
                 ? 'bg-purple-600 text-white'
                 : 'bg-[#13102a] text-gray-500 hover:text-gray-300 border border-purple-900/20'
@@ -188,16 +139,16 @@ const OwnedHypnosisSection: React.FC<{
           <div
             key={id}
             onClick={() => setSelectedHypnosis({ id, def })}
-            className="bg-[#13102a] rounded-xl border border-purple-900/25 px-3.5 py-3 cursor-pointer hover:border-purple-500/40 transition-colors flex items-center justify-between"
+            className="bg-[#13102a] rounded-xl border border-purple-900/25 px-3 md:px-3.5 py-2.5 md:py-3 cursor-pointer hover:border-purple-500/40 transition-colors flex items-center justify-between"
           >
             <div>
-              <div className="font-semibold text-sm text-white mb-0.5">{def.name}</div>
-              <div className="text-[11px] text-gray-400">
+              <div className="font-semibold text-[13px] md:text-sm text-white mb-0.5">{def.name}</div>
+              <div className="text-[10px] md:text-[11px] text-gray-400">
                 {def.isPermanent ? '永久性' : def.isOneTime ? '一次性' : '持續性'} | 消耗: {def.energyCost} MC
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md ${
+              <span className={`text-[9px] md:text-[10px] font-medium px-1.5 md:px-2 py-0.5 rounded-md ${
                 enabled ? 'bg-emerald-900/30 text-emerald-400 border border-emerald-500/30' : 'bg-gray-800 text-gray-400 border border-gray-600/30'
               }`}>
                 {enabled ? '顯示中' : '已隱藏'}
@@ -273,18 +224,18 @@ const OwnedHypnosisDetailModal: React.FC<{
 
   return (
     <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4">
+      <div className="flex-1 overflow-y-auto px-3 md:px-4 pt-3 md:pt-4 pb-3 md:pb-4">
         {/* 標題 */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3 md:mb-4">
           <div className="flex items-center gap-2">
             <List size={18} className="text-purple-400" />
-            <span className="text-base font-bold text-white">催眠詳細資訊</span>
+            <span className="text-[14px] md:text-base font-bold text-white">催眠詳細資訊</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
             {def.isCustom && (
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className="text-xs font-medium bg-red-900/30 hover:bg-red-900/50 text-red-400 px-3 py-1.5 rounded-lg border border-red-500/30 transition-colors"
+                className="text-[11px] md:text-xs font-medium bg-red-900/30 hover:bg-red-900/50 text-red-400 px-2 md:px-3 py-1 md:py-1.5 rounded-lg border border-red-500/30 transition-colors"
               >
                 刪除
               </button>
@@ -295,50 +246,50 @@ const OwnedHypnosisDetailModal: React.FC<{
           </div>
         </div>
 
-        <div className="bg-[#13102a] rounded-xl border border-purple-900/25 p-4 flex flex-col gap-3">
+        <div className="bg-[#13102a] rounded-xl border border-purple-900/25 p-3 md:p-4 flex flex-col gap-2.5 md:gap-3">
           <div>
-            <div className="text-[10px] text-gray-500 mb-0.5">催眠名稱</div>
-            <div className="text-sm text-white font-bold">{def.name}</div>
+            <div className="text-[9px] md:text-[10px] text-gray-500 mb-0.5">催眠名稱</div>
+            <div className="text-[13px] md:text-sm text-white font-bold">{def.name}</div>
           </div>
 
           <div>
-            <div className="text-[10px] text-gray-500 mb-0.5">效果描述</div>
-            <div className="text-[12px] text-gray-300 leading-relaxed bg-[#0c0a1e] p-2.5 rounded-lg border border-purple-900/20">
+            <div className="text-[9px] md:text-[10px] text-gray-500 mb-0.5">效果描述</div>
+            <div className="text-[11px] md:text-[12px] text-gray-300 leading-relaxed bg-[#0c0a1e] p-2 md:p-2.5 rounded-lg border border-purple-900/20">
               {def.description}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5 md:gap-3">
             <div>
-              <div className="text-[10px] text-gray-500 mb-0.5">類型</div>
-              <div className="text-xs text-white">{def.isPermanent ? '永久性' : def.isOneTime ? '一次性' : '持續性'}</div>
+              <div className="text-[9px] md:text-[10px] text-gray-500 mb-0.5">類型</div>
+              <div className="text-[11px] md:text-xs text-white">{def.isPermanent ? '永久性' : def.isOneTime ? '一次性' : '持續性'}</div>
             </div>
             <div>
-              <div className="text-[10px] text-gray-500 mb-0.5">消耗</div>
-              <div className="text-xs text-amber-400 font-semibold">{def.energyCost} MC {def.isOneTime || def.isPermanent ? '(單次)' : '(每分鐘)'}</div>
+              <div className="text-[9px] md:text-[10px] text-gray-500 mb-0.5">消耗</div>
+              <div className="text-[11px] md:text-xs text-amber-400 font-semibold">{def.energyCost} MC {def.isOneTime || def.isPermanent ? '(單次)' : '(每分鐘)'}</div>
             </div>
             <div>
-              <div className="text-[10px] text-gray-500 mb-0.5">自製催眠</div>
-              <div className="text-xs text-white">{def.isCustom ? '是' : '否'}</div>
+              <div className="text-[9px] md:text-[10px] text-gray-500 mb-0.5">自製催眠</div>
+              <div className="text-[11px] md:text-xs text-white">{def.isCustom ? '是' : '否'}</div>
             </div>
             <div>
-              <div className="text-[10px] text-gray-500 mb-0.5">需求 VIP</div>
-              <div className="text-xs text-white">VIP {def.tier}</div>
+              <div className="text-[9px] md:text-[10px] text-gray-500 mb-0.5">需求 VIP</div>
+              <div className="text-[11px] md:text-xs text-white">VIP {def.tier}</div>
             </div>
           </div>
 
-          <div className="mt-2 pt-3 border-t border-purple-900/20 flex items-center justify-between">
+          <div className="mt-1.5 md:mt-2 pt-2 md:pt-3 border-t border-purple-900/20 flex items-center justify-between">
             <div>
-              <div className="text-sm text-white font-semibold">顯示於使用區</div>
-              <div className="text-[10px] text-gray-500">開啟後將可在催眠使用區中選擇此催眠</div>
+              <div className="text-[13px] md:text-sm text-white font-semibold">顯示於使用區</div>
+              <div className="text-[9px] md:text-[10px] text-gray-500">開啟後將可在催眠使用區中選擇此催眠</div>
             </div>
             <button
               onClick={handleToggle}
-              className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
+              className={`relative w-10 md:w-11 h-5 md:h-6 rounded-full transition-colors shrink-0 ${
                 enabled ? 'bg-purple-500' : 'bg-gray-700'
               }`}
             >
-              <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+              <div className={`absolute top-[2px] w-4 h-4 md:w-5 md:h-5 rounded-full bg-white shadow transition-transform ${
                 enabled ? 'translate-x-[22px]' : 'translate-x-0.5'
               }`} />
             </button>
@@ -348,22 +299,22 @@ const OwnedHypnosisDetailModal: React.FC<{
 
       {/* 刪除確認 Modal */}
       {showDeleteConfirm && (
-        <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4">
-          <div className="bg-[#13102a] rounded-xl border border-red-900/50 p-5 w-full max-w-sm flex flex-col gap-4 shadow-2xl">
-            <div className="flex items-center gap-2 text-red-400 font-bold text-lg mb-2">
+        <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-3 md:p-4">
+          <div className="bg-[#13102a] rounded-xl border border-red-900/50 p-4 md:p-5 w-full max-w-sm flex flex-col gap-3 md:gap-4 shadow-2xl">
+            <div className="flex items-center gap-2 text-red-400 font-bold text-base md:text-lg mb-1 md:mb-2">
               <AlertTriangle size={20} />
               刪除自訂催眠
             </div>
-            <div className="text-sm text-gray-300">
+            <div className="text-[13px] md:text-sm text-gray-300">
               確定要刪除自訂催眠 <span className="text-white font-bold">「{def.name}」</span> 嗎？此操作無法還原。
               {(modifiedCombos.length > 0 || deletedCombos.length > 0) && (
-                <div className="mt-3 p-3 bg-red-900/20 rounded-lg border border-red-500/30 text-red-300">
+                <div className="mt-2 md:mt-3 p-2.5 md:p-3 bg-red-900/20 rounded-lg border border-red-500/30 text-red-300">
                   <div className="font-bold text-red-400 mb-1">注意：</div>
                   此催眠正在被以下組合使用：
                   {modifiedCombos.length > 0 && (
                     <div className="mt-1">
                       將從以下組合中移除：
-                      <ul className="list-disc pl-5">
+                      <ul className="list-disc pl-4 md:pl-5">
                         {modifiedCombos.map((comboName, idx) => (
                           <li key={idx}>{comboName}</li>
                         ))}
@@ -371,9 +322,9 @@ const OwnedHypnosisDetailModal: React.FC<{
                     </div>
                   )}
                   {deletedCombos.length > 0 && (
-                    <div className="mt-2 text-red-400">
+                    <div className="mt-1.5 md:mt-2 text-red-400">
                       <span className="font-bold">將會連同以下組合一併刪除</span> (因其為組合中最後一個項目)：
-                      <ul className="list-disc pl-5 text-red-300">
+                      <ul className="list-disc pl-4 md:pl-5 text-red-300">
                         {deletedCombos.map((comboName, idx) => (
                           <li key={idx}>{comboName}</li>
                         ))}
@@ -383,16 +334,16 @@ const OwnedHypnosisDetailModal: React.FC<{
                 </div>
               )}
             </div>
-            <div className="flex gap-3 mt-2">
+            <div className="flex gap-2 md:gap-3 mt-1.5 md:mt-2">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 py-2.5 rounded-lg border border-gray-600/50 text-gray-300 font-medium text-sm hover:bg-gray-800/50 transition-colors"
+                className="flex-1 py-2 md:py-2.5 rounded-lg border border-gray-600/50 text-gray-300 font-medium text-[13px] md:text-sm hover:bg-gray-800/50 transition-colors"
               >
                 取消
               </button>
               <button
                 onClick={handleDelete}
-                className="flex-1 py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium text-sm transition-colors"
+                className="flex-1 py-2 md:py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium text-[13px] md:text-sm transition-colors"
               >
                 確認刪除
               </button>
@@ -557,17 +508,17 @@ const SavedComboDetailModal: React.FC<{
 
   return (
     <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4">
+      <div className="flex-1 overflow-y-auto px-3 md:px-4 pt-3 md:pt-4 pb-3 md:pb-4">
         {/* 標題 */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3 md:mb-4">
           <div className="flex items-center gap-2">
             <Bookmark size={18} className="text-purple-400" />
-            <span className="text-base font-bold text-white">組合詳細資訊</span>
+            <span className="text-[14px] md:text-base font-bold text-white">組合詳細資訊</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="text-xs font-medium bg-red-900/30 hover:bg-red-900/50 text-red-400 px-3 py-1.5 rounded-lg border border-red-500/30 transition-colors"
+              className="text-[11px] md:text-xs font-medium bg-red-900/30 hover:bg-red-900/50 text-red-400 px-2 md:px-3 py-1 md:py-1.5 rounded-lg border border-red-500/30 transition-colors"
             >
               刪除組合
             </button>
@@ -577,9 +528,9 @@ const SavedComboDetailModal: React.FC<{
           </div>
         </div>
 
-        <div className="bg-[#13102a] rounded-xl border border-purple-900/25 p-4 flex flex-col gap-3 mb-4">
+        <div className="bg-[#13102a] rounded-xl border border-purple-900/25 p-3 md:p-4 flex flex-col gap-2.5 md:gap-3 mb-3 md:mb-4">
           <div>
-            <label className="text-[10px] text-gray-500 mb-1 block">組合名稱</label>
+            <label className="text-[9px] md:text-[10px] text-gray-500 mb-1 block">組合名稱</label>
             <input
               type="text"
               value={localCombo.name}
@@ -587,11 +538,11 @@ const SavedComboDetailModal: React.FC<{
                 setLocalCombo({ ...localCombo, name: e.target.value });
                 setIsDirty(true);
               }}
-              className="w-full bg-[#0c0a1e] border border-purple-900/30 rounded-lg px-3 py-2 text-sm text-white font-bold outline-none focus:border-purple-500/50"
+              className="w-full bg-[#0c0a1e] border border-purple-900/30 rounded-lg px-2.5 md:px-3 py-1.5 md:py-2 text-[13px] md:text-sm text-white font-bold outline-none focus:border-purple-500/50"
             />
           </div>
           <div>
-            <label className="text-[10px] text-gray-500 mb-1 block">組合描述</label>
+            <label className="text-[9px] md:text-[10px] text-gray-500 mb-1 block">組合描述</label>
             <textarea
               value={localCombo.description || ''}
               onChange={e => {
@@ -599,42 +550,42 @@ const SavedComboDetailModal: React.FC<{
                 setIsDirty(true);
               }}
               rows={2}
-              className="w-full bg-[#0c0a1e] border border-purple-900/30 rounded-lg px-3 py-2 text-[12px] text-gray-300 leading-relaxed outline-none focus:border-purple-500/50 resize-none"
+              className="w-full bg-[#0c0a1e] border border-purple-900/30 rounded-lg px-2.5 md:px-3 py-1.5 md:py-2 text-[11px] md:text-[12px] text-gray-300 leading-relaxed outline-none focus:border-purple-500/50 resize-none"
             />
           </div>
           <div>
-            <div className="text-[10px] text-gray-500 mb-0.5">預估總消耗</div>
-            <div className="text-sm text-amber-400 font-bold">{totalCost} MC</div>
+            <div className="text-[9px] md:text-[10px] text-gray-500 mb-0.5">預估總消耗</div>
+            <div className="text-[13px] md:text-sm text-amber-400 font-bold">{totalCost} MC</div>
           </div>
         </div>
 
-        <div className="text-sm font-bold text-white mb-2">包含的催眠項目 ({Object.keys(localCombo.includedHypnosis).length})</div>
-        <div className="flex flex-col gap-2">
+        <div className="text-[13px] md:text-sm font-bold text-white mb-1.5 md:mb-2">包含的催眠項目 ({Object.keys(localCombo.includedHypnosis).length})</div>
+        <div className="flex flex-col gap-1.5 md:gap-2">
           {Object.entries(localCombo.includedHypnosis).map(([hypId, config]: [string, any]) => {
             const def = data.hypnosis[hypId];
             if (!def) return null;
 
             return (
-              <div key={hypId} className="bg-[#13102a] rounded-xl border border-purple-900/25 px-3 py-3">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="font-semibold text-sm text-white flex items-center gap-1.5">
+              <div key={hypId} className="bg-[#13102a] rounded-xl border border-purple-900/25 px-2.5 md:px-3 py-2.5 md:py-3">
+                <div className="flex items-start justify-between gap-2 mb-1.5 md:mb-2">
+                  <div className="font-semibold text-[13px] md:text-sm text-white flex items-center gap-1 md:gap-1.5">
                     <Check size={14} className="text-purple-400" />
                     {def.name}
                   </div>
                   <button
                     onClick={() => handleRemoveItem(hypId)}
-                    className="shrink-0 bg-red-900/30 hover:bg-red-900/50 text-red-400 text-[10px] font-medium px-2 py-1 rounded transition-colors border border-red-500/30"
+                    className="shrink-0 bg-red-900/30 hover:bg-red-900/50 text-red-400 text-[9px] md:text-[10px] font-medium px-1.5 md:px-2 py-0.5 md:py-1 rounded transition-colors border border-red-500/30"
                   >
                     移除
                   </button>
                 </div>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[11px] text-gray-400 pl-5">
+                <div className="grid grid-cols-2 gap-x-3 md:gap-x-4 gap-y-1.5 md:gap-y-2 text-[10px] md:text-[11px] text-gray-400 pl-4 md:pl-5">
                   <div>
-                    <label className="block text-[9px] text-gray-500 mb-0.5">施加方式</label>
+                    <label className="block text-[8px] md:text-[9px] text-gray-500 mb-0.5">施加方式</label>
                     <select
                       value={config.applyMethod || ''}
                       onChange={e => handleUpdateItemConfig(hypId, 'applyMethod', e.target.value)}
-                      className="w-full bg-[#0c0a1e] border border-purple-900/30 rounded px-2 py-1 text-white outline-none focus:border-purple-500/50 appearance-none"
+                      className="w-full bg-[#0c0a1e] border border-purple-900/30 rounded px-1.5 md:px-2 py-0.5 md:py-1 text-white outline-none focus:border-purple-500/50 appearance-none"
                     >
                       <option value="">請選擇</option>
                       {APPLY_METHODS.map(m => (
@@ -643,34 +594,50 @@ const SavedComboDetailModal: React.FC<{
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[9px] text-gray-500 mb-0.5">對象</label>
+                    <label className="block text-[8px] md:text-[9px] text-gray-500 mb-0.5">對象</label>
                     <input
                       type="text"
                       value={config.target || ''}
                       onChange={e => handleUpdateItemConfig(hypId, 'target', e.target.value)}
                       placeholder="未設定"
-                      className={`w-full bg-[#0c0a1e] border rounded px-2 py-1 text-white outline-none focus:border-purple-500/50 ${!config.target ? 'border-red-500/30 placeholder:text-red-400/50' : 'border-purple-900/30'}`}
+                      className={`w-full bg-[#0c0a1e] border rounded px-1.5 md:px-2 py-0.5 md:py-1 text-white outline-none focus:border-purple-500/50 ${!config.target ? 'border-red-500/30 placeholder:text-red-400/50' : 'border-purple-900/30'}`}
                     />
                   </div>
                   <div>
-                    <label className="block text-[9px] text-gray-500 mb-0.5">持續時間</label>
-                    <input
-                      type={def.isPermanent || def.isOneTime ? "text" : "number"}
-                      min={1}
-                      value={def.isPermanent ? '永久' : def.isOneTime ? '一次性' : (config.duration || 10)}
-                      disabled={def.isPermanent || def.isOneTime}
-                      onChange={e => handleUpdateItemConfig(hypId, 'duration', parseInt(e.target.value) || 10)}
-                      className="w-full bg-[#0c0a1e] border border-purple-900/30 rounded px-2 py-1 text-white outline-none focus:border-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
+                    <label className="block text-[8px] md:text-[9px] text-gray-500 mb-0.5">持續時間</label>
+                    <div className="flex items-center">
+                      <button
+                        disabled={def.isPermanent || def.isOneTime}
+                        onClick={() => handleUpdateItemConfig(hypId, 'duration', Math.max(1, (typeof config.duration === 'number' ? config.duration : 10) - 1))}
+                        className="w-5 md:w-6 h-[20px] md:h-[24px] bg-[#0c0a1e] border border-r-0 border-purple-900/30 rounded-l text-gray-400 hover:text-white hover:bg-purple-900/40 disabled:opacity-50 flex items-center justify-center transition-colors shrink-0 text-xs"
+                      >
+                        -
+                      </button>
+                      <input
+                        type={def.isPermanent || def.isOneTime ? "text" : "number"}
+                        min={1}
+                        value={def.isPermanent ? '永久' : def.isOneTime ? '一次性' : (config.duration || 10)}
+                        disabled={def.isPermanent || def.isOneTime}
+                        onChange={e => handleUpdateItemConfig(hypId, 'duration', parseInt(e.target.value) || 10)}
+                        className="flex-1 min-w-0 text-center bg-[#0c0a1e] border-y border-purple-900/30 h-[20px] md:h-[24px] text-[10px] md:text-[11px] text-white outline-none focus:border-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed px-0"
+                      />
+                      <button
+                        disabled={def.isPermanent || def.isOneTime}
+                        onClick={() => handleUpdateItemConfig(hypId, 'duration', (typeof config.duration === 'number' ? config.duration : 10) + 1)}
+                        className="w-5 md:w-6 h-[20px] md:h-[24px] bg-[#0c0a1e] border border-l-0 border-purple-900/30 rounded-r text-gray-400 hover:text-white hover:bg-purple-900/40 disabled:opacity-50 flex items-center justify-center transition-colors shrink-0 text-xs"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-[9px] text-gray-500 mb-0.5">備註</label>
+                    <label className="block text-[8px] md:text-[9px] text-gray-500 mb-0.5">備註</label>
                     <input
                       type="text"
                       value={config.note || ''}
                       onChange={e => handleUpdateItemConfig(hypId, 'note', e.target.value)}
                       placeholder="無"
-                      className="w-full bg-[#0c0a1e] border border-purple-900/30 rounded px-2 py-1 text-white outline-none focus:border-purple-500/50"
+                      className="w-full bg-[#0c0a1e] border border-purple-900/30 rounded px-1.5 md:px-2 py-0.5 md:py-1 text-white outline-none focus:border-purple-500/50"
                     />
                   </div>
                 </div>
@@ -681,17 +648,17 @@ const SavedComboDetailModal: React.FC<{
       </div>
 
       {/* 底部按鈕 */}
-      <div className="px-4 pb-4 flex gap-3 shrink-0">
+      <div className="px-3 md:px-4 pb-3 md:pb-4 flex gap-2 md:gap-3 shrink-0">
         <button
           onClick={handleClose}
-          className="flex-1 py-3 rounded-xl border border-gray-600/50 text-gray-300 font-medium text-sm hover:bg-gray-800/50 transition-colors"
+          className="flex-1 py-2.5 md:py-3 rounded-xl border border-gray-600/50 text-gray-300 font-medium text-[13px] md:text-sm hover:bg-gray-800/50 transition-colors"
         >
           關閉
         </button>
         <button
           onClick={handleSave}
           disabled={!isDirty}
-          className="flex-1 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:grayscale"
+          className="flex-1 py-2.5 md:py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-[13px] md:text-sm flex items-center justify-center gap-1.5 md:gap-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:grayscale"
         >
           儲存變更
         </button>
@@ -699,25 +666,25 @@ const SavedComboDetailModal: React.FC<{
 
       {/* 關閉確認 Modal */}
       {showCloseConfirm && (
-        <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4">
-          <div className="bg-[#13102a] rounded-xl border border-purple-900/25 p-5 w-full max-w-sm flex flex-col gap-4 shadow-2xl">
-            <div className="flex items-center gap-2 text-amber-400 font-bold text-lg mb-2">
+        <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-3 md:p-4">
+          <div className="bg-[#13102a] rounded-xl border border-purple-900/25 p-4 md:p-5 w-full max-w-sm flex flex-col gap-3 md:gap-4 shadow-2xl">
+            <div className="flex items-center gap-2 text-amber-400 font-bold text-base md:text-lg mb-1 md:mb-2">
               <AlertTriangle size={20} />
               未儲存的變更
             </div>
-            <div className="text-sm text-gray-300">
+            <div className="text-[13px] md:text-sm text-gray-300">
               您有尚未儲存的變更，確定要放棄這些變更並關閉嗎？
             </div>
-            <div className="flex gap-3 mt-2">
+            <div className="flex gap-2 md:gap-3 mt-1.5 md:mt-2">
               <button
                 onClick={() => setShowCloseConfirm(false)}
-                className="flex-1 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm transition-colors"
+                className="flex-1 py-2 md:py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium text-[13px] md:text-sm transition-colors"
               >
                 返回編輯
               </button>
               <button
                 onClick={onClose}
-                className="flex-1 py-2.5 rounded-lg border border-gray-600/50 text-gray-300 font-medium text-sm hover:bg-gray-800/50 transition-colors"
+                className="flex-1 py-2 md:py-2.5 rounded-lg border border-gray-600/50 text-gray-300 font-medium text-[13px] md:text-sm hover:bg-gray-800/50 transition-colors"
               >
                 放棄變更
               </button>
@@ -728,25 +695,25 @@ const SavedComboDetailModal: React.FC<{
 
       {/* 刪除組合確認 Modal */}
       {showDeleteConfirm && (
-        <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4">
-          <div className="bg-[#13102a] rounded-xl border border-red-900/50 p-5 w-full max-w-sm flex flex-col gap-4 shadow-2xl">
-            <div className="flex items-center gap-2 text-red-400 font-bold text-lg mb-2">
+        <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-3 md:p-4">
+          <div className="bg-[#13102a] rounded-xl border border-red-900/50 p-4 md:p-5 w-full max-w-sm flex flex-col gap-3 md:gap-4 shadow-2xl">
+            <div className="flex items-center gap-2 text-red-400 font-bold text-base md:text-lg mb-1 md:mb-2">
               <AlertTriangle size={20} />
               刪除組合
             </div>
-            <div className="text-sm text-gray-300">
+            <div className="text-[13px] md:text-sm text-gray-300">
               確定要刪除催眠組合 <span className="text-white font-bold">「{combo.name}」</span> 嗎？此操作無法還原。
             </div>
-            <div className="flex gap-3 mt-2">
+            <div className="flex gap-2 md:gap-3 mt-1.5 md:mt-2">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 py-2.5 rounded-lg border border-gray-600/50 text-gray-300 font-medium text-sm hover:bg-gray-800/50 transition-colors"
+                className="flex-1 py-2 md:py-2.5 rounded-lg border border-gray-600/50 text-gray-300 font-medium text-[13px] md:text-sm hover:bg-gray-800/50 transition-colors"
               >
                 取消
               </button>
               <button
                 onClick={onDelete}
-                className="flex-1 py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium text-sm transition-colors"
+                className="flex-1 py-2 md:py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium text-[13px] md:text-sm transition-colors"
               >
                 確認刪除
               </button>
@@ -757,22 +724,22 @@ const SavedComboDetailModal: React.FC<{
 
       {/* 刪除最後一個項目確認 Modal */}
       {showLastItemConfirm && (
-        <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4">
-          <div className="bg-[#13102a] rounded-xl border border-red-900/50 p-5 w-full max-w-sm flex flex-col gap-4 shadow-2xl">
-            <div className="flex items-center gap-2 text-red-400 font-bold text-lg mb-2">
+        <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-3 md:p-4">
+          <div className="bg-[#13102a] rounded-xl border border-red-900/50 p-4 md:p-5 w-full max-w-sm flex flex-col gap-3 md:gap-4 shadow-2xl">
+            <div className="flex items-center gap-2 text-red-400 font-bold text-base md:text-lg mb-1 md:mb-2">
               <AlertTriangle size={20} />
               刪除組合警告
             </div>
-            <div className="text-sm text-gray-300">
+            <div className="text-[13px] md:text-sm text-gray-300">
               這是組合中的最後一個催眠項目，移除後將會<span className="text-red-400 font-bold">刪除整個組合</span>。確定要繼續嗎？
             </div>
-            <div className="flex gap-3 mt-2">
+            <div className="flex gap-2 md:gap-3 mt-1.5 md:mt-2">
               <button
                 onClick={() => {
                   setShowLastItemConfirm(false);
                   setLastItemToRemove(null);
                 }}
-                className="flex-1 py-2.5 rounded-lg border border-gray-600/50 text-gray-300 font-medium text-sm hover:bg-gray-800/50 transition-colors"
+                className="flex-1 py-2 md:py-2.5 rounded-lg border border-gray-600/50 text-gray-300 font-medium text-[13px] md:text-sm hover:bg-gray-800/50 transition-colors"
               >
                 取消
               </button>
@@ -782,7 +749,7 @@ const SavedComboDetailModal: React.FC<{
                     onDelete();
                   }
                 }}
-                className="flex-1 py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium text-sm transition-colors"
+                className="flex-1 py-2 md:py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium text-[13px] md:text-sm transition-colors"
               >
                 確認刪除
               </button>
@@ -976,18 +943,18 @@ const HypnosisShopDetailModal: React.FC<{
 
   return (
     <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4">
+      <div className="flex-1 overflow-y-auto px-3 md:px-4 pt-3 md:pt-4 pb-3 md:pb-4">
         {/* 標題 */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3 md:mb-4">
           <div className="flex items-center gap-2">
             <ShoppingCart size={18} className="text-purple-400" />
-            <span className="text-base font-bold text-white">購買催眠</span>
+            <span className="text-[14px] md:text-base font-bold text-white">購買催眠</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
             {def.isCustom && (
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className="text-xs font-medium bg-red-900/30 hover:bg-red-900/50 text-red-400 px-3 py-1.5 rounded-lg border border-red-500/30 transition-colors"
+                className="text-[11px] md:text-xs font-medium bg-red-900/30 hover:bg-red-900/50 text-red-400 px-2 md:px-3 py-1 md:py-1.5 rounded-lg border border-red-500/30 transition-colors"
               >
                 刪除
               </button>
@@ -998,66 +965,66 @@ const HypnosisShopDetailModal: React.FC<{
           </div>
         </div>
 
-        <div className="bg-[#13102a] rounded-xl border border-purple-900/25 p-4 flex flex-col gap-3">
+        <div className="bg-[#13102a] rounded-xl border border-purple-900/25 p-3 md:p-4 flex flex-col gap-2.5 md:gap-3">
           <div>
-            <div className="text-[10px] text-gray-500 mb-0.5">催眠名稱</div>
-            <div className="text-sm text-white font-bold">{def.name}</div>
+            <div className="text-[9px] md:text-[10px] text-gray-500 mb-0.5">催眠名稱</div>
+            <div className="text-[13px] md:text-sm text-white font-bold">{def.name}</div>
           </div>
 
           <div>
-            <div className="text-[10px] text-gray-500 mb-0.5">效果描述</div>
-            <div className="text-[12px] text-gray-300 leading-relaxed bg-[#0c0a1e] p-2.5 rounded-lg border border-purple-900/20">
+            <div className="text-[9px] md:text-[10px] text-gray-500 mb-0.5">效果描述</div>
+            <div className="text-[11px] md:text-[12px] text-gray-300 leading-relaxed bg-[#0c0a1e] p-2 md:p-2.5 rounded-lg border border-purple-900/20">
               {def.description}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5 md:gap-3">
             <div>
-              <div className="text-[10px] text-gray-500 mb-0.5">類型</div>
-              <div className="text-xs text-white">{def.isPermanent ? '永久性' : def.isOneTime ? '一次性' : '持續性'}</div>
+              <div className="text-[9px] md:text-[10px] text-gray-500 mb-0.5">類型</div>
+              <div className="text-[11px] md:text-xs text-white">{def.isPermanent ? '永久性' : def.isOneTime ? '一次性' : '持續性'}</div>
             </div>
             <div>
-              <div className="text-[10px] text-gray-500 mb-0.5">消耗</div>
-              <div className="text-xs text-amber-400 font-semibold">{def.energyCost} MC {def.isOneTime || def.isPermanent ? '(單次)' : '(每分鐘)'}</div>
+              <div className="text-[9px] md:text-[10px] text-gray-500 mb-0.5">消耗</div>
+              <div className="text-[11px] md:text-xs text-amber-400 font-semibold">{def.energyCost} MC {def.isOneTime || def.isPermanent ? '(單次)' : '(每分鐘)'}</div>
             </div>
             <div>
-              <div className="text-[10px] text-gray-500 mb-0.5">需求 VIP</div>
-              <div className="text-xs text-white">VIP {def.tier}</div>
+              <div className="text-[9px] md:text-[10px] text-gray-500 mb-0.5">需求 VIP</div>
+              <div className="text-[11px] md:text-xs text-white">VIP {def.tier}</div>
             </div>
           </div>
 
-          <div className="mt-2 pt-3 border-t border-purple-900/20">
-            <div className="text-[10px] text-gray-500 mb-2">購買花費</div>
-            <div className="flex flex-wrap gap-2">
+          <div className="mt-1.5 md:mt-2 pt-2 md:pt-3 border-t border-purple-900/20">
+            <div className="text-[9px] md:text-[10px] text-gray-500 mb-1.5 md:mb-2">購買花費</div>
+            <div className="flex flex-wrap gap-1.5 md:gap-2">
               {def.cost.pts !== undefined && (
-                <div className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg border ${
+                <div className={`text-[11px] md:text-xs font-semibold px-2 md:px-2.5 py-1 md:py-1.5 rounded-lg border ${
                   canAffordPts ? 'bg-purple-900/30 text-purple-400 border-purple-500/30' : 'bg-red-900/30 text-red-400 border-red-500/30'
                 }`}>
                   {def.cost.pts} PTS
                 </div>
               )}
               {def.cost.money !== undefined && (
-                <div className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg border ${
+                <div className={`text-[11px] md:text-xs font-semibold px-2 md:px-2.5 py-1 md:py-1.5 rounded-lg border ${
                   canAffordMoney ? 'bg-yellow-900/30 text-yellow-400 border-yellow-500/30' : 'bg-red-900/30 text-red-400 border-red-500/30'
                 }`}>
                   ¥{def.cost.money.toLocaleString()}
                 </div>
               )}
               {def.cost.mc !== undefined && (
-                <div className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg border ${
+                <div className={`text-[11px] md:text-xs font-semibold px-2 md:px-2.5 py-1 md:py-1.5 rounded-lg border ${
                   canAffordMc ? 'bg-cyan-900/30 text-cyan-400 border-cyan-500/30' : 'bg-red-900/30 text-red-400 border-red-500/30'
                 }`}>
                   {def.cost.mc} MC
                 </div>
               )}
               {Object.keys(def.cost).length === 0 && (
-                <div className="text-xs font-semibold px-2.5 py-1.5 rounded-lg border bg-emerald-900/30 text-emerald-400 border-emerald-500/30">
+                <div className="text-[11px] md:text-xs font-semibold px-2 md:px-2.5 py-1 md:py-1.5 rounded-lg border bg-emerald-900/30 text-emerald-400 border-emerald-500/30">
                   免費
                 </div>
               )}
             </div>
             {!canAfford && (
-              <div className="text-[10px] text-red-400 mt-2 flex items-center gap-1">
+              <div className="text-[9px] md:text-[10px] text-red-400 mt-1.5 md:mt-2 flex items-center gap-1">
                 <AlertTriangle size={12} />
                 資源不足，無法購買
               </div>
@@ -1067,17 +1034,17 @@ const HypnosisShopDetailModal: React.FC<{
       </div>
 
       {/* 底部按鈕 */}
-      <div className="px-4 pb-4 flex gap-3 shrink-0">
+      <div className="px-3 md:px-4 pb-3 md:pb-4 flex gap-2 md:gap-3 shrink-0">
         <button
           onClick={onClose}
-          className="flex-1 py-3 rounded-xl border border-gray-600/50 text-gray-300 font-medium text-sm hover:bg-gray-800/50 transition-colors"
+          className="flex-1 py-2.5 md:py-3 rounded-xl border border-gray-600/50 text-gray-300 font-medium text-[13px] md:text-sm hover:bg-gray-800/50 transition-colors"
         >
           取消
         </button>
         <button
           onClick={onPurchase}
           disabled={!canAfford}
-          className="flex-1 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:grayscale"
+          className="flex-1 py-2.5 md:py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-[13px] md:text-sm flex items-center justify-center gap-1.5 md:gap-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:grayscale"
         >
           <ShoppingCart size={14} className="text-white" />
           確認購買
@@ -1372,40 +1339,40 @@ const HypnosisCraftSection: React.FC<{
   const canCraft = name.trim().length > 0 && description.trim().length > 0 && costTypes.length > 0 && canAffordCraft;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="bg-[#13102a] rounded-xl border border-purple-900/25 p-4 flex flex-col gap-4">
+    <div className="flex flex-col gap-3 md:gap-4">
+      <div className="bg-[#13102a] rounded-xl border border-purple-900/25 p-3 md:p-4 flex flex-col gap-3 md:gap-4">
         {/* 名稱 */}
         <div>
-          <label className="text-[10px] text-gray-500 mb-1 block">催眠名稱 <span className="text-red-400">*</span></label>
+          <label className="text-[9px] md:text-[10px] text-gray-500 mb-1 block">催眠名稱 <span className="text-red-400">*</span></label>
           <input
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="請輸入催眠名稱..."
-            className="w-full bg-[#0c0a1e] border border-purple-900/30 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-purple-500/50"
+            className="w-full bg-[#0c0a1e] border border-purple-900/30 rounded-lg px-2.5 md:px-3 py-1.5 md:py-2 text-[13px] md:text-sm text-white outline-none focus:border-purple-500/50"
           />
         </div>
 
         {/* 描述 */}
         <div>
-          <label className="text-[10px] text-gray-500 mb-1 block">催眠效果描述 <span className="text-red-400">*</span></label>
+          <label className="text-[9px] md:text-[10px] text-gray-500 mb-1 block">催眠效果描述 <span className="text-red-400">*</span></label>
           <textarea
             value={description}
             onChange={e => setDescription(e.target.value)}
             placeholder="請輸入詳細的效果描述..."
             rows={3}
-            className="w-full bg-[#0c0a1e] border border-purple-900/30 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-purple-500/50 resize-none"
+            className="w-full bg-[#0c0a1e] border border-purple-900/30 rounded-lg px-2.5 md:px-3 py-1.5 md:py-2 text-[13px] md:text-sm text-white outline-none focus:border-purple-500/50 resize-none"
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3 md:gap-4">
           {/* 需求 VIP 等級 */}
           <div>
-            <label className="text-[10px] text-gray-500 mb-1 block">需求 VIP 等級</label>
+            <label className="text-[9px] md:text-[10px] text-gray-500 mb-1 block">需求 VIP 等級</label>
             <select
               value={tier}
               onChange={e => handleTierChange(Number(e.target.value))}
-              className="w-full bg-[#0c0a1e] border border-purple-900/30 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-purple-500/50 appearance-none"
+              className="w-full bg-[#0c0a1e] border border-purple-900/30 rounded-lg px-2.5 md:px-3 py-1.5 md:py-2 text-[13px] md:text-sm text-white outline-none focus:border-purple-500/50 appearance-none"
             >
               {[0, 1, 2, 3, 4, 5].map(t => (
                 <option key={t} value={t}>
@@ -1421,24 +1388,38 @@ const HypnosisCraftSection: React.FC<{
 
           {/* MC 能量消耗 */}
           <div>
-            <label className="text-[10px] text-gray-500 mb-1 block">MC 能量消耗</label>
-            <input
-              type="number"
-              min={0}
-              value={energyCost}
-              onChange={e => setEnergyCost(Number(e.target.value) || 0)}
-              className="w-full bg-[#0c0a1e] border border-purple-900/30 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-purple-500/50"
-            />
+            <label className="text-[9px] md:text-[10px] text-gray-500 mb-1 block">MC 能量消耗</label>
+            <div className="flex items-center">
+              <button
+                onClick={() => setEnergyCost(Math.max(0, energyCost - 10))}
+                className="w-8 md:w-10 h-[28px] md:h-[32px] bg-[#0c0a1e] border border-r-0 border-purple-900/30 rounded-l-lg text-gray-400 hover:text-white hover:bg-purple-900/40 flex items-center justify-center transition-colors shrink-0"
+              >
+                -
+              </button>
+              <input
+                type="number"
+                min={0}
+                value={energyCost}
+                onChange={e => setEnergyCost(Number(e.target.value) || 0)}
+                className="flex-1 min-w-0 text-center bg-[#0c0a1e] border-y border-purple-900/30 h-[28px] md:h-[32px] text-[13px] md:text-sm text-white outline-none focus:border-purple-500/50 px-0"
+              />
+              <button
+                onClick={() => setEnergyCost(energyCost + 10)}
+                className="w-8 md:w-10 h-[28px] md:h-[32px] bg-[#0c0a1e] border border-l-0 border-purple-900/30 rounded-r-lg text-gray-400 hover:text-white hover:bg-purple-900/40 flex items-center justify-center transition-colors shrink-0"
+              >
+                +
+              </button>
+            </div>
           </div>
         </div>
 
         {/* 屬性切換 */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3 md:gap-4">
           <div>
-            <label className="text-[10px] text-gray-500 mb-2 block">是否為永久催眠</label>
+            <label className="text-[9px] md:text-[10px] text-gray-500 mb-1.5 md:mb-2 block">是否為永久催眠</label>
             <button
               onClick={() => handlePermanentChange(!isPermanent)}
-              className={`w-full py-2 rounded-lg text-xs font-semibold transition-colors border ${
+              className={`w-full py-1.5 md:py-2 rounded-lg text-[11px] md:text-xs font-semibold transition-colors border ${
                 isPermanent ? 'bg-purple-600 text-white border-purple-500' : 'bg-[#0c0a1e] text-gray-400 border-purple-900/30'
               }`}
             >
@@ -1446,11 +1427,11 @@ const HypnosisCraftSection: React.FC<{
             </button>
           </div>
           <div>
-            <label className="text-[10px] text-gray-500 mb-2 block">是否為一次性催眠</label>
+            <label className="text-[9px] md:text-[10px] text-gray-500 mb-1.5 md:mb-2 block">是否為一次性催眠</label>
             <button
               onClick={() => handleOneTimeChange(!isOneTime)}
               disabled={isPermanent}
-              className={`w-full py-2 rounded-lg text-xs font-semibold transition-colors border ${
+              className={`w-full py-1.5 md:py-2 rounded-lg text-[11px] md:text-xs font-semibold transition-colors border ${
                 isOneTime ? 'bg-purple-600 text-white border-purple-500' : 'bg-[#0c0a1e] text-gray-400 border-purple-900/30'
               } ${isPermanent ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
@@ -1461,11 +1442,11 @@ const HypnosisCraftSection: React.FC<{
 
         {/* 購買所需花費類型 */}
         <div>
-          <label className="text-[10px] text-gray-500 mb-2 block">購買所需花費類型 (可多選) <span className="text-red-400">*</span></label>
-          <div className="flex gap-2">
+          <label className="text-[9px] md:text-[10px] text-gray-500 mb-1.5 md:mb-2 block">購買所需花費類型 (可多選) <span className="text-red-400">*</span></label>
+          <div className="flex gap-1.5 md:gap-2">
             <button
               onClick={() => handleCostTypeToggle('money')}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${
+              className={`flex-1 py-1 md:py-1.5 rounded-lg text-[11px] md:text-xs font-semibold transition-colors border ${
                 costTypes.includes('money') ? 'bg-yellow-900/30 text-yellow-400 border-yellow-500/30' : 'bg-[#0c0a1e] text-gray-500 border-purple-900/30'
               }`}
             >
@@ -1473,7 +1454,7 @@ const HypnosisCraftSection: React.FC<{
             </button>
             <button
               onClick={() => handleCostTypeToggle('pts')}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${
+              className={`flex-1 py-1 md:py-1.5 rounded-lg text-[11px] md:text-xs font-semibold transition-colors border ${
                 costTypes.includes('pts') ? 'bg-purple-900/30 text-purple-400 border-purple-500/30' : 'bg-[#0c0a1e] text-gray-500 border-purple-900/30'
               }`}
             >
@@ -1481,7 +1462,7 @@ const HypnosisCraftSection: React.FC<{
             </button>
             <button
               onClick={() => handleCostTypeToggle('mc')}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${
+              className={`flex-1 py-1 md:py-1.5 rounded-lg text-[11px] md:text-xs font-semibold transition-colors border ${
                 costTypes.includes('mc') ? 'bg-cyan-900/30 text-cyan-400 border-cyan-500/30' : 'bg-[#0c0a1e] text-gray-500 border-purple-900/30'
               }`}
             >
@@ -1492,79 +1473,79 @@ const HypnosisCraftSection: React.FC<{
 
         {/* 備註提示 */}
         <div>
-          <label className="text-[10px] text-gray-500 mb-1 block">備註欄位提示</label>
+          <label className="text-[9px] md:text-[10px] text-gray-500 mb-1 block">備註欄位提示</label>
           <input
             type="text"
             value={note}
             onChange={e => setNote(e.target.value)}
             placeholder="例如: 請填入觸發關鍵字..."
-            className="w-full bg-[#0c0a1e] border border-purple-900/30 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-purple-500/50"
+            className="w-full bg-[#0c0a1e] border border-purple-900/30 rounded-lg px-2.5 md:px-3 py-1.5 md:py-2 text-[13px] md:text-sm text-white outline-none focus:border-purple-500/50"
           />
         </div>
 
         {/* 預估成本 (實時顯示) */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-[#0c0a1e] rounded-lg p-3 border border-purple-900/30 flex flex-col">
-            <div className="text-[10px] text-gray-500 mb-1">預估製作成本</div>
-            <div className="flex flex-col gap-1 mb-2">
+        <div className="grid grid-cols-2 gap-2.5 md:gap-3">
+          <div className="bg-[#0c0a1e] rounded-lg p-2.5 md:p-3 border border-purple-900/30 flex flex-col">
+            <div className="text-[9px] md:text-[10px] text-gray-500 mb-1">預估製作成本</div>
+            <div className="flex flex-col gap-1 mb-1.5 md:mb-2">
               {craftCost.money !== undefined && craftCost.money > 0 && (
-                <div className={`text-xs font-semibold ${data.user.money >= craftCost.money ? 'text-yellow-400' : 'text-red-400'}`}>
+                <div className={`text-[11px] md:text-xs font-semibold ${data.user.money >= craftCost.money ? 'text-yellow-400' : 'text-red-400'}`}>
                   ¥{craftCost.money.toLocaleString()}
                 </div>
               )}
               {craftCost.mc !== undefined && craftCost.mc > 0 && (
-                <div className={`text-xs font-semibold ${data.user.mcEnergy >= craftCost.mc ? 'text-cyan-400' : 'text-red-400'}`}>
+                <div className={`text-[11px] md:text-xs font-semibold ${data.user.mcEnergy >= craftCost.mc ? 'text-cyan-400' : 'text-red-400'}`}>
                   {craftCost.mc.toLocaleString()} MC
                 </div>
               )}
               {craftCost.pts !== undefined && craftCost.pts > 0 && (
-                <div className={`text-xs font-semibold ${data.user.mcPoints >= craftCost.pts ? 'text-purple-400' : 'text-red-400'}`}>
+                <div className={`text-[11px] md:text-xs font-semibold ${data.user.mcPoints >= craftCost.pts ? 'text-purple-400' : 'text-red-400'}`}>
                   {craftCost.pts.toLocaleString()} PTS
                 </div>
               )}
               {(!craftCost.money && !craftCost.mc && !craftCost.pts) && (
-                <div className="text-xs text-emerald-400 font-semibold">免費</div>
+                <div className="text-[11px] md:text-xs text-emerald-400 font-semibold">免費</div>
               )}
             </div>
-            <div className="mt-auto border-t border-purple-900/20 pt-2 grid grid-cols-2 gap-x-2 gap-y-1">
-              <div className="text-[9px] text-gray-500 flex justify-between">消耗: <span className={multipliers.usage > 1 ? 'text-red-400' : 'text-emerald-400'}>x{multipliers.usage.toFixed(2)}</span></div>
-              <div className="text-[9px] text-gray-500 flex justify-between">越級: <span className={multipliers.tier > 1 ? 'text-red-400' : 'text-gray-400'}>x{multipliers.tier.toFixed(1)}</span></div>
-              <div className="text-[9px] text-gray-500 flex justify-between">類型: <span className="text-gray-400">x{multipliers.duration.toFixed(1)}</span></div>
-              <div className="text-[9px] text-gray-500 flex justify-between">種類: <span className={multipliers.craft > 1 ? 'text-red-400' : 'text-emerald-400'}>x{multipliers.craft.toFixed(1)}</span></div>
-              <div className="col-span-2 text-[9px] font-semibold text-gray-400 flex justify-between pt-1">總浮動: <span className="text-purple-400">x{multipliers.total.toFixed(2)}</span></div>
+            <div className="mt-auto border-t border-purple-900/20 pt-1.5 md:pt-2 grid grid-cols-2 gap-x-1.5 md:gap-x-2 gap-y-0.5 md:gap-y-1">
+              <div className="text-[8px] md:text-[9px] text-gray-500 flex justify-between">消耗: <span className={multipliers.usage > 1 ? 'text-red-400' : 'text-emerald-400'}>x{multipliers.usage.toFixed(2)}</span></div>
+              <div className="text-[8px] md:text-[9px] text-gray-500 flex justify-between">越級: <span className={multipliers.tier > 1 ? 'text-red-400' : 'text-gray-400'}>x{multipliers.tier.toFixed(1)}</span></div>
+              <div className="text-[8px] md:text-[9px] text-gray-500 flex justify-between">類型: <span className="text-gray-400">x{multipliers.duration.toFixed(1)}</span></div>
+              <div className="text-[8px] md:text-[9px] text-gray-500 flex justify-between">種類: <span className={multipliers.craft > 1 ? 'text-red-400' : 'text-emerald-400'}>x{multipliers.craft.toFixed(1)}</span></div>
+              <div className="col-span-2 text-[8px] md:text-[9px] font-semibold text-gray-400 flex justify-between pt-0.5 md:pt-1">總浮動: <span className="text-purple-400">x{multipliers.total.toFixed(2)}</span></div>
             </div>
             {!canAffordCraft && (
-              <div className="text-[10px] text-red-400 mt-2 flex items-center gap-1">
+              <div className="text-[9px] md:text-[10px] text-red-400 mt-1.5 md:mt-2 flex items-center gap-1">
                 <AlertTriangle size={12} />
                 資源不足，無法製作
               </div>
             )}
           </div>
 
-          <div className="bg-[#0c0a1e] rounded-lg p-3 border border-purple-900/30 flex flex-col">
-            <div className="text-[10px] text-gray-500 mb-1">預估購買成本</div>
-            <div className="flex flex-col gap-1 mb-2">
+          <div className="bg-[#0c0a1e] rounded-lg p-2.5 md:p-3 border border-purple-900/30 flex flex-col">
+            <div className="text-[9px] md:text-[10px] text-gray-500 mb-1">預估購買成本</div>
+            <div className="flex flex-col gap-1 mb-1.5 md:mb-2">
               {purchaseCost.money !== undefined && purchaseCost.money > 0 && (
-                <div className="text-xs font-semibold text-yellow-400">
+                <div className="text-[11px] md:text-xs font-semibold text-yellow-400">
                   ¥{purchaseCost.money.toLocaleString()}
                 </div>
               )}
               {purchaseCost.mc !== undefined && purchaseCost.mc > 0 && (
-                <div className="text-xs font-semibold text-cyan-400">
+                <div className="text-[11px] md:text-xs font-semibold text-cyan-400">
                   {purchaseCost.mc.toLocaleString()} MC
                 </div>
               )}
               {purchaseCost.pts !== undefined && purchaseCost.pts > 0 && (
-                <div className="text-xs font-semibold text-purple-400">
+                <div className="text-[11px] md:text-xs font-semibold text-purple-400">
                   {purchaseCost.pts.toLocaleString()} PTS
                 </div>
               )}
               {(!purchaseCost.money && !purchaseCost.mc && !purchaseCost.pts) && (
-                <div className="text-xs text-emerald-400 font-semibold">免費</div>
+                <div className="text-[11px] md:text-xs text-emerald-400 font-semibold">免費</div>
               )}
             </div>
-            <div className="mt-auto border-t border-purple-900/20 pt-2 flex flex-col gap-1">
-              <div className="text-[9px] text-gray-500 flex justify-between">種類影響: <span className={multipliers.purchase > 1 ? 'text-red-400' : 'text-emerald-400'}>x{multipliers.purchase.toFixed(1)}</span></div>
+            <div className="mt-auto border-t border-purple-900/20 pt-1.5 md:pt-2 flex flex-col gap-1">
+              <div className="text-[8px] md:text-[9px] text-gray-500 flex justify-between">種類影響: <span className={multipliers.purchase > 1 ? 'text-red-400' : 'text-emerald-400'}>x{multipliers.purchase.toFixed(1)}</span></div>
             </div>
           </div>
         </div>
@@ -1574,7 +1555,7 @@ const HypnosisCraftSection: React.FC<{
       <button
         onClick={() => setShowConfirm(true)}
         disabled={!canCraft}
-        className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:grayscale flex items-center justify-center gap-2 shadow-lg shadow-purple-900/20"
+        className="w-full py-2.5 md:py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-[13px] md:text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:grayscale flex items-center justify-center gap-1.5 md:gap-2 shadow-lg shadow-purple-900/20"
       >
         <Hammer size={16} />
         製作催眠
@@ -1583,59 +1564,59 @@ const HypnosisCraftSection: React.FC<{
       {/* 確認製作 Modal */}
       {showConfirm && (
         <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4 flex flex-col justify-center">
-            <div className="bg-[#13102a] rounded-xl border border-purple-900/25 p-5 flex flex-col gap-4 shadow-2xl">
-              <div className="flex items-center gap-2 text-purple-400 font-bold text-lg mb-2">
+          <div className="flex-1 overflow-y-auto px-3 md:px-4 pt-3 md:pt-4 pb-3 md:pb-4 flex flex-col justify-center">
+            <div className="bg-[#13102a] rounded-xl border border-purple-900/25 p-4 md:p-5 flex flex-col gap-3 md:gap-4 shadow-2xl">
+              <div className="flex items-center gap-2 text-purple-400 font-bold text-base md:text-lg mb-1 md:mb-2">
                 <Hammer size={20} />
                 確認製作催眠
               </div>
 
-              <div className="text-sm text-gray-300">
+              <div className="text-[13px] md:text-sm text-gray-300">
                 即將製作自訂催眠 <span className="text-white font-bold">「{name}」</span>。
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-[#0c0a1e] rounded-lg p-3 border border-purple-900/30">
-                  <div className="text-[10px] text-gray-500 mb-1">預估製作成本</div>
+              <div className="grid grid-cols-2 gap-2.5 md:gap-3">
+                <div className="bg-[#0c0a1e] rounded-lg p-2.5 md:p-3 border border-purple-900/30">
+                  <div className="text-[9px] md:text-[10px] text-gray-500 mb-1">預估製作成本</div>
                   <div className="flex flex-col gap-1">
                     {craftCost.money !== undefined && craftCost.money > 0 && (
-                      <div className="text-xs text-yellow-400 font-semibold">¥{craftCost.money.toLocaleString()}</div>
+                      <div className="text-[11px] md:text-xs text-yellow-400 font-semibold">¥{craftCost.money.toLocaleString()}</div>
                     )}
                     {craftCost.mc !== undefined && craftCost.mc > 0 && (
-                      <div className="text-xs text-cyan-400 font-semibold">{craftCost.mc.toLocaleString()} MC</div>
+                      <div className="text-[11px] md:text-xs text-cyan-400 font-semibold">{craftCost.mc.toLocaleString()} MC</div>
                     )}
                     {craftCost.pts !== undefined && craftCost.pts > 0 && (
-                      <div className="text-xs text-purple-400 font-semibold">{craftCost.pts.toLocaleString()} PTS</div>
+                      <div className="text-[11px] md:text-xs text-purple-400 font-semibold">{craftCost.pts.toLocaleString()} PTS</div>
                     )}
                     {(!craftCost.money && !craftCost.mc && !craftCost.pts) && (
-                      <div className="text-xs text-emerald-400 font-semibold">免費</div>
+                      <div className="text-[11px] md:text-xs text-emerald-400 font-semibold">免費</div>
                     )}
                   </div>
                 </div>
 
-                <div className="bg-[#0c0a1e] rounded-lg p-3 border border-purple-900/30">
-                  <div className="text-[10px] text-gray-500 mb-1">未來購買成本</div>
+                <div className="bg-[#0c0a1e] rounded-lg p-2.5 md:p-3 border border-purple-900/30">
+                  <div className="text-[9px] md:text-[10px] text-gray-500 mb-1">未來購買成本</div>
                   <div className="flex flex-col gap-1">
                     {purchaseCost.money !== undefined && purchaseCost.money > 0 && (
-                      <div className="text-xs text-yellow-400 font-semibold">¥{purchaseCost.money.toLocaleString()}</div>
+                      <div className="text-[11px] md:text-xs text-yellow-400 font-semibold">¥{purchaseCost.money.toLocaleString()}</div>
                     )}
                     {purchaseCost.mc !== undefined && purchaseCost.mc > 0 && (
-                      <div className="text-xs text-cyan-400 font-semibold">{purchaseCost.mc.toLocaleString()} MC</div>
+                      <div className="text-[11px] md:text-xs text-cyan-400 font-semibold">{purchaseCost.mc.toLocaleString()} MC</div>
                     )}
                     {purchaseCost.pts !== undefined && purchaseCost.pts > 0 && (
-                      <div className="text-xs text-purple-400 font-semibold">{purchaseCost.pts.toLocaleString()} PTS</div>
+                      <div className="text-[11px] md:text-xs text-purple-400 font-semibold">{purchaseCost.pts.toLocaleString()} PTS</div>
                     )}
                     {(!purchaseCost.money && !purchaseCost.mc && !purchaseCost.pts) && (
-                      <div className="text-xs text-emerald-400 font-semibold">免費</div>
+                      <div className="text-[11px] md:text-xs text-emerald-400 font-semibold">免費</div>
                     )}
                   </div>
                 </div>
               </div>
 
-              <div className="flex gap-3 mt-2">
+              <div className="flex gap-2 md:gap-3 mt-1.5 md:mt-2">
                 <button
                   onClick={() => setShowConfirm(false)}
-                  className="flex-1 py-2.5 rounded-lg border border-gray-600/50 text-gray-300 font-medium text-sm hover:bg-gray-800/50 transition-colors"
+                  className="flex-1 py-2 md:py-2.5 rounded-lg border border-gray-600/50 text-gray-300 font-medium text-[13px] md:text-sm hover:bg-gray-800/50 transition-colors"
                 >
                   取消
                 </button>
@@ -1677,7 +1658,7 @@ const HypnosisCraftSection: React.FC<{
                     setEnergyCost(50);
                     setNote('');
                   }}
-                  className="flex-1 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm transition-colors"
+                  className="flex-1 py-2 md:py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium text-[13px] md:text-sm transition-colors"
                 >
                   確認製作
                 </button>

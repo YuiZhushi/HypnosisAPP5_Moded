@@ -26,154 +26,161 @@ export const HypnosisProfileTab: React.FC<{
   };
 
   return (
-    <div className="flex flex-col h-full relative overflow-y-auto px-4 py-4 gap-4 no-scrollbar pb-24">
+    <div className="flex flex-col h-full relative overflow-hidden">
       {/* 1. 頂部區 (玩家基本資訊) */}
-      <div className="bg-[#13102a] rounded-xl border border-purple-900/30 p-4 flex items-center gap-4">
-        <div className="w-14 h-14 rounded-full bg-[#1a1530] flex items-center justify-center border border-purple-500/40 shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
-          <User size={28} className="text-purple-400" />
-        </div>
-        <div className="flex flex-col flex-1">
-          <div className="text-lg font-bold text-white mb-1">{data.user.userName || '催眠大師'}</div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-900/30 border border-amber-500/30 text-[11px] font-bold text-amber-400">
-              <Crown size={12} />
-              VIP {data.user.vipTier}
-            </div>
-            <div className="text-[10px] text-gray-400 flex items-center gap-1">
-              <Clock size={10} />
-              到期日: {vipEndDate}
-            </div>
+      <div className="px-3 md:px-4 pt-3 md:pt-3 pb-1 md:pb-1 shrink-0">
+        <div className="bg-[#13102a] rounded-xl border border-purple-900/30 p-3 md:p-4 flex items-center gap-3 md:gap-4 shrink-0">
+          <div className="w-12 md:w-14 h-12 md:h-14 rounded-full bg-[#1a1530] flex items-center justify-center border border-purple-500/40 shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
+            <User className="w-6 h-6 md:w-7 md:h-7 text-purple-400" />
           </div>
-        </div>
-      </div>
-
-      {/* 2. 中間資源區 */}
-      <div className="flex flex-col gap-3">
-        {/* MC 能量欄 */}
-        <div className="bg-[#13102a] rounded-xl border border-purple-900/30 p-4 flex flex-col gap-3">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-1.5">
-              <Zap size={16} className="text-purple-400" />
-              <span className="text-sm font-bold text-white">MC 能量</span>
+          <div className="flex flex-col flex-1">
+            <div className="text-[17px] md:text-lg font-bold text-white mb-1">{data.user.userName || '催眠大師'}</div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 px-1.5 md:px-2 py-0.5 rounded-md bg-amber-900/30 border border-amber-500/30 text-[10px] md:text-[11px] font-bold text-amber-400 whitespace-nowrap shrink-0">
+                <Crown className="w-[11px] h-[11px] md:w-3 md:h-3" />
+                <span>VIP {data.user.vipTier}</span>
+              </div>
+              <div className="text-[9px] md:text-[10px] text-gray-400 flex flex-col md:flex-row items-start md:items-center gap-px md:gap-1 shrink-0 text-left md:text-left">
+                <div className="flex items-center gap-0.5 md:gap-1">
+                  <Clock className="w-[9px] h-[9px] md:w-2.5 md:h-2.5 shrink-0" />
+                  <span>到期:</span>
+                </div>
+                <span className="leading-[1.1]">{vipEndDate}</span>
+              </div>
             </div>
-            <div className="text-sm font-mono text-white font-bold">
-              {data.user.mcEnergy} <span className="text-xs text-gray-500">/ {data.user.mcEnergyMax}</span>
-            </div>
-          </div>
-          <div className="w-full h-[6px] bg-[#1a1530] rounded-full overflow-hidden">
-            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${mcPercent}%`, background: 'linear-gradient(90deg, #a855f7, #c084fc)' }} />
-          </div>
-          <div className="flex justify-between items-center text-[11px] text-gray-400">
-            <div className="flex items-center gap-1">
-              <Activity size={12} />
-              累計消耗 MC: <span className="font-mono text-gray-300">{data.user.totalConsumedMc}</span>
-            </div>
-          </div>
-          <div className="flex gap-2 mt-1">
-            <button
-              onClick={() => openExchangeModal('moneyToMc')}
-              className="flex-1 py-2 rounded-lg bg-[#1a1530] hover:bg-purple-900/40 border border-purple-900/50 text-xs font-semibold text-purple-300 transition-colors flex items-center justify-center gap-1"
-            >
-              <Plus size={14} />
-              購買能量
-            </button>
-            <button
-              onClick={() => openExchangeModal('ptsToMcMax')}
-              className="flex-1 py-2 rounded-lg bg-[#1a1530] hover:bg-purple-900/40 border border-purple-900/50 text-xs font-semibold text-purple-300 transition-colors flex items-center justify-center gap-1"
-            >
-              <ArrowUpCircle size={14} />
-              提升上限
-            </button>
-          </div>
-        </div>
-
-        {/* 金錢欄與催眠點欄 (同一行) */}
-        <div className="grid grid-cols-2 gap-3">
-          {/* 金錢欄 */}
-          <div className="bg-[#13102a] rounded-xl border border-yellow-900/30 p-3 flex flex-col justify-between gap-3">
-            <div className="flex items-center gap-1.5">
-              <Coins size={14} className="text-yellow-400" />
-              <span className="text-xs font-bold text-gray-300">持有金錢</span>
-            </div>
-            <div className="text-base font-mono text-white font-bold">{formatMoney(data.user.money)}</div>
-            <button
-              onClick={() => openExchangeModal('ptsToMoney')}
-              className="w-full py-1.5 rounded-md bg-yellow-900/20 hover:bg-yellow-900/40 border border-yellow-900/50 text-[11px] font-semibold text-yellow-500 transition-colors flex items-center justify-center gap-1"
-            >
-              <ArrowRightLeft size={12} />
-              資源兌換
-            </button>
-          </div>
-
-          {/* 催眠點欄 */}
-          <div className="bg-[#13102a] rounded-xl border border-purple-900/30 p-3 flex flex-col justify-between gap-3">
-            <div className="flex items-center gap-1.5">
-              <Star size={14} className="text-purple-400" />
-              <span className="text-xs font-bold text-gray-300">催眠點 (PTS)</span>
-            </div>
-            <div className="text-base font-mono text-white font-bold">{data.user.mcPoints}</div>
-            <button
-              onClick={() => openExchangeModal('moneyToPts')}
-              className="w-full py-1.5 rounded-md bg-purple-900/20 hover:bg-purple-900/40 border border-purple-900/50 text-[11px] font-semibold text-purple-400 transition-colors flex items-center justify-center gap-1"
-            >
-              <Plus size={12} />
-              購買 PTS
-            </button>
           </div>
         </div>
       </div>
 
-      {/* 3. VIP 資訊區 */}
-      <div className="bg-[#13102a] rounded-xl border border-amber-900/30 p-4 flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Crown size={16} className="text-amber-400" />
-            <span className="text-sm font-bold text-white">VIP 資訊</span>
+      <div className="flex-1 overflow-y-auto px-3 md:px-4 pt-2 md:pt-2 pb-20 md:pb-24 flex flex-col gap-3 md:gap-4 no-scrollbar">
+        {/* 2. 中間資源區 */}
+        <div className="flex flex-col gap-3 shrink-0">
+          {/* MC 能量欄 */}
+          <div className="bg-[#13102a] rounded-xl border border-purple-900/30 p-3 md:p-4 flex flex-col gap-2 md:gap-3">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 md:w-4 md:h-4 text-purple-400" />
+                <span className="text-[13px] md:text-sm font-bold text-white">MC 能量</span>
+              </div>
+              <div className="text-[13px] md:text-sm font-mono text-white font-bold">
+                {data.user.mcEnergy} <span className="text-[11px] md:text-xs text-gray-500">/ {data.user.mcEnergyMax}</span>
+              </div>
+            </div>
+            <div className="w-full h-[5px] md:h-[6px] bg-[#1a1530] rounded-full overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${mcPercent}%`, background: 'linear-gradient(90deg, #a855f7, #c084fc)' }} />
+            </div>
+            <div className="flex justify-between items-center text-[10px] md:text-[11px] text-gray-400">
+              <div className="flex items-center gap-1">
+                <Activity className="w-[11px] h-[11px] md:w-3 md:h-3" />
+                累計消耗 MC: <span className="font-mono text-gray-300">{data.user.totalConsumedMc}</span>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-1">
+              <button
+                onClick={() => openExchangeModal('moneyToMc')}
+                className="flex-1 py-1.5 md:py-2 rounded-lg bg-[#1a1530] hover:bg-purple-900/40 border border-purple-900/50 text-[11px] md:text-xs font-semibold text-purple-300 transition-colors flex items-center justify-center gap-1"
+              >
+                <Plus className="w-[13px] h-[13px] md:w-3.5 md:h-3.5" />
+                購買能量
+              </button>
+              <button
+                onClick={() => openExchangeModal('ptsToMcMax')}
+                className="flex-1 py-1.5 md:py-2 rounded-lg bg-[#1a1530] hover:bg-purple-900/40 border border-purple-900/50 text-[11px] md:text-xs font-semibold text-purple-300 transition-colors flex items-center justify-center gap-1"
+              >
+                <ArrowUpCircle className="w-[13px] h-[13px] md:w-3.5 md:h-3.5" />
+                提升上限
+              </button>
+            </div>
+          </div>
+
+          {/* 金錢欄與催眠點欄 (同一行) */}
+          <div className="grid grid-cols-2 gap-2 md:gap-3">
+            {/* 金錢欄 */}
+            <div className="bg-[#13102a] rounded-xl border border-yellow-900/30 p-2.5 md:p-3 flex flex-col justify-between gap-2 md:gap-3">
+              <div className="flex items-center gap-1 md:gap-1.5">
+                <Coins className="w-[13px] h-[13px] md:w-3.5 md:h-3.5 text-yellow-400" />
+                <span className="text-[11px] md:text-xs font-bold text-gray-300">持有金錢</span>
+              </div>
+              <div className="text-[15px] md:text-base font-mono text-white font-bold">{formatMoney(data.user.money)}</div>
+              <button
+                onClick={() => openExchangeModal('ptsToMoney')}
+                className="w-full py-1 md:py-1.5 rounded-md bg-yellow-900/20 hover:bg-yellow-900/40 border border-yellow-900/50 text-[10px] md:text-[11px] font-semibold text-yellow-500 transition-colors flex items-center justify-center gap-1"
+              >
+                <ArrowRightLeft className="w-[11px] h-[11px] md:w-3 md:h-3" />
+                資源兌換
+              </button>
+            </div>
+
+            {/* 催眠點欄 */}
+            <div className="bg-[#13102a] rounded-xl border border-purple-900/30 p-2.5 md:p-3 flex flex-col justify-between gap-2 md:gap-3">
+              <div className="flex items-center gap-1 md:gap-1.5">
+                <Star className="w-[13px] h-[13px] md:w-3.5 md:h-3.5 text-purple-400" />
+                <span className="text-[11px] md:text-xs font-bold text-gray-300">催眠點 (PTS)</span>
+              </div>
+              <div className="text-[15px] md:text-base font-mono text-white font-bold">{data.user.mcPoints}</div>
+              <button
+                onClick={() => openExchangeModal('moneyToPts')}
+                className="w-full py-1 md:py-1.5 rounded-md bg-purple-900/20 hover:bg-purple-900/40 border border-purple-900/50 text-[10px] md:text-[11px] font-semibold text-purple-400 transition-colors flex items-center justify-center gap-1"
+              >
+                <Plus className="w-[11px] h-[11px] md:w-3 md:h-3" />
+                購買 PTS
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between py-2 border-b border-amber-900/20">
-          <div className="flex items-center gap-2">
-            <RefreshCw size={14} className="text-gray-400" />
-            <span className="text-xs text-gray-300">VIP 自動續訂</span>
+        {/* 3. VIP 資訊區 */}
+        <div className="bg-[#13102a] rounded-xl border border-amber-900/30 p-3 md:p-4 flex flex-col gap-2 md:gap-3 shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Crown className="w-3.5 h-3.5 md:w-4 md:h-4 text-amber-400" />
+              <span className="text-[13px] md:text-sm font-bold text-white">VIP 資訊</span>
+            </div>
           </div>
+
+          <div className="flex items-center justify-between py-1.5 md:py-2 border-b border-amber-900/20">
+            <div className="flex items-center gap-2">
+              <RefreshCw className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400" />
+              <span className="text-[11px] md:text-xs text-gray-300">VIP 自動續訂</span>
+            </div>
+            <button
+              onClick={toggleAutoRenew}
+              className={`relative w-9 md:w-10 h-4.5 md:h-5 rounded-full transition-colors shrink-0 ${
+                data.user.vipAutoRenew ? 'bg-emerald-500' : 'bg-gray-700'
+              }`}
+            >
+              <div className={`absolute top-[2px] md:top-0.5 w-3.5 md:w-4 h-3.5 md:h-4 rounded-full bg-white shadow transition-transform ${
+                data.user.vipAutoRenew ? 'translate-x-[20px] md:translate-x-[22px]' : 'translate-x-0.5'
+              }`} />
+            </button>
+          </div>
+
           <button
-            onClick={toggleAutoRenew}
-            className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${
-              data.user.vipAutoRenew ? 'bg-emerald-500' : 'bg-gray-700'
-            }`}
+            onClick={() => setShowVipModal(true)}
+            className="w-full py-2 md:py-2.5 rounded-lg bg-amber-900/20 hover:bg-amber-900/40 border border-amber-500/30 text-[13px] md:text-sm font-bold text-amber-400 transition-colors flex items-center justify-center gap-1.5 md:gap-2 mt-1"
           >
-            <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
-              data.user.vipAutoRenew ? 'translate-x-[22px]' : 'translate-x-0.5'
-            }`} />
+            <ArrowUpCircle className="w-3.5 h-3.5 md:w-4 md:h-4" />
+            升級 VIP
           </button>
         </div>
 
-        <button
-          onClick={() => setShowVipModal(true)}
-          className="w-full py-2.5 rounded-lg bg-amber-900/20 hover:bg-amber-900/40 border border-amber-500/30 text-sm font-bold text-amber-400 transition-colors flex items-center justify-center gap-2 mt-1"
-        >
-          <ArrowUpCircle size={16} />
-          升級 VIP
-        </button>
-      </div>
-
-      {/* 4. 風險指標區 */}
-      <div className="bg-[#13102a] rounded-xl border border-red-900/30 p-4 flex flex-col gap-3">
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-2">
-            <ShieldAlert size={16} className="text-red-400" />
-            <span className="text-sm font-bold text-white">風險指標</span>
+        {/* 4. 風險指標區 */}
+        <div className="bg-[#13102a] rounded-xl border border-red-900/30 p-3 md:p-4 flex flex-col gap-2 md:gap-3 shrink-0">
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-400" />
+              <span className="text-[13px] md:text-sm font-bold text-white">風險指標</span>
+            </div>
+            <span className="text-[13px] md:text-sm font-mono font-bold text-red-400">{data.user.suspicion}%</span>
           </div>
-          <span className="text-sm font-mono font-bold text-red-400">{data.user.suspicion}%</span>
-        </div>
-        <div className="w-full h-[6px] bg-[#1a1530] rounded-full overflow-hidden">
-          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, data.user.suspicion)}%`, background: 'linear-gradient(90deg, #ef4444, #f87171)' }} />
-        </div>
-        <div className="text-[11px] text-gray-400">
-          {data.user.suspicion > 80 ? '極度危險！請立即停止可疑行為！' :
-           data.user.suspicion > 50 ? '警告：可疑度偏高。' :
-           data.user.suspicion > 20 ? '注意：已引起部分懷疑。' : '安全：目前未引起明顯懷疑。'}
+          <div className="w-full h-[5px] md:h-[6px] bg-[#1a1530] rounded-full overflow-hidden">
+            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, data.user.suspicion)}%`, background: 'linear-gradient(90deg, #ef4444, #f87171)' }} />
+          </div>
+          <div className="text-[10px] md:text-[11px] text-gray-400">
+            {data.user.suspicion > 80 ? '極度危險！請立即停止可疑行為！' :
+             data.user.suspicion > 50 ? '警告：可疑度偏高。' :
+             data.user.suspicion > 20 ? '注意：已引起部分懷疑。' : '安全：目前未引起明顯懷疑。'}
+          </div>
         </div>
       </div>
 
@@ -206,6 +213,15 @@ const VipUpgradeModal: React.FC<{
   reload: () => void;
   onClose: () => void;
 }> = ({ data, reload, onClose }) => {
+  React.useEffect(() => {
+    const containers = document.querySelectorAll('.overflow-y-auto');
+    const originalStyles = Array.from(containers).map(c => (c as HTMLElement).style.overflow);
+    containers.forEach(c => (c as HTMLElement).style.overflow = 'hidden');
+    return () => {
+      containers.forEach((c, i) => (c as HTMLElement).style.overflow = originalStyles[i]);
+    };
+  }, []);
+
   const currentTier = data.user.vipTier;
   const nextTier = currentTier + 1;
 
@@ -234,10 +250,10 @@ const VipUpgradeModal: React.FC<{
   };
 
   return (
-    <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4">
-      <div className="bg-[#13102a] rounded-xl border border-amber-900/50 p-5 w-full max-w-sm flex flex-col gap-4 shadow-2xl">
+    <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-3 md:p-4">
+      <div className="bg-[#13102a] rounded-xl border border-amber-900/50 p-4 md:p-5 w-full max-w-sm flex flex-col gap-3 md:gap-4 shadow-2xl">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-amber-400 font-bold text-lg">
+          <div className="flex items-center gap-2 text-amber-400 font-bold text-base md:text-lg">
             <Crown size={20} />
             升級 VIP 等級
           </div>
@@ -248,50 +264,50 @@ const VipUpgradeModal: React.FC<{
 
         {nextTier <= 5 ? (
           <>
-            <div className="flex items-center justify-center gap-4 py-4">
+            <div className="flex items-center justify-center gap-3 md:gap-4 py-3 md:py-4">
               <div className="flex flex-col items-center gap-1">
-                <span className="text-sm text-gray-400">目前等級</span>
-                <span className="px-3 py-1 bg-gray-800 rounded-lg font-bold text-gray-300">VIP {currentTier}</span>
+                <span className="text-[13px] md:text-sm text-gray-400">目前等級</span>
+                <span className="px-2.5 md:px-3 py-1 bg-gray-800 rounded-lg font-bold text-gray-300">VIP {currentTier}</span>
               </div>
               <ArrowRightLeft size={20} className="text-gray-500" />
               <div className="flex flex-col items-center gap-1">
-                <span className="text-sm text-amber-400">下一等級</span>
-                <span className="px-3 py-1 bg-amber-900/30 border border-amber-500/50 rounded-lg font-bold text-amber-400">VIP {nextTier}</span>
+                <span className="text-[13px] md:text-sm text-amber-400">下一等級</span>
+                <span className="px-2.5 md:px-3 py-1 bg-amber-900/30 border border-amber-500/50 rounded-lg font-bold text-amber-400">VIP {nextTier}</span>
               </div>
             </div>
 
-            <div className="bg-[#0c0a1e] rounded-lg p-3 border border-amber-900/30 flex flex-col gap-2">
+            <div className="bg-[#0c0a1e] rounded-lg p-2.5 md:p-3 border border-amber-900/30 flex flex-col gap-2">
               <div>
-                <div className="text-[11px] text-gray-400 mb-1">升級費用 (金錢)</div>
-                <div className={`text-lg font-mono font-bold ${data.user.money >= upgradeCost ? 'text-yellow-400' : 'text-red-400'}`}>
+                <div className="text-[10px] md:text-[11px] text-gray-400 mb-1">升級費用 (金錢)</div>
+                <div className={`text-base md:text-lg font-mono font-bold ${data.user.money >= upgradeCost ? 'text-yellow-400' : 'text-red-400'}`}>
                   ¥{upgradeCost.toLocaleString()}
                 </div>
-                <div className="text-[10px] text-gray-500 mt-1">
+                <div className="text-[9px] md:text-[10px] text-gray-500 mt-1">
                   目前持有: ¥{data.user.money.toLocaleString()}
                 </div>
               </div>
               <div className="border-t border-amber-900/20 pt-2">
-                <div className="text-[11px] text-gray-400 mb-1">要求累計消耗 MC</div>
-                <div className={`text-lg font-mono font-bold ${data.user.totalConsumedMc >= requiredMc ? 'text-cyan-400' : 'text-red-400'}`}>
+                <div className="text-[10px] md:text-[11px] text-gray-400 mb-1">要求累計消耗 MC</div>
+                <div className={`text-base md:text-lg font-mono font-bold ${data.user.totalConsumedMc >= requiredMc ? 'text-cyan-400' : 'text-red-400'}`}>
                   {requiredMc.toLocaleString()} MC
                 </div>
-                <div className="text-[10px] text-gray-500 mt-1">
+                <div className="text-[9px] md:text-[10px] text-gray-500 mt-1">
                   目前累計: {data.user.totalConsumedMc.toLocaleString()} MC
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-3 mt-2">
+            <div className="flex gap-2 md:gap-3 mt-2">
               <button
                 onClick={onClose}
-                className="flex-1 py-2.5 rounded-lg border border-gray-600/50 text-gray-300 font-medium text-sm hover:bg-gray-800/50 transition-colors"
+                className="flex-1 py-2 md:py-2.5 rounded-lg border border-gray-600/50 text-gray-300 font-medium text-[13px] md:text-sm hover:bg-gray-800/50 transition-colors"
               >
                 取消
               </button>
               <button
                 onClick={handleUpgrade}
                 disabled={!canUpgrade}
-                className="flex-1 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-medium text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:grayscale"
+                className="flex-1 py-2 md:py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-medium text-[13px] md:text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:grayscale"
               >
                 確認升級
               </button>
@@ -395,10 +411,10 @@ const ResourceExchangeModal: React.FC<{
   };
 
   return (
-    <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4">
-      <div className="bg-[#13102a] rounded-xl border border-purple-900/50 p-5 w-full max-w-sm flex flex-col gap-4 shadow-2xl">
+    <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-3 md:p-4">
+      <div className="bg-[#13102a] rounded-xl border border-purple-900/50 p-4 md:p-5 w-full max-w-sm flex flex-col gap-3 md:gap-4 shadow-2xl">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-purple-400 font-bold text-lg">
+          <div className="flex items-center gap-2 text-purple-400 font-bold text-base md:text-lg">
             <ArrowRightLeft size={20} />
             資源兌換
           </div>
@@ -408,50 +424,64 @@ const ResourceExchangeModal: React.FC<{
         </div>
 
         <div className="flex flex-col gap-2 p-1 bg-[#0c0a1e] rounded-lg border border-purple-900/30">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-1.5 md:gap-2">
             <button
               onClick={() => setExchangeType('moneyToMc')}
-              className={`py-1.5 text-xs font-semibold rounded-md transition-colors ${exchangeType === 'moneyToMc' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}
+              className={`py-1.5 text-[11px] md:text-xs font-semibold rounded-md transition-colors ${exchangeType === 'moneyToMc' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}
             >
               購買 MC 能量
             </button>
             <button
               onClick={() => setExchangeType('ptsToMcMax')}
-              className={`py-1.5 text-xs font-semibold rounded-md transition-colors ${exchangeType === 'ptsToMcMax' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}
+              className={`py-1.5 text-[11px] md:text-xs font-semibold rounded-md transition-colors ${exchangeType === 'ptsToMcMax' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}
             >
               提升能量上限
             </button>
             <button
               onClick={() => setExchangeType('ptsToMoney')}
-              className={`py-1.5 text-xs font-semibold rounded-md transition-colors ${exchangeType === 'ptsToMoney' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}
+              className={`py-1.5 text-[11px] md:text-xs font-semibold rounded-md transition-colors ${exchangeType === 'ptsToMoney' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}
             >
               兌換金錢
             </button>
             <button
               onClick={() => setExchangeType('moneyToPts')}
-              className={`py-1.5 text-xs font-semibold rounded-md transition-colors ${exchangeType === 'moneyToPts' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}
+              className={`py-1.5 text-[11px] md:text-xs font-semibold rounded-md transition-colors ${exchangeType === 'moneyToPts' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}
             >
               購買催眠點
             </button>
           </div>
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2.5 md:gap-3">
           <div>
-            <label className="text-[11px] text-gray-400 mb-1 block">{inputLabel}</label>
-            <input
-              type="number"
-              min={1}
-              value={amount}
-              onChange={(e) => setAmount(Math.max(1, parseInt(e.target.value) || 1))}
-              className="w-full bg-[#0c0a1e] border border-purple-900/30 rounded-lg px-3 py-2 text-white outline-none focus:border-purple-500/50"
-            />
+            <label className="text-[10px] md:text-[11px] text-gray-400 mb-1 block">{inputLabel}</label>
+            <div className="flex items-center">
+              <button
+                onClick={() => setAmount(Math.max(1, amount - 1))}
+                className="w-8 md:w-10 h-[28px] md:h-[32px] bg-[#0c0a1e] border border-r-0 border-purple-900/30 rounded-l-lg text-gray-400 hover:text-white hover:bg-purple-900/40 flex items-center justify-center transition-colors shrink-0"
+              >
+                -
+              </button>
+              <input
+                type="number"
+                min={1}
+                value={amount}
+                onChange={(e) => setAmount(Math.max(1, parseInt(e.target.value) || 1))}
+                className="flex-1 min-w-0 text-center bg-[#0c0a1e] border-y border-purple-900/30 h-[28px] md:h-[32px] text-white outline-none focus:border-purple-500/50 px-0"
+              />
+              <button
+                onClick={() => setAmount(amount + 1)}
+                className="w-8 md:w-10 h-[28px] md:h-[32px] bg-[#0c0a1e] border border-l-0 border-purple-900/30 rounded-r-lg text-gray-400 hover:text-white hover:bg-purple-900/40 flex items-center justify-center transition-colors shrink-0"
+              >
+                +
+              </button>
+            </div>
           </div>
 
-          <div className="bg-[#0c0a1e] rounded-lg p-3 border border-purple-900/30 grid grid-cols-2 gap-3">
+          <div className="bg-[#0c0a1e] rounded-lg p-2.5 md:p-3 border border-purple-900/30 grid grid-cols-2 gap-2 md:gap-3">
             <div>
-              <div className="text-[10px] text-gray-500 mb-1">消耗 {costLabel}</div>
-              <div className={`text-sm font-mono font-bold ${
+              <div className="text-[9px] md:text-[10px] text-gray-500 mb-1">消耗 {costLabel}</div>
+              <div className={`text-[13px] md:text-sm font-mono font-bold ${
                 (exchangeType === 'moneyToMc' || exchangeType === 'moneyToPts')
                   ? (data.user.money >= cost ? 'text-yellow-400' : 'text-red-400')
                   : (data.user.mcPoints >= cost ? 'text-purple-400' : 'text-red-400')
@@ -460,31 +490,31 @@ const ResourceExchangeModal: React.FC<{
               </div>
             </div>
             <div>
-              <div className="text-[10px] text-gray-500 mb-1">獲得 {gainLabel}</div>
-              <div className="text-sm font-mono font-bold text-emerald-400">
+              <div className="text-[9px] md:text-[10px] text-gray-500 mb-1">獲得 {gainLabel}</div>
+              <div className="text-[13px] md:text-sm font-mono font-bold text-emerald-400">
                 +{gain.toLocaleString()}
               </div>
             </div>
           </div>
 
           {warning && (
-            <div className="text-[11px] text-red-400 mt-1">
+            <div className="text-[10px] md:text-[11px] text-red-400 mt-1">
               {warning}
             </div>
           )}
         </div>
 
-        <div className="flex gap-3 mt-2">
+        <div className="flex gap-2 md:gap-3 mt-1.5 md:mt-2">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-lg border border-gray-600/50 text-gray-300 font-medium text-sm hover:bg-gray-800/50 transition-colors"
+            className="flex-1 py-2 md:py-2.5 rounded-lg border border-gray-600/50 text-gray-300 font-medium text-[13px] md:text-sm hover:bg-gray-800/50 transition-colors"
           >
             取消
           </button>
           <button
             onClick={handleExchange}
             disabled={!canExchange}
-            className="flex-1 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:grayscale"
+            className="flex-1 py-2 md:py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium text-[13px] md:text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:grayscale"
           >
             確認兌換
           </button>
