@@ -87,6 +87,9 @@ importers:
       '@eslint/js':
         specifier: ^9.39.4
         version: 9.39.4
+      '@tailwindcss/container-queries':
+        specifier: ^0.1.1
+        version: 0.1.1(tailwindcss@4.2.2)
       '@tailwindcss/postcss':
         specifier: ^4.2.2
         version: 4.2.2
@@ -540,6 +543,11 @@ packages:
 
   '@socket.io/component-emitter@3.1.2':
     resolution: {integrity: sha512-9BCxFwvbGg/RsZK9tjXd8s4UcwR0MWeFQ1XEKIQVVvAGJyINdrqKMcTRyLoK8Rse1GjzLV9cwjWV1olXRWEXVA==}
+
+  '@tailwindcss/container-queries@0.1.1':
+    resolution: {integrity: sha512-p18dswChx6WnTSaJCSGx6lTmrGzNNvm2FtXmiO6AuA1V4U5REyoqwmT6kgAsIMdjo07QdAfYXHJ4hnMtfHzWgA==}
+    peerDependencies:
+      tailwindcss: '>=3.2.0'
 
   '@tailwindcss/node@4.2.2':
     resolution: {integrity: sha512-pXS+wJ2gZpVXqFaUEjojq7jzMpTGf8rU6ipJz5ovJV6PUGmlJ+jvIwGrzdHdQ80Sg+wmQxUFuoW1UAAwHNEdFA==}
@@ -4346,6 +4354,10 @@ snapshots:
   '@sinclair/typebox@0.27.10': {}
 
   '@socket.io/component-emitter@3.1.2': {}
+
+  '@tailwindcss/container-queries@0.1.1(tailwindcss@4.2.2)':
+    dependencies:
+      tailwindcss: 4.2.2
 
   '@tailwindcss/node@4.2.2':
     dependencies:

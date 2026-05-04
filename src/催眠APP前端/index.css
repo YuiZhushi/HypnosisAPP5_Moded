@@ -1,4 +1,56 @@
 @import 'tailwindcss';
+@plugin "@tailwindcss/container-queries";
+
+@theme {
+  /* Fluid Spacing (Padding, Margin, Gap, Width, Height) */
+  --spacing-0_5: clamp(1px, 0.47cqw, 2px);
+  --spacing-1: clamp(2px, 0.95cqw, 4px);
+  --spacing-1_5: clamp(4px, 1.42cqw, 6px);
+  --spacing-2: clamp(6px, 1.9cqw, 8px);
+  --spacing-2_5: clamp(8px, 2.38cqw, 10px);
+  --spacing-3: clamp(9px, 2.85cqw, 12px);
+  --spacing-3_5: clamp(10px, 3.33cqw, 14px);
+  --spacing-4: clamp(12px, 3.81cqw, 16px);
+  --spacing-5: clamp(16px, 4.76cqw, 20px);
+  --spacing-6: clamp(18px, 5.71cqw, 24px);
+  --spacing-7: clamp(22px, 6.66cqw, 28px);
+  --spacing-8: clamp(24px, 7.61cqw, 32px);
+  --spacing-9: clamp(28px, 8.57cqw, 36px);
+  --spacing-10: clamp(32px, 9.52cqw, 40px);
+  --spacing-11: clamp(36px, 10.47cqw, 44px);
+  --spacing-12: clamp(40px, 11.42cqw, 48px);
+  --spacing-14: clamp(46px, 13.33cqw, 56px);
+  --spacing-16: clamp(52px, 15.23cqw, 64px);
+  --spacing-20: clamp(64px, 19.04cqw, 80px);
+  --spacing-24: clamp(76px, 22.85cqw, 96px);
+
+  /* Fluid Text Sizes */
+  --text-xs: clamp(10px, 2.85cqw, 12px);
+  --text-sm: clamp(12px, 3.33cqw, 14px);
+  --text-base: clamp(14px, 3.81cqw, 16px);
+  --text-lg: clamp(16px, 4.28cqw, 18px);
+  --text-xl: clamp(18px, 4.76cqw, 20px);
+  --text-2xl: clamp(20px, 5.71cqw, 24px);
+  --text-3xl: clamp(24px, 7.14cqw, 30px);
+  --text-4xl: clamp(28px, 8.57cqw, 36px);
+  --text-5xl: clamp(36px, 11.42cqw, 48px);
+  --text-6xl: clamp(48px, 14.28cqw, 60px);
+
+  /* Fluid Border Radius */
+  --radius-sm: clamp(2px, 0.47cqw, 2px);
+  --radius-md: clamp(4px, 0.95cqw, 6px);
+  --radius-lg: clamp(6px, 1.9cqw, 8px);
+  --radius-xl: clamp(8px, 2.85cqw, 12px);
+  --radius-2xl: clamp(12px, 3.81cqw, 16px);
+  --radius-3xl: clamp(18px, 5.71cqw, 24px);
+
+  /* Custom Container Breakpoints to trigger md/sm based on bezel width instead of viewport */
+  --breakpoint-sm: 360px;
+  --breakpoint-md: 400px;
+}
+
+@custom-variant sm (@container (min-width: 360px));
+@custom-variant md (@container (min-width: 400px));
 
 html,
 body {
