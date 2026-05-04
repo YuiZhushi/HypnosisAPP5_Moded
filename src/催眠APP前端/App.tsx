@@ -390,16 +390,16 @@ const HomeScreen = ({
     <div className="relative h-full w-full bg-linear-to-b from-slate-900 via-purple-950 to-black flex flex-col pt-12 pb-24 animate-fade-in">
       {/* Date Widget */}
       <div className="px-6 mb-8 text-white/90 drop-shadow-md">
-        <div className="text-6xl font-thin tracking-tighter">{displayTime}</div>
-        <div className="text-lg font-medium">{displayDate}</div>
+        <div className="text-5xl sm:text-6xl font-thin tracking-tighter">{displayTime}</div>
+        <div className="text-base sm:text-lg font-medium">{displayDate}</div>
       </div>
 
       {/* App Grid */}
-      <div className="flex-1 px-5 grid grid-cols-4 gap-y-6 gap-x-4 content-start">
+      <div className="flex-1 px-3 sm:px-5 grid grid-cols-4 gap-y-4 sm:gap-y-6 gap-x-2 sm:gap-x-4 content-start">
         {visibleApps.map(app => (
           <div
             key={app.id}
-            className={`flex flex-col items-center gap-1.5 group ${app.disabled ? 'opacity-50 grayscale cursor-not-allowed' : 'cursor-pointer'}`}
+            className={`flex flex-col items-center gap-1 sm:gap-1.5 group ${app.disabled ? 'opacity-50 grayscale cursor-not-allowed' : 'cursor-pointer'}`}
             onClick={() => {
               if (app.disabled) return;
               if (typeof app.action === 'function') {
@@ -411,19 +411,19 @@ const HomeScreen = ({
           >
             <div
               className={`
-              w-14 h-14 rounded-2xl ${app.color} flex items-center justify-center shadow-lg
+              w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl ${app.color} flex items-center justify-center shadow-lg
               ${!app.disabled && 'group-active:scale-90 transition-transform duration-200'}
               relative
             `}
             >
-              <app.icon size={28} className={app.id === 'calendar' ? 'text-black' : 'text-white'} />
+              <app.icon className={`w-6 h-6 sm:w-7 sm:h-7 ${app.id === 'calendar' ? 'text-black' : 'text-white'}`} />
               {app.disabled && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-2xl">
                   <span className="text-[8px] font-bold text-white bg-red-600 px-1 rounded">WIP</span>
                 </div>
               )}
             </div>
-            <span className="text-[10px] text-white font-medium tracking-wide drop-shadow-md">{app.name}</span>
+            <span className="text-[9px] sm:text-[10px] text-white font-medium tracking-wide drop-shadow-md">{app.name}</span>
           </div>
         ))}
       </div>
