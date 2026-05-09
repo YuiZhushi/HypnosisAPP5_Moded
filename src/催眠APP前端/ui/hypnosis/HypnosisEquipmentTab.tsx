@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { RuntimeData, EquipmentDef, MockApi } from './mockData';
+import { RuntimeData, EquipmentDef } from '../mock/mockModels';
+import { MockApi } from '../mock/mockApi';
 import {
   Wrench, ShoppingCart, X, AlertTriangle, Eye, Zap, Coins, Star, Monitor, Activity, FileText, Image as ImageIcon, AlignCenter, Volume2, Music, Smartphone, Coffee, Box, Wind, Cloud, Maximize, Radio, Wifi, Cpu
 } from 'lucide-react';

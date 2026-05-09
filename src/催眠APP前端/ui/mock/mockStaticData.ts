@@ -1,59 +1,7 @@
-/**
- * 催眠 APP 模擬資料檔 (Mock Data File)
- * 用於 UI 重構期間的測試與開發。
- * 包含靜態字典（催眠、裝置、組合）與玩家動態狀態。
- */
+import { HypnosisDef, EquipmentDef, AchievementOrQuestDef } from './mockModels';
 
 // ==========================================
-// 1. 靜態字典結構設計 (Static Dictionaries)
-// ==========================================
-
-export interface CostDict {
-  mc?: number;
-  money?: number;
-  pts?: number;
-}
-
-export interface HypnosisDef {
-  name: string;
-  description: string;
-  tier: number; // 需求的 VIP 等級 (0~5)
-  cost: CostDict;
-  isCustom: boolean;
-  isPermanent: boolean;
-  isOneTime: boolean;
-  duration?: number | 'onetime' | 'permanent'; // 單次持續時間 (分鐘)，當 isOneTime=true 且 isPermanent=false 時可選，不填寫預設為 'onetime' 表示持續到被打破或觸發事件，通常這項不用設定。
-  energyCost: number; // 消耗的 MC 能量 (根據 isOneTime 決定是一次性還是每分鐘)
-  defaultNote?: string; // 在備註欄為空時，將會作為備註欄欄位顯示，用於提示使用者要填入什麼內容?
-}
-
-export interface EquipmentDef {
-  // id: string;
-  name: string;
-  description: string;
-  icon: string;
-  tier: number; // 需求的 VIP 等級 (0~5)
-  cost: CostDict;
-  type: 'technology' | 'device';
-  usageCostType: Array<'none' | 'mc' | 'money' | 'suspicion'>;
-  usageCostRate: number; // 開啟時的消耗率 (若 usageCostType 包含 'none' 則為 0)
-}
-
-export interface ComboHypnosisConfig {
-  applyMethod: string;
-  target: string;
-  duration: number | 'onetime' | 'permanent'; // 分鐘數或一次性或永久
-  note: string;
-}
-
-export interface ComboDef {
-  name: string;
-  description: string;
-  includedHypnosis: Record<string, ComboHypnosisConfig>; // 以催眠 ID 為 key
-}
-
-// ==========================================
-// 2. 預設的催眠和裝置區域 (Static Hypnosis and Device)
+// 催眠 APP 靜態字典 (Hypnosis App Dictionaries)
 // ==========================================
 
 export const HYPNOSIS_DICTIONARY: Record<string, HypnosisDef> = {
@@ -743,396 +691,419 @@ export const EQUIPMENT_DICTIONARY: Record<string, EquipmentDef> = {
 };
 
 // ==========================================
-// 3. 測試用的靜態資料
+// 成就與任務 APP 靜態字典 (Achievement & Quest App Dictionaries)
 // ==========================================
 
-// 預設的測試用自訂催眠
-export const TestCustomHypnosisInput: Record<string, HypnosisDef> = {
-  ch_20260501_164434: {
-    name: '測試用自訂催眠1',
-    description: '這是用來測試自訂催眠的',
-    tier: 1,
-    cost: {money:0},
-    isCustom: true,
-    isPermanent: false,
-    isOneTime: false,
-    energyCost: 0,
-    defaultNote: '請填入描述',
-  },
-  ch_20260501_164440: {
-    name: '測試用自訂催眠2',
-    description: '這是用來測試自訂催眠的',
-    tier: 3,
-    cost: {mc:10,pts:12},
-    isCustom: true,
-    isPermanent: false,
-    isOneTime: false,
-    energyCost: 132,
-    defaultNote: '請填入描述',
-  }
-};
-
-// 預設的測試用催眠組合
-export const TestComboDataInput: Record<string, ComboDef> = {
-  chc_20260501_164557: {
-    name: '預設組合：日常聽話',
-    description: '簡單的日常服從組合。',
-    includedHypnosis: {
-      trial_basic: {
-        applyMethod: '直接輸入-圖像',
-        target: '看到催眠化面的人',
-        duration: 30,
-        note: '舉起左手',
-      },
-      vip4_conscious_action: {
-        applyMethod: '直接輸入-聲音',
-        target: '聽到聲音的人',
-        duration: 1,
-        note: '大喊`忠誠!`',
-      },
+export const ACHIEVEMENT_DICTIONARY: Record<string, AchievementOrQuestDef> = {
+  // 靜態成就
+  ach_newbie: {
+    name: '初次接触',
+    dataType: 'achievement',
+    isCustom: false,
+    description: '累计消耗超过 10 点 MC 能量。',
+    completionCondition: {
+      type: 'program',
+      condition: [{ target: 'totalConsumedMc', operator: '>=', value: 10 }],
     },
+    reward: { pts: 5 },
   },
-  chc_20260501_164604: {
-    name: '在公開場合強制裸體',
-    description: '強迫目標在公共場合裸體。',
-    includedHypnosis: {
-      vip4_unconscious_action: {
-        applyMethod: '間接輸入-聲音',
-        target: '聽到這份催眠音檔的人',
-        duration: 30,
-        note: '走到操場中央並脫光衣服',
-      },
-      vip3_forced_orgasm: {
-        applyMethod: '間接輸入-聲音',
-        target: '聽到這份催眠音檔的人',
-        duration: 'onetime',
-        note: '走到操場並脫光衣服然後高潮',
-      },
-      vip1_estrus: {
-        applyMethod: '間接輸入-聲音',
-        target: '聽到這份催眠音檔的人',
-        duration: 30,
-        note: '',
-      },
-      vip4_no_refractory: {
-        applyMethod: '間接輸入-聲音',
-        target: '聽到這份催眠音檔的人',
-        duration: 30,
-        note: '',
-      },
+  ach_vip2: {
+    name: '进阶会员',
+    dataType: 'achievement',
+    isCustom: false,
+    description: '解锁 VIP 2 权限 (累计消耗 100 MC)。',
+    completionCondition: {
+      type: 'program',
+      condition: [{ target: 'totalConsumedMc', operator: '>=', value: 100 }],
     },
+    reward: { pts: 20 },
   },
-  chc_20260502_092418: {
-    name: '自訂組合1',
-    description: '自訂組合1',
-    includedHypnosis: {
-      vip3_forced_orgasm: {
-        applyMethod: '直接輸入-聲音',
-        target: '正在看 this 組合的人',
-        duration: 'onetime',
-        note: '高潮',
-      },
-      vip1_estrus: {
-        applyMethod: '直接輸入-圖像',
-        target: '正在看 this 組合的人',
-        duration: 30,
-        note: '發情',
-      },
-      vip4_no_refractory: {
-        applyMethod: '直接輸入-聲音',
-        target: '正在聽 this 組合的人',
-        duration: 24,
-        note: '',
-      },
+  ach_rich: {
+    name: '资金充裕',
+    dataType: 'achievement',
+    isCustom: false,
+    description: '持有金钱超过 50,000 円。',
+    completionCondition: {
+      type: 'program',
+      condition: [{ target: 'money', operator: '>=', value: 50000 }],
     },
+    reward: { pts: 10 },
   },
-  chc_20260502_092426: {
-    name: '自訂組合2',
-    description: '自訂組合2',
-    includedHypnosis: {
-      vip5_forced_action: {
-        applyMethod: '直接輸入-聲音',
-        target: '正在聽 this 組合的人',
-        duration: 'onetime',
-        note: '',
-      },
-      vip5_perm_fake_memory: {
-        applyMethod: '直接輸入-圖像',
-        target: '正在看 this 組合的人',
-        duration: 'permanent',
-        note: '永遠記得這件事',
-      },
+  ach_sus: {
+    name: '隐秘行动',
+    dataType: 'achievement',
+    isCustom: false,
+    description: '将可疑度控制在 5% 以下。',
+    completionCondition: {
+      type: 'program',
+      condition: [{ target: 'suspicion', operator: '<=', value: 5 }],
     },
+    reward: { pts: 50 },
   },
 };
 
-export const TestCharDataInput: Record<string, MockcharData> = {
-  '測試角色名': {
-    placeholder: '測試用角色',
+export const QUEST_DICTIONARY: Record<string, AchievementOrQuestDef> = {
+  quest_naked_public_no_hypno: {
+    name: '清醒的裸露',
+    dataType: 'quest',
+    description: '在不催眠的情况下让角色在有他人的地方全裸。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '在不催眠的情况下让角色在有他人的地方全裸。',
+    },
+    reward: { pts: 50 },
   },
-  '白雪公主': {
-    placeholder: '測試用角色2',
+  quest_cuckold_request: {
+    name: '绿帽请求',
+    dataType: 'quest',
+    description: '让阿宅君请求你跟爱丽莎发生关系。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '让阿宅君请求你跟爱丽莎发生关系。',
+    },
+    reward: { pts: 40 },
   },
-  '其他人': {
-    placeholder: '測試用角色3',
-  }
+  quest_slave_circle: {
+    name: '奴隶循环',
+    dataType: 'quest',
+    description: '让A认为B是她的奴隶，B认为C是她的奴隶，C认为A是她的奴隶。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '让A认为B是她的奴隶，B认为C是她的奴隶，C认为A是她的奴隶。',
+    },
+    reward: { pts: 50 },
+  },
+  quest_placebo_hypno: {
+    name: '安慰剂效应',
+    dataType: 'quest',
+    description: '让一名没被催眠的角色以为自己被催眠了。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '让一名没被催眠的角色以为自己被催眠了。',
+    },
+    reward: { pts: 30 },
+  },
+  quest_stealth_sex: {
+    name: '隐奸',
+    dataType: 'quest',
+    description: '在阿宅君没发现的情况下在他面前跟爱丽莎发生关系(隐奸)。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '在阿宅君没发现的情况下在他面前跟爱丽莎发生关系(隐奸)。',
+    },
+    reward: { pts: 30 },
+  },
+  quest_furniture_mindset: {
+    name: '家具化',
+    dataType: 'quest',
+    description: '让一名角色深信自己是一件家具。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '让一名角色深信自己是一件家具。',
+    },
+    reward: { pts: 20 },
+  },
+  quest_pure_love_ntr: {
+    name: '纯爱牛',
+    dataType: 'quest',
+    description: '让一名角色认为出轨是纯爱的表现。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '让一名角色认为出轨是纯爱的表现。',
+    },
+    reward: { pts: 30 },
+  },
+  quest_proxy_hypno: {
+    name: '代理催眠',
+    dataType: 'quest',
+    description: '让一名角色用APP催眠另一名角色。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '让一名角色用APP催眠另一名角色。',
+    },
+    reward: { pts: 40 },
+  },
+  quest_dream_scenario: {
+    name: '盗梦空间',
+    dataType: 'quest',
+    description: '营造一个场景让一名角色以为自己在做梦。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '营造一个场景让一名角色以为自己在做梦。',
+    },
+    reward: { pts: 25 },
+  },
+  quest_conflict_hypno: {
+    name: '逻辑崩溃',
+    dataType: 'quest',
+    description: '同时进行两项相互冲突的催眠。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '同时进行两项相互冲突的催眠。',
+    },
+    reward: { pts: 15 },
+  },
+  quest_naked_school: {
+    name: '全裸登校',
+    dataType: 'quest',
+    description: '让一名角色全裸登校。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '让一名角色全裸登校。',
+    },
+    reward: { pts: 30 },
+  },
+  quest_naked_rule: {
+    name: '伊甸园',
+    dataType: 'quest',
+    description: '让全裸登校变成校规。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '让全裸登校变成校规。',
+    },
+    reward: { pts: 50 },
+  },
+  quest_pavlov_bell: {
+    name: '巴甫洛夫的铃声',
+    dataType: 'quest',
+    description: '让一名角色听到上课铃就会高潮。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '让一名角色听到上课铃就会高潮。',
+    },
+    reward: { pts: 20 },
+  },
+  quest_self_hypno: {
+    name: '自我沦陷',
+    dataType: 'quest',
+    description: '让自己被催眠。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '让自己被催眠。',
+    },
+    reward: { pts: 15 },
+  },
+  quest_public_climax: {
+    name: '公开展示',
+    dataType: 'quest',
+    description: '让一名角色在公共场合高潮。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '让一名角色在公共场合高潮。',
+    },
+    reward: { pts: 20 },
+  },
+  quest_train_wolf: {
+    name: '电车之狼',
+    dataType: 'quest',
+    description: '在电车上让一名角色高潮。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '在电车上让一名角色高潮。',
+    },
+    reward: { pts: 20 },
+  },
+  quest_yuri_action: {
+    name: '百合花开',
+    dataType: 'quest',
+    description: '让两名女角色相互亲热。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '让两名女角色相互亲热。',
+    },
+    reward: { pts: 15 },
+  },
+  quest_flasher_coat: {
+    name: '露出痴女',
+    dataType: 'quest',
+    description: '让一名角色全裸只穿着大衣走在街道上。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '让一名角色全裸只穿着大衣走在街道上。',
+    },
+    reward: { pts: 30 },
+  },
+  quest_public_leak: {
+    name: '论外',
+    dataType: 'quest',
+    description: '让一名角色在公众场合失禁。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '让一名角色在公众场合失禁。',
+    },
+    reward: { pts: 25 },
+  },
+  quest_pet_school: {
+    name: '禁止带宠物上学',
+    dataType: 'quest',
+    description: '让一名角色在学校被全裸牵着爬行。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '让一名角色在学校被全裸牵着爬行。',
+    },
+    reward: { pts: 40 },
+  },
+  quest_ntr_report: {
+    name: '寝取报告',
+    dataType: 'quest',
+    description: '让爱丽莎给阿宅君进行寝取报告。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '让爱丽莎给阿宅君进行寝取报告。',
+    },
+    reward: { pts: 35 },
+  },
+  quest_best_buddy: {
+    name: '好哥们',
+    dataType: 'quest',
+    description: '给阿宅君发送爱丽莎的色情影片，但不要让他认出是爱丽莎。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '给阿宅君发送爱丽莎的色情影片，但不要让他认出是爱丽莎。',
+    },
+    reward: { pts: 20 },
+  },
+  quest_cuckold_awakening: {
+    name: '绿帽癖觉醒',
+    dataType: 'quest',
+    description: '让阿宅君一边撸管看着你跟爱丽莎做爱。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '让阿宅君一边撸管看着你跟爱丽莎做爱。',
+    },
+    reward: { pts: 45 },
+  },
+  quest_male_swimsuit: {
+    name: '男泳装挑战',
+    dataType: 'quest',
+    description: '让夏美在公众场合穿男泳装。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '让夏美在公众场合穿男泳装。',
+    },
+    reward: { pts: 30 },
+  },
+  quest_classic_spot: {
+    name: '经典地点',
+    dataType: 'quest',
+    description: '与一名角色在学校保健室或体育品仓库做爱。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '与一名角色在学校保健室或体育品仓库做爱。',
+    },
+    reward: { pts: 15 },
+  },
+  quest_ntr_phone: {
+    name: '寝取电话',
+    dataType: 'quest',
+    description: '让爱丽莎一边跟你做爱一边跟阿宅君打电话。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '让爱丽莎一边跟你做爱一边跟阿宅君打电话。',
+    },
+    reward: { pts: 30 },
+  },
+  quest_dignity_break: {
+    name: '尊严破坏',
+    dataType: 'quest',
+    description: '让一名角色在没被催眠的情况下对你全裸土下座。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '让一名角色在没被催眠的情况下对你全裸土下座。',
+    },
+    reward: { pts: 50 },
+  },
+  quest_cosplay_cm: {
+    name: 'Cosplay露出',
+    dataType: 'quest',
+    description: '让爱丽莎穿上非常暴露的cos服去CM。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '让爱丽莎穿上非常暴露的cos服去CM。',
+    },
+    reward: { pts: 35 },
+  },
+  quest_body_paint: {
+    name: '人体彩绘',
+    dataType: 'quest',
+    description: '让夏美在公共场合只涂着人体彩绘。',
+    isCustom: false,
+    completionCondition: {
+      type: 'ai',
+      condition: '让夏美在公共场合只涂着人体彩绘。',
+    },
+    reward: { pts: 45 },
+  },
+  quest_orgasm_strong: {
+    name: '强绝顶',
+    dataType: 'quest',
+    description: '让角色的快感值到达200后高潮。',
+    isCustom: false,
+    completionCondition: {
+      type: 'program',
+      condition: [{ target: 'orgasm', operator: '>=', value: 200 }],
+    },
+    reward: { pts: 15 },
+  },
+  quest_orgasm_super: {
+    name: '增强绝顶',
+    dataType: 'quest',
+    description: '让角色的快感值到达300后高潮。',
+    isCustom: false,
+    completionCondition: {
+      type: 'program',
+      condition: [{ target: 'orgasm', operator: '>=', value: 300 }],
+    },
+    reward: { pts: 25 },
+  },
+  quest_orgasm_ultimate: {
+    name: '超强绝顶',
+    dataType: 'quest',
+    description: '让角色的快感值到达400后高潮。',
+    isCustom: false,
+    completionCondition: {
+      type: 'program',
+      condition: [{ target: 'orgasm', operator: '>=', value: 400 }],
+    },
+    reward: { pts: 35 },
+  },
+  quest_orgasm_strongest: {
+    name: '最强绝顶',
+    dataType: 'quest',
+    description: '让角色的快感值到达500后高潮。',
+    isCustom: false,
+    completionCondition: {
+      type: 'program',
+      condition: [{ target: 'orgasm', operator: '>=', value: 500 }],
+    },
+    reward: { pts: 45 },
+  },
 };
-
-// 預設的測試資料
-export const defaultMockUserData: MockUserData = {
-  userName: '測試用玩家名',
-  money: 102830,
-  mcEnergy: 1900,
-  mcEnergyMax: 2000,
-  mcPoints: 500,
-  totalConsumedMc: 500,
-  vipTier: 3,
-  vipEndVirtualMinutes: 10056, // 一週
-  vipAutoRenew: true,
-  suspicion: 10,
-
-  ownedHypnosis: {
-    trial_basic: { enabled: true },
-    vip1_senses: { enabled: true },
-    vip2_medium: { enabled: false },
-    vip5_perm_fake_memory: { enabled: true },
-    vip5_forced_action: { enabled: true },
-    ch_20260501_164434: { enabled: true },
-    ch_20260501_164440: { enabled: false },
-  },
-  ownedEquipments: {
-    eq_screen: { enabled: true },
-    eq_vip1_stats: { enabled: true },
-    eq_text_compiler: { enabled: true },
-    eq_gas_modulator: { enabled: true },
-    eq_gas_maker: { enabled: false },
-  },
-  ownedCombos: {
-    chc_20260501_164557: { enabled: true },
-    chc_20260501_164604: { enabled: false },
-    chc_20260502_092418: { enabled: true },
-    chc_20260502_092426: { enabled: true },
-  },
-};
-
-// ==========================================
-// 4. 動態狀態結構設計 (Dynamic State)
-// ==========================================
-
-export interface MockSystemData { // 模擬可以從後端獲取的資料，將來可以替換成真正的後端資料接口
-  time: string;
-}
-
-export interface MockcharData {
-  placeholder: string;
-}
-
-export interface MockUserData { // 模擬可以從後端獲取的資料，將來可以替換成真正的後端資料接口
-  userName: string;
-  // A. 基礎資源與訂閱資訊
-  money: number;
-  mcEnergy: number;
-  mcEnergyMax: number;
-  mcPoints: number; // 持有催眠點(PTS)
-  totalConsumedMc: number;
-  vipTier: number; // 0~5
-  vipEndVirtualMinutes: number; // 虛擬分鐘
-  vipAutoRenew: boolean;
-  suspicion: number; // 主角可疑度
-
-  // B. 玩家持有的多重物件 (Record 結構)
-  ownedHypnosis: Record<string, { enabled: boolean, settings?: any }>;
-  ownedEquipments: Record<string, { enabled: boolean, settings?: any }>;
-  ownedCombos: Record<string, { enabled: boolean, settings?: any }>;
-}
-
-export interface RuntimeData { // UI 介面使用的資料，理論上在UI層完成後不需要變更，因為所有與後端互動的邏輯都被封裝在橋接檔案中
-  system: MockSystemData;
-  user: MockUserData;
-  chars: Record<string, MockcharData>; // name, MockcharData
-
-  hypnosis: Record<string, HypnosisDef>; // id(其中自訂催眠使用hash值做id，ch_YYYYMMDD_hhmmss), HypnosisDef
-  equipment: Record<string, EquipmentDef>; // id, EquipmentDef
-  combos: Record<string, ComboDef>; // id(由於默認由玩家創建，所以使用hash值做id，chc_YYYYMMDD_hhmmss), ComboDef
-}
-
-// ==========================================
-// 5. 模擬後端 API (Mock Backend API)
-// ==========================================
-
-// 內部狀態 (模擬資料庫)
-let mockDatabase: MockUserData = JSON.parse(JSON.stringify(defaultMockUserData));
-const mockSystemData: MockSystemData = { time: '2026-05-01 11:28:00' };
-
-// 模擬網路延遲
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-export const MockApi = {
-  /**
-   * 查詢用戶當前的資源與狀態
-   */
-  async getUserInfo(): Promise<MockUserData> {
-    await delay(200);
-    return JSON.parse(JSON.stringify(mockDatabase));
-  },
-
-  /**
-   * 查詢目前的系統狀態
-   */
-  async getSystemData(): Promise<MockSystemData> {
-    await delay(100);
-    return JSON.parse(JSON.stringify(mockSystemData));
-  },
-
-  /**
-   * 查詢角色資料
-   */
-  async getCharData(): Promise<Record<string, MockcharData>> {
-    await delay(100);
-    return TestCharDataInput;
-  },
-
-  /**
-   * 查詢完整的設備字典 (所有設備定義，不做擁有過濾)
-   */
-  async getAllEquipment(): Promise<Record<string, EquipmentDef>> {
-    await delay(150);
-    return { ...EQUIPMENT_DICTIONARY };
-  },
-
-  /**
-   * 查詢完整的催眠字典 (所有催眠定義，包含自訂催眠，不做擁有過濾)
-   */
-  async getAllHypnosis(): Promise<Record<string, HypnosisDef>> {
-    await delay(150);
-    return { ...HYPNOSIS_DICTIONARY, ...TestCustomHypnosisInput };
-  },
-
-  /**
-   * 查詢完整的催眠組合字典 (所有組合定義，不做擁有過濾)
-   */
-  async getAllCombos(): Promise<Record<string, ComboDef>> {
-    await delay(150);
-    return { ...TestComboDataInput };
-  },
-
-  /**
-   * 模擬更新用戶資源 (金錢、MC 能量、PTS 等)
-   */
-  async updateUserResource(patch: Partial<Pick<MockUserData, 'money' | 'mcEnergy' | 'mcEnergyMax' | 'mcPoints' | 'totalConsumedMc' | 'suspicion' | 'vipTier' | 'vipEndVirtualMinutes' | 'vipAutoRenew'>>): Promise<void> {
-    await delay(300);
-
-    // 如果有消耗 MC 能量，則自動累加到 totalConsumedMc
-    if (patch.mcEnergy !== undefined && patch.mcEnergy < mockDatabase.mcEnergy) {
-      const consumed = mockDatabase.mcEnergy - patch.mcEnergy;
-      patch.totalConsumedMc = (patch.totalConsumedMc ?? mockDatabase.totalConsumedMc) + consumed;
-    }
-
-    mockDatabase = { ...mockDatabase, ...patch };
-  },
-
-  /**
-   * 模擬更新擁有的催眠狀態
-   */
-  async updateUserOwnedHypnosis(id: string, enabled: boolean, settings?: any): Promise<void> {
-    await delay(200);
-    mockDatabase.ownedHypnosis[id] = { enabled, settings: settings || mockDatabase.ownedHypnosis[id]?.settings };
-  },
-
-  /**
-   * 模擬更新擁有的設備狀態
-   */
-  async updateUserOwnedEquipments(id: string, enabled: boolean, settings?: any): Promise<void> {
-    await delay(200);
-    mockDatabase.ownedEquipments[id] = { enabled, settings: settings || mockDatabase.ownedEquipments[id]?.settings };
-  },
-
-  /**
-   * 模擬更新擁有的組合狀態
-   */
-  async updateUserOwnedCombos(id: string, enabled: boolean, settings?: any): Promise<void> {
-    await delay(200);
-    mockDatabase.ownedCombos[id] = { enabled, settings: settings || mockDatabase.ownedCombos[id]?.settings };
-  },
-
-  /**
-   * 模擬發送催眠指令
-   */
-  async sendHypnosis(launchData: any[]): Promise<void> {
-    await delay(500);
-    console.log('[MockApi] 模擬發送催眠指令:', launchData);
-  },
-
-  /**
-   * 模擬儲存自製催眠
-   */
-  async saveNewHypnosis(id: string, def: HypnosisDef): Promise<void> {
-    await delay(300);
-    TestCustomHypnosisInput[id] = def;
-    // 製作出的催眠不會直接歸入已購買，而是需要玩家在去商店購買才會擁有
-  },
-
-  /**
-   * 模擬儲存新的催眠組合
-   */
-  async saveNewCombo(comboId: string, comboDef: ComboDef): Promise<void> {
-    await delay(200);
-    // 更新全局組合字典
-    TestComboDataInput[comboId] = comboDef;
-    // 更新用戶擁有的組合
-    mockDatabase.ownedCombos[comboId] = { enabled: true };
-  },
-
-  /**
-   * 模擬更新已存在的催眠組合內容
-   */
-  async updateCombo(comboId: string, comboDef: ComboDef): Promise<void> {
-    await delay(200);
-    if (TestComboDataInput[comboId]) {
-      TestComboDataInput[comboId] = comboDef;
-    }
-  },
-
-  /**
-   * 模擬刪除催眠組合
-   */
-  async deleteCombo(comboId: string): Promise<void> {
-    await delay(200);
-    delete TestComboDataInput[comboId];
-    if (mockDatabase.ownedCombos[comboId]) {
-      delete mockDatabase.ownedCombos[comboId];
-    }
-  },
-
-  /**
-   * 模擬刪除自訂催眠
-   */
-  async deleteHypnosis(id: string): Promise<void> {
-    await delay(200);
-    // 1. 從 TestCustomHypnosisInput 中刪除
-    if (TestCustomHypnosisInput[id]) {
-      delete TestCustomHypnosisInput[id];
-    }
-    // 2. 從 mockDatabase.ownedHypnosis 中移除
-    if (mockDatabase.ownedHypnosis[id]) {
-      delete mockDatabase.ownedHypnosis[id];
-    }
-    // 3. 從所有包含此催眠的組合中移除
-    for (const comboId in TestComboDataInput) {
-      if (TestComboDataInput[comboId].includedHypnosis[id]) {
-        delete TestComboDataInput[comboId].includedHypnosis[id];
-
-        // 如果移除後組合變為空，則刪除整個組合
-        if (Object.keys(TestComboDataInput[comboId].includedHypnosis).length === 0) {
-          delete TestComboDataInput[comboId];
-          if (mockDatabase.ownedCombos[comboId]) {
-            delete mockDatabase.ownedCombos[comboId];
-          }
-        }
-      }
-    }
-  }
-};
-
-
-

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { RuntimeData, MockApi } from './mockData';
+import { RuntimeData } from '../mock/mockModels';
+import { MockApi } from '../mock/mockApi';
 import { User, Crown, Zap, Coins, Star, ShieldAlert, Clock, RefreshCw, Activity, ArrowRightLeft, ArrowUpCircle, X, Plus } from 'lucide-react';
 
 export const HypnosisProfileTab: React.FC<{

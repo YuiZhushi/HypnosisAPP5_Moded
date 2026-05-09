@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { MockApi, RuntimeData } from './mockData';
+import { RuntimeData } from '../mock/mockModels';
+import { MockApi } from '../mock/mockApi';
 import { HypnosisUseTab } from './HypnosisUseTab';
 import { HypnosisManageTab } from './HypnosisManageTab';
 import { HypnosisEquipmentTab } from './HypnosisEquipmentTab';

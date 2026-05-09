@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { RuntimeData, HypnosisDef, MockApi } from './mockData';
+import { RuntimeData, HypnosisDef } from '../mock/mockModels';
+import { MockApi } from '../mock/mockApi';
 import {
   List, Bookmark, ShoppingCart, Hammer, Check, X,
   AlertTriangle, Crown
