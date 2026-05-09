@@ -1,6 +1,19 @@
 import { MockUserData, MockSystemData, MockcharData, HypnosisDef, ComboDef, AchievementOrQuestDef } from './mockModels';
 
-export const mockSystemData: MockSystemData = { time: '2026-05-01 11:28:00' };
+export const mockSystemData: MockSystemData = {
+  time: '2026-05-01 11:28:00',
+  apiSettings: {
+    apiEndpoint: 'https://api.openai.com/v1/chat/completions',
+    apiKey: 'sk-mock-api-key-12345',
+    modelName: 'gpt-4o',
+    temperature: 0.7,
+    maxTokens: 8192,
+    topP: 0.95,
+    presencePenalty: 0.2,
+    frequencyPenalty: 0.3,
+    streamMode: 'non_streaming'
+  }
+};
 
 export const TestCharDataInput: Record<string, MockcharData> = {
   '西园寺爱丽莎': {

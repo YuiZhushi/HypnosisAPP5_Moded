@@ -44,13 +44,15 @@ export const useHypnosisRuntimeData = () => {
   const loadData = async (isReload = false) => {
     if (!isReload) setLoading(true);
     try {
-      const [user, system, equipment, hypnosis, combos, chars] = await Promise.all([
+      const [user, system, equipment, hypnosis, combos, chars, achievements, quests] = await Promise.all([
         MockApi.getUserInfo(),
         MockApi.getSystemData(),
         MockApi.getAllEquipment(),
         MockApi.getAllHypnosis(),
         MockApi.getAllCombos(),
-        MockApi.getCharData()
+        MockApi.getCharData(),
+        MockApi.getAllAchievements(),
+        MockApi.getAllQuests()
       ]);
 
       setData({
@@ -59,7 +61,9 @@ export const useHypnosisRuntimeData = () => {
         chars,
         hypnosis,
         equipment,
-        combos
+        combos,
+        achievements,
+        quests
       });
     } catch (err) {
       setError(err as Error);

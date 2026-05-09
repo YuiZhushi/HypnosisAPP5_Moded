@@ -6,7 +6,8 @@ import {
   EquipmentDef,
   ComboDef,
   AchievementOrQuestDef,
-  ConditionOnProgram
+  ConditionOnProgram,
+  MockApiSettings
 } from './mockModels';
 
 import {
@@ -233,6 +234,38 @@ const FULL_ACHIEVEMENT_DICTIONARY: Record<string, AchievementOrQuestDef> = {
 };
 
 export const MockApi = {
+  // ==========================================
+  // 設定 APP 相關 API
+  // ==========================================
+
+  async getApiSettings(): Promise<MockApiSettings> {
+    await delay(150);
+    return JSON.parse(JSON.stringify(mockSystemData.apiSettings || {}));
+  },
+
+  async updateApiSettings(newSettings: Partial<MockApiSettings>): Promise<void> {
+    await delay(300);
+    if (!mockSystemData.apiSettings) {
+      mockSystemData.apiSettings = {
+        apiEndpoint: '',
+        apiKey: '',
+        modelName: '',
+        temperature: 0.7,
+        maxTokens: 8192,
+        topP: 1,
+        presencePenalty: 0,
+        frequencyPenalty: 0,
+        streamMode: 'non_streaming'
+      };
+    }
+    mockSystemData.apiSettings = { ...mockSystemData.apiSettings, ...newSettings };
+  },
+
+  async fetchAvailableModels(): Promise<string[]> {
+    await delay(500);
+    return ['gpt-4o', 'gpt-4-turbo', 'gpt-3.5-turbo', 'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku', 'gemini-1.5-pro'];
+  },
+
   // ==========================================
   // 通用 & 催眠相關 API
   // ==========================================

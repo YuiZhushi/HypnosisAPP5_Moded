@@ -106,8 +106,21 @@ export interface AchievementOrQuestDef {
 // 系統與通用定義 (System & Common Models)
 // ==========================================
 
+export interface MockApiSettings {
+  apiEndpoint: string;
+  apiKey: string;
+  modelName: string;
+  temperature: number;
+  maxTokens: number;
+  topP: number;
+  presencePenalty: number;
+  frequencyPenalty: number;
+  streamMode: 'non_streaming' | 'streaming' | 'fake_streaming';
+}
+
 export interface MockSystemData {
   time: string;
+  apiSettings?: MockApiSettings;
 }
 
 // ==========================================
