@@ -207,6 +207,9 @@ export function ApiSettingsSection({ initialSettings, availableModels, onSave, o
 
   return (
     <div className="flex flex-col gap-4">
+      {/* ============================================ */}
+      {/* 基礎連線設定區塊 (API Key, Endpoint, Model) */}
+      {/* ============================================ */}
       <div className="flex flex-col gap-1">
         <label className="text-xs text-white/60">API 金鑰</label>
         <div className="flex gap-2">
@@ -294,6 +297,9 @@ export function ApiSettingsSection({ initialSettings, availableModels, onSave, o
 
       <div className="h-px bg-white/10" />
 
+      {/* ============================================ */}
+      {/* 進階 LLM 參數調整區塊 */}
+      {/* ============================================ */}
       <div className="flex flex-col gap-4">
         <SliderRow
           label={`溫度 (Temperature)`}
@@ -342,6 +348,9 @@ export function ApiSettingsSection({ initialSettings, availableModels, onSave, o
         />
       </div>
 
+      {/* ============================================ */}
+      {/* 儲存按鈕 */}
+      {/* ============================================ */}
       <button
         onClick={handleSave}
         disabled={saveStatus === 'saving'}

@@ -7,7 +7,8 @@ import {
   ComboDef,
   AchievementOrQuestDef,
   ConditionOnProgram,
-  MockApiSettings
+  MockApiSettings,
+  CalendarEvent
 } from './mockModels';
 
 import {
@@ -17,14 +18,16 @@ import {
   TestCharDataInput,
   TestCustomHypnosisInput,
   TestComboDataInput,
-  TestQuestDataInput
+  TestQuestDataInput,
+  TestCustomCalendarEvents
 } from './mockDatabase';
 
 import {
   HYPNOSIS_DICTIONARY,
   EQUIPMENT_DICTIONARY,
   ACHIEVEMENT_DICTIONARY,
-  QUEST_DICTIONARY
+  QUEST_DICTIONARY,
+  CALENDAR_STATIC_EVENTS
 } from './mockStaticData';
 
 // 模擬網路延遲
@@ -565,6 +568,34 @@ export const MockApi = {
     }
     if (mockDatabase.ownedQuests[id]) {
       delete mockDatabase.ownedQuests[id];
+    }
+  },
+
+  // ==========================================
+  // 日曆 APP 相關 API
+  // ==========================================
+
+  async getCalendarEvents(): Promise<Record<string, CalendarEvent>> {
+    await delay(150);
+    return { ...CALENDAR_STATIC_EVENTS, ...TestCustomCalendarEvents };
+  },
+
+  async createCalendarEvent(id: string, event: CalendarEvent): Promise<void> {
+    await delay(300);
+    TestCustomCalendarEvents[id] = event;
+  },
+
+  async updateCalendarEvent(id: string, event: CalendarEvent): Promise<void> {
+    await delay(200);
+    if (TestCustomCalendarEvents[id]) {
+      TestCustomCalendarEvents[id] = event;
+    }
+  },
+
+  async deleteCalendarEvent(id: string): Promise<void> {
+    await delay(200);
+    if (TestCustomCalendarEvents[id]) {
+      delete TestCustomCalendarEvents[id];
     }
   }
 };

@@ -1,4 +1,4 @@
-import { MockUserData, MockSystemData, MockcharData, HypnosisDef, ComboDef, AchievementOrQuestDef } from './mockModels';
+import { MockUserData, MockSystemData, MockcharData, HypnosisDef, ComboDef, AchievementOrQuestDef, CalendarEvent } from './mockModels';
 
 export const mockSystemData: MockSystemData = {
   time: '2026-05-01 11:28:00',
@@ -253,6 +253,25 @@ export const TestQuestDataInput: Record<string, AchievementOrQuestDef> = {
     },
     reward: { mcEnergyMax: 50 },
   },
+};
+
+export const TestCustomCalendarEvents: Record<string, CalendarEvent> = {
+  'evt_custom_1': {
+    title: '約會',
+    startDate: '2026-05-15',
+    endDate: '2026-05-15',
+    type: 'custom',
+    color: 'blue',
+    description: '與愛麗莎的約會',
+  },
+  'evt_custom_2': {
+    title: '催眠實驗',
+    startDate: '2026-05-20',
+    endDate: '2026-05-22',
+    type: 'custom',
+    color: 'purple',
+    description: '測試新的催眠組合',
+  }
 };
 
 export const defaultMockUserData: MockUserData = {

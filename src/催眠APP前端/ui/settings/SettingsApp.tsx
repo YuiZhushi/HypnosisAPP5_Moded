@@ -102,6 +102,9 @@ export function SettingsApp({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="flex h-full w-full flex-col bg-[#0d0a1a] text-white font-sans overflow-hidden">
+      {/* ============================================ */}
+      {/* App Title Bar (標題欄) */}
+      {/* ============================================ */}
       <div className="relative flex items-center justify-between px-3 md:px-4 py-1.5 md:py-2 bg-[#0d0a1a] shrink-0 w-full border-b border-white/5">
         <button
           onClick={onBack}
@@ -120,7 +123,11 @@ export function SettingsApp({ onBack }: { onBack: () => void }) {
         <div className="w-14"></div>
       </div>
 
+      {/* ============================================ */}
+      {/* Main Content Area */}
+      {/* ============================================ */}
       <div className="flex-1 flex overflow-hidden">
+        {/* 左側導航欄 */}
         <nav className="flex-none w-16 md:w-20 border-r border-white/5 overflow-y-auto no-scrollbar py-2 bg-[#0c0a1e]">
           {allSections.map(section => {
             const Icon = section.icon;
@@ -140,6 +147,7 @@ export function SettingsApp({ onBack }: { onBack: () => void }) {
           })}
         </nav>
 
+        {/* 右側設定內容區 */}
         <div className="flex-1 overflow-y-auto hypno-scrollbar px-3 py-4 md:px-4">
           {activeSection ? (
             <>

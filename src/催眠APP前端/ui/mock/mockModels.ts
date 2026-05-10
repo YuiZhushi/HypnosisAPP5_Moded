@@ -103,6 +103,25 @@ export interface AchievementOrQuestDef {
 }
 
 // ==========================================
+// 日曆 APP 相關定義 (Calendar App Models)
+// ==========================================
+
+export type EventColor = 'red' | 'blue' | 'purple' | 'gray' | 'green' | 'yellow' | 'orange' | 'pink' | 'teal' | 'indigo';
+
+export interface CalendarEvent {
+  title: string;
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
+  type: 'system' | 'custom';
+  color: EventColor;
+  description?: string;
+}
+
+export interface MockCalendarData {
+  events: Record<string, CalendarEvent>; // 以 id 為 key
+}
+
+// ==========================================
 // 系統與通用定義 (System & Common Models)
 // ==========================================
 

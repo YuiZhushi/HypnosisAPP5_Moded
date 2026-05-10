@@ -3,7 +3,7 @@ import { StatusBar } from './ui/shared/StatusBar';
 import { HypnosisApp, HypnoLogoSVG } from './ui/hypnosis/HypnosisApp';
 import { AchievementApp } from './ui/achievement/AchievementApp';
 import { BodyStatsApp } from './ui/body-stats/BodyStatsApp';
-import { CalendarApp } from './ui/calendar/CalendarApp';
+import CalendarApp from './ui/calendar/CalendarApp';
 import { HelpApp } from './ui/help/HelpApp';
 import { WipApp } from './ui/shared/PageLayout';
 import { SettingsApp } from './ui/settings/SettingsApp';
