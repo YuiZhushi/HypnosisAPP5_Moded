@@ -7,7 +7,7 @@ import CalendarApp from './ui/calendar/CalendarApp';
 import { HelpApp } from './ui/help/HelpApp';
 import { WipApp } from './ui/shared/PageLayout';
 import { SettingsApp } from './ui/settings/SettingsApp';
-import { CharacterEditorApp } from './ui/character-editor/CharacterEditorApp';
+import { CharacterBackgroundApp } from './ui/character-background/CharacterBackgroundApp';
 import { waitForMvuReady } from './shared/mvu/mvuBridge';
 import { UserResources } from './constants/interfaces';
 import { AppMode } from './constants/types';
@@ -211,7 +211,7 @@ const App = () => {
       case AppMode.SETTINGS:
         return <SettingsApp onBack={() => setCurrentApp(AppMode.HOME)} />;
       case AppMode.CHARACTER_EDITOR:
-        return <CharacterEditorApp onBack={() => setCurrentApp(AppMode.HOME)} />;
+        return <CharacterBackgroundApp onBack={() => setCurrentApp(AppMode.HOME)} />;
       case AppMode.WIP:
         return <WipApp name="Unknown App" onBack={() => setCurrentApp(AppMode.HOME)} />;
       case AppMode.HOME:
