@@ -28,7 +28,10 @@ export const RewardDisplay = ({ reward }: { reward: Record<string, number> }) =>
   return (
     <div className="flex flex-wrap gap-1.5 justify-end">
       {Object.entries(reward).map(([type, amount]) => (
-        <div key={type} className="flex items-center gap-1 text-[10px] md:text-[11px] font-medium bg-[#0c0a1e] border border-purple-900/30 px-1.5 py-0.5 rounded-md shrink-0">
+        <div
+          key={type}
+          className="flex items-center gap-1 text-[10px] md:text-[11px] font-medium bg-[#0c0a1e] border border-purple-900/30 px-1.5 py-0.5 rounded-md shrink-0"
+        >
           <RewardIcon type={type as 'money' | 'pts' | 'mcEnergyMax' | 'mcEnergy' | 'suspicion'} />
           <span className="text-white">{amount}</span>
         </div>
@@ -55,16 +58,21 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({ achievements, us
           <div
             key={id}
             className={cn(
-              "p-2.5 md:p-3 rounded-xl border transition-all",
+              'p-2.5 md:p-3 rounded-xl border transition-all',
               isClaimed
-                ? "bg-[#13102a]/40 border-purple-900/20 opacity-50 grayscale-30"
+                ? 'bg-[#13102a]/40 border-purple-900/20 opacity-50 grayscale-30'
                 : isUnlocked
-                ? "bg-[#13102a] border-yellow-500/50 shadow-[0_0_8px_rgba(234,179,8,0.15)]"
-                : "bg-[#0c0a1e] border-purple-900/30"
+                  ? 'bg-[#13102a] border-yellow-500/50 shadow-[0_0_8px_rgba(234,179,8,0.15)]'
+                  : 'bg-[#0c0a1e] border-purple-900/30',
             )}
           >
             <div className="flex justify-between items-start mb-1.5">
-              <h3 className={cn("font-bold text-[13px] md:text-sm", isUnlocked && !isClaimed ? "text-yellow-400" : "text-gray-200")}>
+              <h3
+                className={cn(
+                  'font-bold text-[13px] md:text-sm',
+                  isUnlocked && !isClaimed ? 'text-yellow-400' : 'text-gray-200',
+                )}
+              >
                 {ach.name}
               </h3>
               <RewardDisplay reward={ach.reward} />

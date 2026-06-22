@@ -12,10 +12,7 @@ import type { AiPatchResult } from '../../constants/interfaces';
  * 解析 AI 回應，提取 YAML/EJS patch 內容。
  * 容忍拼寫錯誤（如 esj_patch），並自動清理 markdown 偽影。
  */
-export function parseAiResponse(
-  rawText: string,
-  expectedType: 'yaml' | 'ejs' | 'mixed',
-): AiPatchResult {
+export function parseAiResponse(rawText: string, expectedType: 'yaml' | 'ejs' | 'mixed'): AiPatchResult {
   const result: AiPatchResult = {
     yamlRaw: '',
     ejsRaw: '',

@@ -46,7 +46,10 @@ function SelectDropdown<T extends string>({
             <button
               key={o.value}
               type="button"
-              onClick={() => { onChange(o.value); setOpen(false); }}
+              onClick={() => {
+                onChange(o.value);
+                setOpen(false);
+              }}
               className={`w-full text-left px-3 py-2 text-sm transition-colors hover:bg-purple-600/30 ${
                 o.value === value ? 'text-purple-300 bg-purple-600/15' : 'text-white/80'
               }`}
@@ -98,7 +101,10 @@ function ModelDropdown({
         <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-[#1e1b2e] border border-white/10 rounded-lg shadow-xl max-h-48 overflow-y-auto dark-scrollbar">
           <button
             type="button"
-            onClick={() => { onChange(''); setOpen(false); }}
+            onClick={() => {
+              onChange('');
+              setOpen(false);
+            }}
             className={`w-full text-left px-3 py-2 text-sm transition-colors hover:bg-purple-600/30 ${
               !value ? 'text-purple-300 bg-purple-600/15' : 'text-white/60'
             }`}
@@ -109,7 +115,10 @@ function ModelDropdown({
             <button
               key={m}
               type="button"
-              onClick={() => { onChange(m); setOpen(false); }}
+              onClick={() => {
+                onChange(m);
+                setOpen(false);
+              }}
               className={`w-full text-left px-3 py-2 text-sm transition-colors hover:bg-purple-600/30 ${
                 m === value ? 'text-purple-300 bg-purple-600/15' : 'text-white/80'
               }`}
@@ -164,7 +173,12 @@ export type ApiSettingsSectionProps = {
   onFetchModels: () => Promise<void>;
 };
 
-export function ApiSettingsSection({ initialSettings, availableModels, onSave, onFetchModels }: ApiSettingsSectionProps) {
+export function ApiSettingsSection({
+  initialSettings,
+  availableModels,
+  onSave,
+  onFetchModels,
+}: ApiSettingsSectionProps) {
   const [form, setForm] = useState<MockApiSettings>(initialSettings);
   const [showKey, setShowKey] = useState(false);
   const [fetchStatus, setFetchStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
@@ -175,12 +189,9 @@ export function ApiSettingsSection({ initialSettings, availableModels, onSave, o
     setForm(initialSettings);
   }, [initialSettings]);
 
-  const patch = useCallback(
-    <K extends keyof MockApiSettings>(key: K, value: MockApiSettings[K]) => {
-      setForm(prev => ({ ...prev, [key]: value }));
-    },
-    []
-  );
+  const patch = useCallback(<K extends keyof MockApiSettings>(key: K, value: MockApiSettings[K]) => {
+    setForm(prev => ({ ...prev, [key]: value }));
+  }, []);
 
   const handleFetchModels = async () => {
     if (!form.apiEndpoint) return;
@@ -275,9 +286,7 @@ export function ApiSettingsSection({ initialSettings, availableModels, onSave, o
             )}
           </button>
         </div>
-        {fetchStatus === 'error' && (
-          <p className="text-xs text-red-400">無法獲取模型列表，請檢查端點和金鑰</p>
-        )}
+        {fetchStatus === 'error' && <p className="text-xs text-red-400">無法獲取模型列表，請檢查端點和金鑰</p>}
       </div>
 
       <div className="flex flex-col gap-1">
@@ -358,17 +367,17 @@ export function ApiSettingsSection({ initialSettings, availableModels, onSave, o
           saveStatus === 'saved'
             ? 'bg-green-600/80 text-white'
             : saveStatus === 'error'
-            ? 'bg-red-600/80 text-white'
-            : 'bg-purple-600 hover:bg-purple-500 text-white'
+              ? 'bg-red-600/80 text-white'
+              : 'bg-purple-600 hover:bg-purple-500 text-white'
         }`}
       >
         {saveStatus === 'saving'
           ? '保存中...'
           : saveStatus === 'saved'
-          ? '✓ 已保存'
-          : saveStatus === 'error'
-          ? '保存失敗'
-          : '保存設置'}
+            ? '✓ 已保存'
+            : saveStatus === 'error'
+              ? '保存失敗'
+              : '保存設置'}
       </button>
     </div>
   );

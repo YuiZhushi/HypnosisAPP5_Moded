@@ -39,7 +39,10 @@ function findOldNodeFuzzy(
     for (const seg of segments) {
       if (!seg) continue;
       const idx = newKey.indexOf(seg, pos);
-      if (idx < 0) { allFound = false; break; }
+      if (idx < 0) {
+        allFound = false;
+        break;
+      }
       pos = idx + seg.length;
     }
     if (allFound && segments.some(s => s.length > 0)) {
@@ -100,29 +103,53 @@ export function buildDiffProposals(
 
       if (!oldNode) {
         proposals.push({
-          id: nextDiffId(), sectionId, branchId, path,
-          changeType: 'add', oldValue: undefined, newValue: extractValue(newNode),
-          defaultDecision: 'reject', reason: '新增了屬性',
+          id: nextDiffId(),
+          sectionId,
+          branchId,
+          path,
+          changeType: 'add',
+          oldValue: undefined,
+          newValue: extractValue(newNode),
+          defaultDecision: 'reject',
+          reason: '新增了屬性',
         });
       } else if (oldNode.type !== newNode.type) {
         proposals.push({
-          id: nextDiffId(), sectionId, branchId, path,
-          changeType: 'type_conflict', oldValue: extractValue(oldNode), newValue: extractValue(newNode),
-          defaultDecision: 'reject', reason: '型別衝突（例如從文字變成陣列）',
+          id: nextDiffId(),
+          sectionId,
+          branchId,
+          path,
+          changeType: 'type_conflict',
+          oldValue: extractValue(oldNode),
+          newValue: extractValue(newNode),
+          defaultDecision: 'reject',
+          reason: '型別衝突（例如從文字變成陣列）',
         });
       } else if (newNode.type === 'string') {
         if (oldNode.value !== newNode.value) {
           if (!newNode.value && oldNode.value) {
             proposals.push({
-              id: nextDiffId(), sectionId, branchId, path,
-              changeType: 'empty_rejected', oldValue: oldNode.value, newValue: newNode.value,
-              defaultDecision: 'reject', reason: 'AI 企圖清空原數值',
+              id: nextDiffId(),
+              sectionId,
+              branchId,
+              path,
+              changeType: 'empty_rejected',
+              oldValue: oldNode.value,
+              newValue: newNode.value,
+              defaultDecision: 'reject',
+              reason: 'AI 企圖清空原數值',
             });
           } else {
             proposals.push({
-              id: nextDiffId(), sectionId, branchId, path,
-              changeType: 'update', oldValue: oldNode.value, newValue: newNode.value,
-              defaultDecision: 'reject', reason: 'AI 修改了內容',
+              id: nextDiffId(),
+              sectionId,
+              branchId,
+              path,
+              changeType: 'update',
+              oldValue: oldNode.value,
+              newValue: newNode.value,
+              defaultDecision: 'reject',
+              reason: 'AI 修改了內容',
             });
           }
         }
@@ -139,10 +166,15 @@ export function buildDiffProposals(
         const valStr = JSON.stringify(extractValue(newUnnamed[i]));
         if (!oldValues.has(valStr)) {
           proposals.push({
-            id: nextDiffId(), sectionId, branchId,
+            id: nextDiffId(),
+            sectionId,
+            branchId,
             path: [...currentPath, `[新增項目 #${i + 1}]`],
-            changeType: 'add', oldValue: undefined, newValue: extractValue(newUnnamed[i]),
-            defaultDecision: 'reject', reason: '新增了陣列項目',
+            changeType: 'add',
+            oldValue: undefined,
+            newValue: extractValue(newUnnamed[i]),
+            defaultDecision: 'reject',
+            reason: '新增了陣列項目',
           });
         }
       }

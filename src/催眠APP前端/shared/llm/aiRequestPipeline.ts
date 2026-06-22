@@ -14,11 +14,7 @@ import { logger } from '../../../催眠APP共用/debug/loggerService';
 
 // ====== 類型（從 constants/interfaces.ts 統一導入） ======
 
-import type {
-  PromptModule,
-  PlaceholderValue,
-  ComposePromptParams,
-} from '../../constants/interfaces';
+import type { PromptModule, PlaceholderValue, ComposePromptParams } from '../../constants/interfaces';
 
 export type SendResult = {
   ok: boolean;
@@ -35,18 +31,20 @@ export type RequestResult = {
 
 // ====== API Settings 讀取（透過回調注入，避免直接依賴 DataService） ======
 
-export type ApiSettingsProvider = () => {
-  apiKey?: string;
-  apiEndpoint?: string;
-  modelName?: string;
-  temperature?: number;
-  maxTokens?: number;
-  topP?: number;
-  topK?: number;
-  presencePenalty?: number;
-  frequencyPenalty?: number;
-  streamMode?: string;
-} | undefined;
+export type ApiSettingsProvider = () =>
+  | {
+      apiKey?: string;
+      apiEndpoint?: string;
+      modelName?: string;
+      temperature?: number;
+      maxTokens?: number;
+      topP?: number;
+      topK?: number;
+      presencePenalty?: number;
+      frequencyPenalty?: number;
+      streamMode?: string;
+    }
+  | undefined;
 
 let _apiSettingsProvider: ApiSettingsProvider | null = null;
 
@@ -83,7 +81,8 @@ function getRequiredApiSettings() {
   if (!endpoint) throw new Error('AI API 設定缺少端點（apiEndpoint）');
   if (!model) throw new Error('AI API 設定缺少模型名稱（modelName）');
   return {
-    endpoint, model,
+    endpoint,
+    model,
     apiKey: api?.apiKey ?? '',
     streamMode: api?.streamMode ?? 'non_streaming',
     temperature: api?.temperature,
@@ -103,16 +102,20 @@ function getRequiredApiSettings() {
 export function composePrompt(params: ComposePromptParams): string {
   const { modules, moduleOrder = [], placeholders = {}, escapeEjs = false } = params;
 
-  logger.debug('composePrompt start', { moduleCount: modules.length, placeholderCount: Object.keys(placeholders).length });
+  logger.debug('composePrompt start', {
+    moduleCount: modules.length,
+    placeholderCount: Object.keys(placeholders).length,
+  });
 
   const moduleMap = new Map(modules.map(m => [m.id, m]));
-  const orderedModules = moduleOrder.length > 0
-    ? moduleOrder.map(id => {
-        const found = moduleMap.get(id);
-        if (!found) throw new Error(`提示詞模組缺失：moduleOrder 指定了不存在的 id「${id}」`);
-        return found;
-      })
-    : modules;
+  const orderedModules =
+    moduleOrder.length > 0
+      ? moduleOrder.map(id => {
+          const found = moduleMap.get(id);
+          if (!found) throw new Error(`提示詞模組缺失：moduleOrder 指定了不存在的 id「${id}」`);
+          return found;
+        })
+      : modules;
 
   let merged = orderedModules.map(m => normalizeText(m.content)).join('');
 

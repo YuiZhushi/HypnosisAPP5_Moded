@@ -2,26 +2,49 @@ import React, { useState, useMemo } from 'react';
 import { RuntimeData, EquipmentDef } from '../mock/mockModels';
 import { MockApi } from '../mock/mockApi';
 import {
-  Wrench, ShoppingCart, X, AlertTriangle, Eye, Zap, Coins, Star, Monitor, Activity, FileText, Image as ImageIcon, AlignCenter, Volume2, Music, Smartphone, Coffee, Box, Wind, Cloud, Maximize, Radio, Wifi, Cpu
+  Wrench,
+  ShoppingCart,
+  X,
+  AlertTriangle,
+  Eye,
+  Zap,
+  Coins,
+  Star,
+  Monitor,
+  Activity,
+  FileText,
+  Image as ImageIcon,
+  AlignCenter,
+  Volume2,
+  Music,
+  Smartphone,
+  Coffee,
+  Box,
+  Wind,
+  Cloud,
+  Maximize,
+  Radio,
+  Wifi,
+  Cpu,
 } from 'lucide-react';
 
 const IconMap: Record<string, React.FC<any>> = {
-  'monitor': Monitor,
-  'activity': Activity,
+  monitor: Monitor,
+  activity: Activity,
   'file-text': FileText,
-  'image': ImageIcon,
+  image: ImageIcon,
   'align-center': AlignCenter,
   'volume-2': Volume2,
-  'music': Music,
-  'smartphone': Smartphone,
-  'coffee': Coffee,
-  'box': Box,
-  'wind': Wind,
-  'cloud': Cloud,
-  'maximize': Maximize,
-  'radio': Radio,
-  'wifi': Wifi,
-  'cpu': Cpu
+  music: Music,
+  smartphone: Smartphone,
+  coffee: Coffee,
+  box: Box,
+  wind: Wind,
+  cloud: Cloud,
+  maximize: Maximize,
+  radio: Radio,
+  wifi: Wifi,
+  cpu: Cpu,
 };
 
 type EquipmentSubTab = 'installed' | 'shop';
@@ -60,12 +83,8 @@ export const HypnosisEquipmentTab: React.FC<{
       {/* 內容區塊 */}
       {/* ============================================ */}
       <div className="flex-1 overflow-y-auto px-3 md:px-4 pb-20 md:pb-24 flex flex-col gap-3 md:gap-4 no-scrollbar">
-        {activeSubTab === 'installed' && (
-          <InstalledEquipmentSection data={data} reload={reload} />
-        )}
-        {activeSubTab === 'shop' && (
-          <EquipmentShopSection data={data} reload={reload} />
-        )}
+        {activeSubTab === 'installed' && <InstalledEquipmentSection data={data} reload={reload} />}
+        {activeSubTab === 'shop' && <EquipmentShopSection data={data} reload={reload} />}
       </div>
     </div>
   );
@@ -123,9 +142,7 @@ const InstalledEquipmentSection: React.FC<{
   return (
     <div className="flex flex-col gap-3">
       {installedEquipments.length === 0 ? (
-        <div className="text-center py-8 text-gray-500 text-sm">
-          尚未安裝任何設備
-        </div>
+        <div className="text-center py-8 text-gray-500 text-sm">尚未安裝任何設備</div>
       ) : (
         <div className="flex flex-col gap-1.5 md:gap-2">
           {installedEquipments.map(({ id, def, enabled }) => {
@@ -137,11 +154,15 @@ const InstalledEquipmentSection: React.FC<{
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 md:gap-2.5">
-                    <div className={`w-7 md:w-8 h-7 md:h-8 rounded-lg flex items-center justify-center border ${enabled ? 'bg-purple-900/30 border-purple-500/50 text-purple-400' : 'bg-[#0c0a1e] border-gray-700 text-gray-500'}`}>
+                    <div
+                      className={`w-7 md:w-8 h-7 md:h-8 rounded-lg flex items-center justify-center border ${enabled ? 'bg-purple-900/30 border-purple-500/50 text-purple-400' : 'bg-[#0c0a1e] border-gray-700 text-gray-500'}`}
+                    >
                       <IconComp className="w-3.5 h-3.5 md:w-4 md:h-4" />
                     </div>
                     <div>
-                      <div className="font-semibold text-[13px] md:text-sm text-white leading-none mb-1">{def.name}</div>
+                      <div className="font-semibold text-[13px] md:text-sm text-white leading-none mb-1">
+                        {def.name}
+                      </div>
                       <div className="flex gap-1.5 items-center">
                         <span className="text-[9px] md:text-[10px] text-gray-400 bg-[#0c0a1e] px-1 md:px-1.5 py-0.5 rounded border border-gray-800">
                           {def.type === 'technology' ? '技術' : '硬體'}
@@ -159,9 +180,11 @@ const InstalledEquipmentSection: React.FC<{
                       enabled ? 'bg-purple-500' : 'bg-gray-700'
                     } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    <div className={`absolute top-[2px] w-4 h-4 md:w-5 md:h-5 rounded-full bg-white shadow transition-transform ${
-                      enabled ? 'translate-x-[22px]' : 'translate-x-0.5'
-                    }`} />
+                    <div
+                      className={`absolute top-[2px] w-4 h-4 md:w-5 md:h-5 rounded-full bg-white shadow transition-transform ${
+                        enabled ? 'translate-x-[22px]' : 'translate-x-0.5'
+                      }`}
+                    />
                   </button>
                 </div>
                 <div className="text-[10px] md:text-[11px] text-gray-400 bg-[#0c0a1e] p-1.5 md:p-2 rounded-lg border border-purple-900/10 leading-relaxed">
@@ -203,9 +226,7 @@ const EquipmentShopSection: React.FC<{
   return (
     <div className="flex flex-col gap-3">
       {availableEquipments.length === 0 ? (
-        <div className="text-center py-8 text-gray-500 text-sm">
-          沒有可購買的設備
-        </div>
+        <div className="text-center py-8 text-gray-500 text-sm">沒有可購買的設備</div>
       ) : (
         <div className="flex flex-col gap-1.5 md:gap-2">
           {availableEquipments.map(({ id, def }) => {
@@ -222,17 +243,23 @@ const EquipmentShopSection: React.FC<{
                 key={id}
                 onClick={() => !isLocked && setSelectedEquipment({ id, def })}
                 className={`bg-[#13102a] rounded-xl border px-3 md:px-3.5 py-2.5 md:py-3 flex items-center justify-between transition-colors ${
-                  isLocked ? 'border-gray-800 opacity-50 cursor-not-allowed' : 'border-purple-900/25 cursor-pointer hover:border-purple-500/40'
+                  isLocked
+                    ? 'border-gray-800 opacity-50 cursor-not-allowed'
+                    : 'border-purple-900/25 cursor-pointer hover:border-purple-500/40'
                 }`}
               >
                 <div className="flex items-center gap-2 md:gap-3 min-w-0 pr-2">
-                  <div className={`w-8 md:w-9 h-8 md:h-9 rounded-lg flex items-center justify-center shrink-0 border ${isLocked ? 'bg-[#0c0a1e] border-gray-800 text-gray-600' : 'bg-purple-900/20 border-purple-500/30 text-purple-400'}`}>
+                  <div
+                    className={`w-8 md:w-9 h-8 md:h-9 rounded-lg flex items-center justify-center shrink-0 border ${isLocked ? 'bg-[#0c0a1e] border-gray-800 text-gray-600' : 'bg-purple-900/20 border-purple-500/30 text-purple-400'}`}
+                  >
                     <IconComp className="w-[14px] h-[14px] md:w-[18px] md:h-[18px]" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-[13px] md:text-sm text-white mb-0.5">{def.name}</div>
                     <div className="flex gap-1 md:gap-1.5 items-center">
-                      <span className={`text-[8px] md:text-[9px] px-1 md:px-1.5 py-0.5 rounded border ${isLocked ? 'bg-red-900/20 border-red-800 text-red-500' : 'bg-[#0c0a1e] border-gray-800 text-gray-400'}`}>
+                      <span
+                        className={`text-[8px] md:text-[9px] px-1 md:px-1.5 py-0.5 rounded border ${isLocked ? 'bg-red-900/20 border-red-800 text-red-500' : 'bg-[#0c0a1e] border-gray-800 text-gray-400'}`}
+                      >
                         VIP {def.tier}
                       </span>
                       {isLocked && <span className="text-[8px] md:text-[9px] text-red-500 font-medium">權限不足</span>}
@@ -242,23 +269,35 @@ const EquipmentShopSection: React.FC<{
 
                 <div className="flex flex-col items-end gap-1 shrink-0">
                   {def.cost.pts !== undefined && (
-                    <span className={`text-[9px] md:text-[10px] font-medium px-1.5 md:px-2 py-0.5 rounded-md border ${
-                      canAffordPts ? 'bg-purple-900/30 text-purple-400 border-purple-500/30' : 'bg-red-900/30 text-red-400 border-red-500/30'
-                    }`}>
+                    <span
+                      className={`text-[9px] md:text-[10px] font-medium px-1.5 md:px-2 py-0.5 rounded-md border ${
+                        canAffordPts
+                          ? 'bg-purple-900/30 text-purple-400 border-purple-500/30'
+                          : 'bg-red-900/30 text-red-400 border-red-500/30'
+                      }`}
+                    >
                       {def.cost.pts} PTS
                     </span>
                   )}
                   {def.cost.money !== undefined && (
-                    <span className={`text-[9px] md:text-[10px] font-medium px-1.5 md:px-2 py-0.5 rounded-md border ${
-                      canAffordMoney ? 'bg-yellow-900/30 text-yellow-400 border-yellow-500/30' : 'bg-red-900/30 text-red-400 border-red-500/30'
-                    }`}>
+                    <span
+                      className={`text-[9px] md:text-[10px] font-medium px-1.5 md:px-2 py-0.5 rounded-md border ${
+                        canAffordMoney
+                          ? 'bg-yellow-900/30 text-yellow-400 border-yellow-500/30'
+                          : 'bg-red-900/30 text-red-400 border-red-500/30'
+                      }`}
+                    >
                       ¥{def.cost.money.toLocaleString()}
                     </span>
                   )}
                   {def.cost.mc !== undefined && (
-                    <span className={`text-[9px] md:text-[10px] font-medium px-1.5 md:px-2 py-0.5 rounded-md border ${
-                      canAffordMc ? 'bg-cyan-900/30 text-cyan-400 border-cyan-500/30' : 'bg-red-900/30 text-red-400 border-red-500/30'
-                    }`}>
+                    <span
+                      className={`text-[9px] md:text-[10px] font-medium px-1.5 md:px-2 py-0.5 rounded-md border ${
+                        canAffordMc
+                          ? 'bg-cyan-900/30 text-cyan-400 border-cyan-500/30'
+                          : 'bg-red-900/30 text-red-400 border-red-500/30'
+                      }`}
+                    >
                       {def.cost.mc} MC
                     </span>
                   )}
@@ -373,23 +412,35 @@ const EquipmentShopDetailModal: React.FC<{
             <div className="text-[9px] md:text-[10px] text-gray-500 mb-1.5 md:mb-2">購買花費</div>
             <div className="flex flex-wrap gap-1.5 md:gap-2">
               {def.cost.pts !== undefined && (
-                <div className={`text-[11px] md:text-xs font-semibold px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg border ${
-                  canAffordPts ? 'bg-purple-900/30 text-purple-400 border-purple-500/30' : 'bg-red-900/30 text-red-400 border-red-500/30'
-                }`}>
+                <div
+                  className={`text-[11px] md:text-xs font-semibold px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg border ${
+                    canAffordPts
+                      ? 'bg-purple-900/30 text-purple-400 border-purple-500/30'
+                      : 'bg-red-900/30 text-red-400 border-red-500/30'
+                  }`}
+                >
                   {def.cost.pts} PTS
                 </div>
               )}
               {def.cost.money !== undefined && (
-                <div className={`text-[11px] md:text-xs font-semibold px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg border ${
-                  canAffordMoney ? 'bg-yellow-900/30 text-yellow-400 border-yellow-500/30' : 'bg-red-900/30 text-red-400 border-red-500/30'
-                }`}>
+                <div
+                  className={`text-[11px] md:text-xs font-semibold px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg border ${
+                    canAffordMoney
+                      ? 'bg-yellow-900/30 text-yellow-400 border-yellow-500/30'
+                      : 'bg-red-900/30 text-red-400 border-red-500/30'
+                  }`}
+                >
                   ¥{def.cost.money.toLocaleString()}
                 </div>
               )}
               {def.cost.mc !== undefined && (
-                <div className={`text-[11px] md:text-xs font-semibold px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg border ${
-                  canAffordMc ? 'bg-cyan-900/30 text-cyan-400 border-cyan-500/30' : 'bg-red-900/30 text-red-400 border-red-500/30'
-                }`}>
+                <div
+                  className={`text-[11px] md:text-xs font-semibold px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg border ${
+                    canAffordMc
+                      ? 'bg-cyan-900/30 text-cyan-400 border-cyan-500/30'
+                      : 'bg-red-900/30 text-red-400 border-red-500/30'
+                  }`}
+                >
                   {def.cost.mc} MC
                 </div>
               )}

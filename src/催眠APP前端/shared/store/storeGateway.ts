@@ -27,7 +27,10 @@ const SYSTEM_SCHEMA = createSystemSchema(DEFAULT_USER_DATA);
 
 /** 正規化系統變數別名（處理舊版欄位名稱） */
 function normalizeSystemAliases(systemRaw: Record<string, any>): Record<string, any> {
-  const toFinite = (v: unknown) => { const n = typeof v === 'number' ? v : Number(v); return Number.isFinite(n) ? n : null; };
+  const toFinite = (v: unknown) => {
+    const n = typeof v === 'number' ? v : Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
 
   if (toFinite(systemRaw._MC能量) === null) {
     const v = toFinite(systemRaw.MC能量);

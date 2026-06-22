@@ -23,7 +23,7 @@ export const AchievementApp: React.FC<{ onBack?: () => void }> = ({ onBack }) =>
         MockApi.getAllAchievements(),
         MockApi.getAllQuests(),
         MockApi.getCharData(),
-        MockApi.getTotalAchievementsCount()
+        MockApi.getTotalAchievementsCount(),
       ]);
       setUserData(user);
       setAchievements(achs);
@@ -50,7 +50,7 @@ export const AchievementApp: React.FC<{ onBack?: () => void }> = ({ onBack }) =>
 
       if (activeTab === 'achievements') {
         // 檢查所有未解鎖的成就
-        const checks = Object.keys(achievements).map(async (id) => {
+        const checks = Object.keys(achievements).map(async id => {
           if (!userData.ownedAchievements[id]) {
             const isMet = await MockApi.checkCondition(id, 'achievement');
             if (isMet) {
@@ -170,9 +170,17 @@ export const AchievementApp: React.FC<{ onBack?: () => void }> = ({ onBack }) =>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-24 h-1.5 bg-[#1a1530] rounded-full overflow-hidden hidden sm:block">
-                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.round((userData.mcEnergy / userData.mcEnergyMax) * 100)}%`, background: 'linear-gradient(90deg, #a855f7, #c084fc)' }} />
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${Math.round((userData.mcEnergy / userData.mcEnergyMax) * 100)}%`,
+                      background: 'linear-gradient(90deg, #a855f7, #c084fc)',
+                    }}
+                  />
                 </div>
-                <span className="text-[11px] md:text-sm font-mono text-white font-semibold">{userData.mcEnergy}/{userData.mcEnergyMax}</span>
+                <span className="text-[11px] md:text-sm font-mono text-white font-semibold">
+                  {userData.mcEnergy}/{userData.mcEnergyMax}
+                </span>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -181,14 +189,18 @@ export const AchievementApp: React.FC<{ onBack?: () => void }> = ({ onBack }) =>
                   <Coins className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
                   <span className="text-[10px] md:text-xs text-gray-400">金幣</span>
                 </div>
-                <span className="text-[11px] md:text-sm font-mono text-white font-semibold">{formatMoney(userData.money || 0)}</span>
+                <span className="text-[11px] md:text-sm font-mono text-white font-semibold">
+                  {formatMoney(userData.money || 0)}
+                </span>
               </div>
               <div className="flex items-center justify-between bg-[#0c0a1e] rounded-lg border border-purple-900/30 px-2 py-1.5">
                 <div className="flex items-center gap-1">
                   <Star className="w-3.5 h-3.5 text-purple-400 shrink-0" />
                   <span className="text-[10px] md:text-xs text-gray-400">催眠點</span>
                 </div>
-                <span className="text-[11px] md:text-sm font-mono text-white font-semibold">{userData.mcPoints} PT</span>
+                <span className="text-[11px] md:text-sm font-mono text-white font-semibold">
+                  {userData.mcPoints} PT
+                </span>
               </div>
             </div>
           </div>
@@ -200,11 +212,7 @@ export const AchievementApp: React.FC<{ onBack?: () => void }> = ({ onBack }) =>
       {/* ============================================ */}
       <div className="flex-1 overflow-y-auto hypno-scrollbar p-4 pt-0">
         {activeTab === 'achievements' && (
-          <AchievementTab
-            achievements={achievements}
-            userData={userData}
-            onClaim={handleClaimAchievement}
-          />
+          <AchievementTab achievements={achievements} userData={userData} onClaim={handleClaimAchievement} />
         )}
         {activeTab === 'quests' && (
           <QuestTab
@@ -234,20 +242,29 @@ export const AchievementApp: React.FC<{ onBack?: () => void }> = ({ onBack }) =>
       <div className="shrink-0 bg-[#100d1e] border-t border-purple-900/30 w-full">
         <div className="flex items-stretch justify-around px-1 pt-1.5 md:pt-2 pb-3 md:pb-5.5">
           <BottomTabButton
-            icon={<Trophy className="w-[18px] h-[18px] md:w-5 md:h-5" strokeWidth={activeTab === 'achievements' ? 2.2 : 1.5} />}
+            icon={
+              <Trophy
+                className="w-[18px] h-[18px] md:w-5 md:h-5"
+                strokeWidth={activeTab === 'achievements' ? 2.2 : 1.5}
+              />
+            }
             label={`成就 (${Object.values(userData.ownedAchievements).length}/${totalAchievementsCount})`}
             active={activeTab === 'achievements'}
             onClick={() => setActiveTab('achievements')}
           />
           <BottomTabButton
-            icon={<Target className="w-[18px] h-[18px] md:w-5 md:h-5" strokeWidth={activeTab === 'quests' ? 2.2 : 1.5} />}
+            icon={
+              <Target className="w-[18px] h-[18px] md:w-5 md:h-5" strokeWidth={activeTab === 'quests' ? 2.2 : 1.5} />
+            }
             label="任務"
             active={activeTab === 'quests'}
             onClick={() => setActiveTab('quests')}
           />
           {userData.vipTier >= 4 && (
             <BottomTabButton
-              icon={<PenTool className="w-[18px] h-[18px] md:w-5 md:h-5" strokeWidth={activeTab === 'craft' ? 2.2 : 1.5} />}
+              icon={
+                <PenTool className="w-[18px] h-[18px] md:w-5 md:h-5" strokeWidth={activeTab === 'craft' ? 2.2 : 1.5} />
+              }
               label="自訂任務"
               active={activeTab === 'craft'}
               onClick={() => setActiveTab('craft')}
@@ -271,15 +288,13 @@ const BottomTabButton: React.FC<{
   <button
     onClick={onClick}
     className={`flex flex-col items-center justify-center gap-1 flex-1 transition-colors duration-200 cursor-pointer ${
-      active
-        ? 'text-purple-400'
-        : 'text-gray-600 hover:text-gray-400'
+      active ? 'text-purple-400' : 'text-gray-600 hover:text-gray-400'
     }`}
   >
     {icon}
-    <span className={`text-[9px] md:text-[10px] font-medium leading-none ${
-      active ? 'text-purple-400' : 'text-gray-600'
-    }`}>
+    <span
+      className={`text-[9px] md:text-[10px] font-medium leading-none ${active ? 'text-purple-400' : 'text-gray-600'}`}
+    >
       {label}
     </span>
   </button>

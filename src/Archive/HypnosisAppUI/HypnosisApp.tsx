@@ -58,43 +58,41 @@ interface HypnosisAppProps {
 }
 
 export const HypnosisApp: React.FC<HypnosisAppProps> = ({ onExit }) => {
-    const [activeTab, setActiveTab] = useState<TabType>('use');
-    const { userData } = useUserProfileLogic();
+  const [activeTab, setActiveTab] = useState<TabType>('use');
+  const { userData } = useUserProfileLogic();
 
-    const renderActiveTab = () => {
-        switch (activeTab) {
-            case 'use':
-                return <HypnosisUseTab />;
-            case 'manage':
-                return <HypnosisManageTab />;
-            case 'equipment':
-                return <EquipmentManageTab />;
-            case 'profile':
-                return <UserProfileTab />;
-            default:
-                return <HypnosisUseTab />;
-        }
-    };
+  const renderActiveTab = () => {
+    switch (activeTab) {
+      case 'use':
+        return <HypnosisUseTab />;
+      case 'manage':
+        return <HypnosisManageTab />;
+      case 'equipment':
+        return <EquipmentManageTab />;
+      case 'profile':
+        return <UserProfileTab />;
+      default:
+        return <HypnosisUseTab />;
+    }
+  };
 
-    return (
-        <div className="flex flex-col h-full w-full bg-black text-white relative font-sans overflow-hidden">
-            {/* Background Effect */}
-            <div className="absolute inset-0 pointer-events-none opacity-20">
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-900 via-black to-black animate-pulse"></div>
-            </div>
+  return (
+    <div className="flex flex-col h-full w-full bg-black text-white relative font-sans overflow-hidden">
+      {/* Background Effect */}
+      <div className="absolute inset-0 pointer-events-none opacity-20">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-900 via-black to-black animate-pulse"></div>
+      </div>
 
-            {/* App Layout */}
-            <div className="relative z-10 flex flex-col h-full w-full">
-                <TopBar />
-                <AppHeader userData={userData} onExit={onExit} />
+      {/* App Layout */}
+      <div className="relative z-10 flex flex-col h-full w-full">
+        <TopBar />
+        <AppHeader userData={userData} onExit={onExit} />
 
-                {/* Tab Content Area */}
-                <div className="flex-1 overflow-hidden flex flex-col bg-black/50">
-                    {renderActiveTab()}
-                </div>
+        {/* Tab Content Area */}
+        <div className="flex-1 overflow-hidden flex flex-col bg-black/50">{renderActiveTab()}</div>
 
-                <BottomTabBar activeTab={activeTab} onTabChange={setActiveTab} />
-            </div>
-        </div>
-    );
+        <BottomTabBar activeTab={activeTab} onTabChange={setActiveTab} />
+      </div>
+    </div>
+  );
 };

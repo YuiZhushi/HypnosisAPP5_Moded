@@ -21,12 +21,9 @@ export const EDITOR_SECTIONS: EditorSection[] = [
 ];
 
 /** 分區提示詞的所有分區 ID（10 個編輯分區 + 'all'） */
-export const EDITOR_PROMPT_SECTION_IDS = [
-  ...EDITOR_SECTIONS.map(s => s.id),
-  'all',
-] as const;
+export const EDITOR_PROMPT_SECTION_IDS = [...EDITOR_SECTIONS.map(s => s.id), 'all'] as const;
 
-export type EditorPromptSectionId = typeof EDITOR_PROMPT_SECTION_IDS[number];
+export type EditorPromptSectionId = (typeof EDITOR_PROMPT_SECTION_IDS)[number];
 
 /** 預設佔位符鍵 */
 export const EDITOR_PROMPT_PLACEHOLDERS = [

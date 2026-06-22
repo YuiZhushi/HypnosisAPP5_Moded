@@ -29,12 +29,33 @@ export function yamlToTree(obj: unknown, lockedKeys?: Set<string>): EditorNode[]
   if (Array.isArray(obj)) {
     return obj.map(item => {
       if (Array.isArray(item)) {
-        return { id: nextId(), key: '', type: 'list' as NodeType, value: '', children: yamlToTree(item), isLocked: false };
+        return {
+          id: nextId(),
+          key: '',
+          type: 'list' as NodeType,
+          value: '',
+          children: yamlToTree(item),
+          isLocked: false,
+        };
       }
       if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
-        return { id: nextId(), key: '', type: 'object' as NodeType, value: '', children: yamlToTree(item), isLocked: false };
+        return {
+          id: nextId(),
+          key: '',
+          type: 'object' as NodeType,
+          value: '',
+          children: yamlToTree(item),
+          isLocked: false,
+        };
       }
-      return { id: nextId(), key: '', type: 'string' as NodeType, value: String(item ?? ''), children: [], isLocked: false };
+      return {
+        id: nextId(),
+        key: '',
+        type: 'string' as NodeType,
+        value: String(item ?? ''),
+        children: [],
+        isLocked: false,
+      };
     });
   }
 

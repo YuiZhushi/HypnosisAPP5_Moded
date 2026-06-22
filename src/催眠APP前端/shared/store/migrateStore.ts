@@ -19,10 +19,7 @@ export function migrateStore(store: PersistedStore): PersistedStore {
   store.calendarCRUD = normalizeCalendarCrudStore(store.calendarCRUD ?? DEFAULT_CALENDAR_CRUD);
 
   // 舊資料一次性遷移：若沒有 calendarCRUD 節點但有 calendarEvents，收斂為 #0 swipe0 的 add 操作
-  if (
-    Object.keys(store.calendarEvents ?? {}).length > 0 &&
-    Object.keys(store.calendarCRUD.nodes ?? {}).length === 0
-  ) {
+  if (Object.keys(store.calendarEvents ?? {}).length > 0 && Object.keys(store.calendarCRUD.nodes ?? {}).length === 0) {
     const node: CalendarCrudNode = {
       floor: 0,
       swipeId: 0,

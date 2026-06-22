@@ -19,7 +19,12 @@ const colorOptions: { value: EventColor; label: string; bgClass: string; borderC
   { value: 'green', label: '綠色', bgClass: 'bg-green-500/10 text-green-200', borderClass: 'border-green-400/30' },
   { value: 'yellow', label: '黃色', bgClass: 'bg-yellow-500/10 text-yellow-200', borderClass: 'border-yellow-400/30' },
   { value: 'orange', label: '橘色', bgClass: 'bg-orange-500/10 text-orange-200', borderClass: 'border-orange-400/30' },
-  { value: 'pink', label: '粉紅色', bgClass: 'bg-fuchsia-500/10 text-fuchsia-200', borderClass: 'border-fuchsia-400/30' },
+  {
+    value: 'pink',
+    label: '粉紅色',
+    bgClass: 'bg-fuchsia-500/10 text-fuchsia-200',
+    borderClass: 'border-fuchsia-400/30',
+  },
   { value: 'teal', label: '藍綠色', bgClass: 'bg-teal-500/10 text-teal-200', borderClass: 'border-teal-400/30' },
   { value: 'indigo', label: '靛色', bgClass: 'bg-indigo-500/10 text-indigo-200', borderClass: 'border-indigo-400/30' },
 ];
@@ -31,12 +36,7 @@ const formatDateString = (d: Date) => {
   return `${y}-${m}-${day}`;
 };
 
-const EventPanel: React.FC<EventPanelProps> = ({
-  date,
-  events,
-  onClose,
-  onEventsChange,
-}) => {
+const EventPanel: React.FC<EventPanelProps> = ({ date, events, onClose, onEventsChange }) => {
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -116,7 +116,10 @@ const EventPanel: React.FC<EventPanelProps> = ({
   return (
     <>
       {/* 底部彈出面板 (Bottom Sheet) */}
-      <div className="absolute inset-0 z-40 bg-black/80 backdrop-blur-sm flex items-end animate-fade-in" onClick={onClose}>
+      <div
+        className="absolute inset-0 z-40 bg-black/80 backdrop-blur-sm flex items-end animate-fade-in"
+        onClick={onClose}
+      >
         <div
           className="w-full bg-[#0a0815] rounded-t-2xl border-t border-purple-900/50 flex flex-col min-h-[50vh] max-h-[85vh] shadow-[0_-10px_40px_rgba(0,0,0,0.5)]"
           onClick={e => e.stopPropagation()}
@@ -134,7 +137,10 @@ const EventPanel: React.FC<EventPanelProps> = ({
               </div>
               <div className="text-[11px] md:text-[12px] text-gray-500">{dayEvents.length} 項事件</div>
             </div>
-            <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors">
+            <button
+              onClick={onClose}
+              className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+            >
               <X size={20} />
             </button>
           </div>
@@ -156,7 +162,9 @@ const EventPanel: React.FC<EventPanelProps> = ({
                     <div className="flex items-start justify-between gap-2 w-full">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[13px] md:text-sm font-bold text-white tracking-wide truncate">{evt.title}</span>
+                          <span className="text-[13px] md:text-sm font-bold text-white tracking-wide truncate">
+                            {evt.title}
+                          </span>
                         </div>
                         {evt.startDate !== evt.endDate && (
                           <div className="text-[9px] md:text-[10px] text-gray-400 mt-1">
@@ -230,7 +238,10 @@ const EventPanel: React.FC<EventPanelProps> = ({
                 <CalendarIcon size={18} className="text-purple-400" />
                 {editingId ? '編輯事件' : '新增事件'}
               </h3>
-              <button onClick={() => setShowFormModal(false)} className="text-gray-400 hover:text-white transition-colors">
+              <button
+                onClick={() => setShowFormModal(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
                 <X size={20} />
               </button>
             </div>
@@ -269,12 +280,14 @@ const EventPanel: React.FC<EventPanelProps> = ({
               <div>
                 <label className="block text-xs text-gray-500 mb-1.5 md:mb-2">顏色</label>
                 <div className="flex flex-wrap gap-2 md:gap-2.5">
-                  {colorOptions.map((opt) => (
+                  {colorOptions.map(opt => (
                     <button
                       key={opt.value}
                       onClick={() => setColor(opt.value)}
                       className={`w-6 h-6 rounded-full border border-white/10 ${opt.bgClass.split(' ')[0]} transition-all ${
-                        color === opt.value ? 'ring-2 ring-white ring-offset-2 ring-offset-[#13102a] scale-110' : 'opacity-70 hover:opacity-100'
+                        color === opt.value
+                          ? 'ring-2 ring-white ring-offset-2 ring-offset-[#13102a] scale-110'
+                          : 'opacity-70 hover:opacity-100'
                       }`}
                       title={opt.label}
                     />

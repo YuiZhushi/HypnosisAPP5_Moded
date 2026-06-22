@@ -35,12 +35,7 @@ const textColorClasses: Record<EventColor, string> = {
   indigo: 'text-indigo-400',
 };
 
-const CalendarGrid: React.FC<CalendarGridProps> = ({
-  currentDate,
-  selectedDate,
-  events,
-  onDateSelect,
-}) => {
+const CalendarGrid: React.FC<CalendarGridProps> = ({ currentDate, selectedDate, events, onDateSelect }) => {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
@@ -69,11 +64,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   };
 
   const isSameDate = (d1: Date, d2: Date) => {
-    return (
-      d1.getFullYear() === d2.getFullYear() &&
-      d1.getMonth() === d2.getMonth() &&
-      d1.getDate() === d2.getDate()
-    );
+    return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
   };
 
   return (
@@ -91,7 +82,12 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
       <div className="grid grid-cols-7 gap-2">
         {days.map((date, index) => {
           if (!date) {
-            return <div key={`empty-${index}`} className="aspect-3/4 sm:aspect-3/4 rounded-xl border border-white/5 bg-white/0" />;
+            return (
+              <div
+                key={`empty-${index}`}
+                className="aspect-3/4 sm:aspect-3/4 rounded-xl border border-white/5 bg-white/0"
+              />
+            );
           }
 
           const dateString = formatDateString(date);
@@ -107,7 +103,9 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
           const totalCount = dayEvents.length;
 
           const primary = dayEvents[0]
-            ? (dayEvents[0][1].title.length > 6 ? dayEvents[0][1].title.slice(0, 6) + '…' : dayEvents[0][1].title)
+            ? dayEvents[0][1].title.length > 6
+              ? dayEvents[0][1].title.slice(0, 6) + '…'
+              : dayEvents[0][1].title
             : null;
 
           return (
@@ -123,9 +121,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             >
               <div className="w-full flex items-start justify-between">
                 <div
-                  className={['text-xs font-bold tabular-nums', isToday ? 'text-cyan-200' : 'text-white/80'].join(
-                    ' ',
-                  )}
+                  className={['text-xs font-bold tabular-nums', isToday ? 'text-cyan-200' : 'text-white/80'].join(' ')}
                 >
                   {date.getDate()}
                 </div>

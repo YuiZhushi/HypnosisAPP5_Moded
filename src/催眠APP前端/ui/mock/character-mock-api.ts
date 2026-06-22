@@ -40,5 +40,5 @@ export const CharacterMockApi = {
       mockPrompts.push(prompt);
     }
     return prompt;
-  }
+  },
 };

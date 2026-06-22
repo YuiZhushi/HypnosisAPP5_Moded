@@ -14,10 +14,7 @@ export const useSettingsRuntimeData = () => {
     if (showLoading) setIsLoading(true);
     setError(null);
     try {
-      const [settingsData, modelsData] = await Promise.all([
-        MockApi.getApiSettings(),
-        MockApi.fetchAvailableModels()
-      ]);
+      const [settingsData, modelsData] = await Promise.all([MockApi.getApiSettings(), MockApi.fetchAvailableModels()]);
       setApiSettings(settingsData);
       setAvailableModels(modelsData);
     } catch (err) {
@@ -28,15 +25,18 @@ export const useSettingsRuntimeData = () => {
     }
   }, []);
 
-  const saveApiSettings = useCallback(async (newSettings: Partial<MockApiSettings>) => {
-    try {
-      await MockApi.updateApiSettings(newSettings);
-      await fetchSettings(false); // Refresh local state in background
-    } catch (err) {
-      console.error('[useSettingsRuntimeData] Error saving settings:', err);
-      throw err;
-    }
-  }, [fetchSettings]);
+  const saveApiSettings = useCallback(
+    async (newSettings: Partial<MockApiSettings>) => {
+      try {
+        await MockApi.updateApiSettings(newSettings);
+        await fetchSettings(false); // Refresh local state in background
+      } catch (err) {
+        console.error('[useSettingsRuntimeData] Error saving settings:', err);
+        throw err;
+      }
+    },
+    [fetchSettings],
+  );
 
   useEffect(() => {
     fetchSettings();
@@ -48,7 +48,7 @@ export const useSettingsRuntimeData = () => {
     isLoading,
     error,
     refresh: fetchSettings,
-    saveApiSettings
+    saveApiSettings,
   };
 };
 
@@ -93,8 +93,18 @@ export function SettingsApp({ onBack }: { onBack: () => void }) {
         <div className="text-lg text-red-400 font-medium mb-2">載入失敗</div>
         <div className="text-sm text-gray-500 mb-4">{error}</div>
         <div className="flex gap-3">
-          <button className="px-5 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-medium transition-colors" onClick={() => refresh(true)}>重試</button>
-          <button className="px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors" onClick={onBack}>返回</button>
+          <button
+            className="px-5 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-medium transition-colors"
+            onClick={() => refresh(true)}
+          >
+            重試
+          </button>
+          <button
+            className="px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors"
+            onClick={onBack}
+          >
+            返回
+          </button>
         </div>
       </div>
     );
@@ -137,7 +147,9 @@ export function SettingsApp({ onBack }: { onBack: () => void }) {
                 key={section.id}
                 onClick={() => setActiveId(section.id)}
                 className={`w-full flex flex-col items-center gap-1 py-3 px-1 transition-colors text-center border-l-2 ${
-                  isActive ? 'bg-purple-600/10 text-purple-300 border-purple-500' : 'text-white/50 hover:text-white/80 hover:bg-white/5 border-transparent'
+                  isActive
+                    ? 'bg-purple-600/10 text-purple-300 border-purple-500'
+                    : 'text-white/50 hover:text-white/80 hover:bg-white/5 border-transparent'
                 }`}
               >
                 <Icon className="w-4 h-4 md:w-5 md:h-5" />
@@ -162,9 +174,7 @@ export function SettingsApp({ onBack }: { onBack: () => void }) {
               )}
             </>
           ) : (
-            <div className="flex items-center justify-center h-full text-white/30 text-sm">
-              請選擇一個設定項目
-            </div>
+            <div className="flex items-center justify-center h-full text-white/30 text-sm">請選擇一個設定項目</div>
           )}
         </div>
       </div>

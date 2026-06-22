@@ -6,29 +6,53 @@ import { HypnosisManageTab } from './HypnosisManageTab';
 import { HypnosisEquipmentTab } from './HypnosisEquipmentTab';
 import { HypnosisProfileTab } from './HypnosisProfileTab';
 import {
-  ChevronLeft, Bell, ChevronDown, ChevronUp, Zap, Coins, Star,
-  Monitor, Activity, FileText, Image as ImageIcon, AlignCenter,
-  Volume2, Music, Smartphone, Coffee, Box, Wind, Cloud,
-  Maximize, Radio, Wifi, Cpu, Eye, Settings, Wrench, User, Crown
+  ChevronLeft,
+  Bell,
+  ChevronDown,
+  ChevronUp,
+  Zap,
+  Coins,
+  Star,
+  Monitor,
+  Activity,
+  FileText,
+  Image as ImageIcon,
+  AlignCenter,
+  Volume2,
+  Music,
+  Smartphone,
+  Coffee,
+  Box,
+  Wind,
+  Cloud,
+  Maximize,
+  Radio,
+  Wifi,
+  Cpu,
+  Eye,
+  Settings,
+  Wrench,
+  User,
+  Crown,
 } from 'lucide-react';
 
 const IconMap: Record<string, React.FC<any>> = {
-  'monitor': Monitor,
-  'activity': Activity,
+  monitor: Monitor,
+  activity: Activity,
   'file-text': FileText,
-  'image': ImageIcon,
+  image: ImageIcon,
   'align-center': AlignCenter,
   'volume-2': Volume2,
-  'music': Music,
-  'smartphone': Smartphone,
-  'coffee': Coffee,
-  'box': Box,
-  'wind': Wind,
-  'cloud': Cloud,
-  'maximize': Maximize,
-  'radio': Radio,
-  'wifi': Wifi,
-  'cpu': Cpu
+  music: Music,
+  smartphone: Smartphone,
+  coffee: Coffee,
+  box: Box,
+  wind: Wind,
+  cloud: Cloud,
+  maximize: Maximize,
+  radio: Radio,
+  wifi: Wifi,
+  cpu: Cpu,
 };
 
 // ==========================================
@@ -52,7 +76,7 @@ export const useHypnosisRuntimeData = () => {
         MockApi.getAllCombos(),
         MockApi.getCharData(),
         MockApi.getAllAchievements(),
-        MockApi.getAllQuests()
+        MockApi.getAllQuests(),
       ]);
 
       setData({
@@ -63,7 +87,7 @@ export const useHypnosisRuntimeData = () => {
         equipment,
         combos,
         achievements,
-        quests
+        quests,
       });
     } catch (err) {
       setError(err as Error);
@@ -101,8 +125,18 @@ export const HypnosisApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <div className="text-lg text-red-400 font-medium mb-2">載入失敗</div>
         <div className="text-sm text-gray-500 mb-4">{error.message}</div>
         <div className="flex gap-3">
-          <button className="px-5 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-medium transition-colors" onClick={reload}>重試</button>
-          <button className="px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors" onClick={onBack}>返回</button>
+          <button
+            className="px-5 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-medium transition-colors"
+            onClick={reload}
+          >
+            重試
+          </button>
+          <button
+            className="px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors"
+            onClick={onBack}
+          >
+            返回
+          </button>
         </div>
       </div>
     );
@@ -142,15 +176,16 @@ export const HypnosisApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <Bell size={11} className="opacity-40" />
         </div>
         <div className="flex items-center gap-1.5">
-          {data && Object.entries(data.user.ownedEquipments)
-            .filter(([_, state]) => state.enabled)
-            .slice(0, 7)
-            .map(([id]) => {
-              const eq = data.equipment[id];
-              if (!eq) return null;
-              const IconComp = IconMap[eq.icon] || Box;
-              return <IconComp key={id} size={12} />;
-            })}
+          {data &&
+            Object.entries(data.user.ownedEquipments)
+              .filter(([_, state]) => state.enabled)
+              .slice(0, 7)
+              .map(([id]) => {
+                const eq = data.equipment[id];
+                if (!eq) return null;
+                const IconComp = IconMap[eq.icon] || Box;
+                return <IconComp key={id} size={12} />;
+              })}
         </div>
       </div>
 
@@ -202,7 +237,15 @@ export const HypnosisApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         {activeTab === 'use' && <HypnosisUseTab data={data} reload={reload} />}
         {activeTab === 'manage' && <HypnosisManageTab data={data} reload={reload} />}
         {activeTab === 'equipment' && <HypnosisEquipmentTab data={data} reload={reload} />}
-        {activeTab === 'profile' && <HypnosisProfileTab data={data} reload={reload} vipEndDate={vipEndDate} mcPercent={mcPercent} formatMoney={formatMoney} />}
+        {activeTab === 'profile' && (
+          <HypnosisProfileTab
+            data={data}
+            reload={reload}
+            vipEndDate={vipEndDate}
+            mcPercent={mcPercent}
+            formatMoney={formatMoney}
+          />
+        )}
       </div>
 
       {/* ============================================ */}
@@ -217,19 +260,25 @@ export const HypnosisApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             onClick={() => setActiveTab('use')}
           />
           <BottomTabButton
-            icon={<Settings className="w-[18px] h-[18px] md:w-5 md:h-5" strokeWidth={activeTab === 'manage' ? 2.2 : 1.5} />}
+            icon={
+              <Settings className="w-[18px] h-[18px] md:w-5 md:h-5" strokeWidth={activeTab === 'manage' ? 2.2 : 1.5} />
+            }
             label="催眠管理區"
             active={activeTab === 'manage'}
             onClick={() => setActiveTab('manage')}
           />
           <BottomTabButton
-            icon={<Wrench className="w-[18px] h-[18px] md:w-5 md:h-5" strokeWidth={activeTab === 'equipment' ? 2.2 : 1.5} />}
+            icon={
+              <Wrench className="w-[18px] h-[18px] md:w-5 md:h-5" strokeWidth={activeTab === 'equipment' ? 2.2 : 1.5} />
+            }
             label="設備管理區"
             active={activeTab === 'equipment'}
             onClick={() => setActiveTab('equipment')}
           />
           <BottomTabButton
-            icon={<User className="w-[18px] h-[18px] md:w-5 md:h-5" strokeWidth={activeTab === 'profile' ? 2.2 : 1.5} />}
+            icon={
+              <User className="w-[18px] h-[18px] md:w-5 md:h-5" strokeWidth={activeTab === 'profile' ? 2.2 : 1.5} />
+            }
             label="詳細用戶資料區"
             active={activeTab === 'profile'}
             onClick={() => setActiveTab('profile')}
@@ -266,7 +315,9 @@ const QuickUserProfileCard: React.FC<{
             <div className="ml-auto flex flex-col items-end gap-px text-right shrink-0">
               <span className="text-[10px] text-gray-500 leading-tight">到期: {vipEndDate}</span>
               {data.user.vipAutoRenew ? (
-                <span className="text-[10px] text-emerald-400 font-medium underline decoration-emerald-400/50">自動續訂開啟</span>
+                <span className="text-[10px] text-emerald-400 font-medium underline decoration-emerald-400/50">
+                  自動續訂開啟
+                </span>
               ) : (
                 <span className="text-[10px] text-gray-500 font-medium">自動續訂關閉</span>
               )}
@@ -277,16 +328,23 @@ const QuickUserProfileCard: React.FC<{
               <div className="flex items-center gap-1">
                 <Zap className="w-[11px] h-[11px] text-cyan-400 shrink-0" />
                 <span className="text-[9px] text-gray-500">MC 能量</span>
-                <span className="text-[10px] font-mono text-white font-semibold ml-auto">{data.user.mcEnergy}/{data.user.mcEnergyMax}</span>
+                <span className="text-[10px] font-mono text-white font-semibold ml-auto">
+                  {data.user.mcEnergy}/{data.user.mcEnergyMax}
+                </span>
               </div>
               <div className="mt-1 w-full h-[3px] bg-[#1a1530] rounded-full overflow-hidden">
-                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${mcPercent}%`, background: 'linear-gradient(90deg, #a855f7, #c084fc)' }} />
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${mcPercent}%`, background: 'linear-gradient(90deg, #a855f7, #c084fc)' }}
+                />
               </div>
             </div>
             <div className="flex items-center gap-1 bg-[#0c0a1e] rounded-lg border border-purple-900/30 px-2 py-1.5">
               <Coins className="w-[11px] h-[11px] text-yellow-400 shrink-0" />
               <span className="text-[9px] text-gray-500">金幣</span>
-              <span className="text-[10px] font-mono text-white font-semibold ml-0.5">{formatMoney(data.user.money || 0)}</span>
+              <span className="text-[10px] font-mono text-white font-semibold ml-0.5">
+                {formatMoney(data.user.money || 0)}
+              </span>
             </div>
             <div className="flex items-center gap-1 bg-[#0c0a1e] rounded-lg border border-purple-900/30 px-2 py-1.5">
               <Star className="w-[11px] h-[11px] text-purple-400 shrink-0" />
@@ -317,7 +375,11 @@ const QuickUserProfileCard: React.FC<{
               <Zap className="w-2.5 h-2.5 text-cyan-400 shrink-0" />
               <span className="text-[9px] font-mono text-white">{data.user.mcEnergy}</span>
             </div>
-            {isExpanded ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+            {isExpanded ? (
+              <ChevronUp size={14} className="text-gray-400" />
+            ) : (
+              <ChevronDown size={14} className="text-gray-400" />
+            )}
           </div>
         </div>
 
@@ -329,7 +391,9 @@ const QuickUserProfileCard: React.FC<{
               <div className="flex flex-col items-end gap-px text-right">
                 <span className="text-[10px] text-gray-300 leading-tight">{vipEndDate}</span>
                 {data.user.vipAutoRenew ? (
-                  <span className="text-[9px] text-emerald-400 font-medium underline decoration-emerald-400/50">自動續訂開啟</span>
+                  <span className="text-[9px] text-emerald-400 font-medium underline decoration-emerald-400/50">
+                    自動續訂開啟
+                  </span>
                 ) : (
                   <span className="text-[9px] text-gray-500 font-medium">自動續訂關閉</span>
                 )}
@@ -343,10 +407,15 @@ const QuickUserProfileCard: React.FC<{
                     <Zap className="w-3 h-3 text-cyan-400 shrink-0" />
                     <span className="text-[10px] text-gray-400">MC 能量</span>
                   </div>
-                  <span className="text-[11px] font-mono text-white font-semibold">{data.user.mcEnergy}/{data.user.mcEnergyMax}</span>
+                  <span className="text-[11px] font-mono text-white font-semibold">
+                    {data.user.mcEnergy}/{data.user.mcEnergyMax}
+                  </span>
                 </div>
                 <div className="w-full h-[4px] bg-[#1a1530] rounded-full overflow-hidden">
-                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${mcPercent}%`, background: 'linear-gradient(90deg, #a855f7, #c084fc)' }} />
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${mcPercent}%`, background: 'linear-gradient(90deg, #a855f7, #c084fc)' }}
+                  />
                 </div>
               </div>
 
@@ -356,7 +425,9 @@ const QuickUserProfileCard: React.FC<{
                     <Coins className="w-3 h-3 text-yellow-400 shrink-0" />
                     <span className="text-[10px] text-gray-400">金幣</span>
                   </div>
-                  <span className="text-[11px] font-mono text-white font-semibold">{formatMoney(data.user.money || 0)}</span>
+                  <span className="text-[11px] font-mono text-white font-semibold">
+                    {formatMoney(data.user.money || 0)}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between bg-[#0c0a1e] rounded-lg border border-purple-900/30 px-2 py-1.5">
                   <div className="flex items-center gap-1">
@@ -373,10 +444,7 @@ const QuickUserProfileCard: React.FC<{
 
       {/* Backdrop for mobile dropdown */}
       {isExpanded && (
-        <div
-          className="md:hidden fixed inset-0 z-10 bg-black/40 backdrop-blur-[1px]"
-          onClick={onToggle}
-        />
+        <div className="md:hidden fixed inset-0 z-10 bg-black/40 backdrop-blur-[1px]" onClick={onToggle} />
       )}
     </>
   );
@@ -394,21 +462,15 @@ const BottomTabButton: React.FC<{
   <button
     onClick={onClick}
     className={`flex flex-col items-center justify-center gap-1 flex-1 transition-colors duration-200 ${
-      active
-        ? 'text-purple-400'
-        : 'text-gray-600 hover:text-gray-400'
+      active ? 'text-purple-400' : 'text-gray-600 hover:text-gray-400'
     }`}
   >
     {icon}
-    <span className={`text-[9px] font-medium leading-none ${
-      active ? 'text-purple-400' : 'text-gray-600'
-    }`}>
+    <span className={`text-[9px] font-medium leading-none ${active ? 'text-purple-400' : 'text-gray-600'}`}>
       {label}
     </span>
   </button>
 );
-
-
 
 // ====== ICON ======
 // --- SVG Logo Component ---

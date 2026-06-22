@@ -84,9 +84,8 @@ function applyProposalToTree(tree: EditorNode[], proposal: AstDiffProposal): boo
     if (parentNode && parentNode.type !== 'list') return false;
 
     // 清理空白佔位項目
-    const allEmpty = currentList.length > 0 && currentList.every(
-      n => n.type === 'string' && (!n.value || n.value.trim() === ''),
-    );
+    const allEmpty =
+      currentList.length > 0 && currentList.every(n => n.type === 'string' && (!n.value || n.value.trim() === ''));
     if (allEmpty) currentList.length = 0;
 
     const newItemsNodes = yamlToTree([proposal.newValue]);

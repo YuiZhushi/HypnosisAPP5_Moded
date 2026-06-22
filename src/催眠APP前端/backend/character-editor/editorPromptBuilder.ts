@@ -128,12 +128,8 @@ export function buildEditorPipelineParams(params: {
 
   // 篩選：fixed + 當前分區的 content/format/instruction
   const fixedModules = allModules.filter(m => m.type === 'fixed');
-  const sectionContentModule = allModules.find(
-    m => m.type === 'section_content' && m.sectionId === currentSectionId,
-  );
-  const sectionFormatModule = allModules.find(
-    m => m.type === 'section_format' && m.sectionId === currentSectionId,
-  );
+  const sectionContentModule = allModules.find(m => m.type === 'section_content' && m.sectionId === currentSectionId);
+  const sectionFormatModule = allModules.find(m => m.type === 'section_format' && m.sectionId === currentSectionId);
   const sectionInstructionModule = allModules.find(
     m => m.type === 'section_instruction' && m.sectionId === currentSectionId,
   );
@@ -152,12 +148,12 @@ export function buildEditorPipelineParams(params: {
 
   // 組裝 placeholders
   const placeholders: Record<string, string> = {
-    '角色名': characterName,
-    '角色世界書條目': worldbookEntry,
-    '當前的分區名稱': currentSectionName,
-    '當前分區的yaml內容': currentSectionYaml,
-    '所有分區的yaml與ESJ內容': allSectionsContent,
-    '用戶的輸入': userInput,
+    角色名: characterName,
+    角色世界書條目: worldbookEntry,
+    當前的分區名稱: currentSectionName,
+    當前分區的yaml內容: currentSectionYaml,
+    所有分區的yaml與ESJ內容: allSectionsContent,
+    用戶的輸入: userInput,
   };
 
   return {

@@ -21,8 +21,18 @@ export const SCHOOL_MONTHS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3] as const;
 
 /** 每月天數 */
 export const MONTH_LENGTHS: Record<number, number> = {
-  1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30,
-  7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31,
+  1: 31,
+  2: 28,
+  3: 31,
+  4: 30,
+  5: 31,
+  6: 30,
+  7: 31,
+  8: 31,
+  9: 30,
+  10: 31,
+  11: 30,
+  12: 31,
 };
 
 // ====== 工具函數 ======
@@ -30,8 +40,19 @@ export const MONTH_LENGTHS: Record<number, number> = {
 function inferEventKind(title: string): SchoolCalendarEvent['kind'] {
   if (title.includes('祝日') || title.includes('振替休日')) return 'holiday';
   const festivals = [
-    '七夕', '万圣节', '元旦', '圣诞节', '平安夜', '大晦日',
-    '盂兰盆节', '情人节', '白色情人节', '女儿节', '节分', '七五三节', '愚人节',
+    '七夕',
+    '万圣节',
+    '元旦',
+    '圣诞节',
+    '平安夜',
+    '大晦日',
+    '盂兰盆节',
+    '情人节',
+    '白色情人节',
+    '女儿节',
+    '节分',
+    '七五三节',
+    '愚人节',
   ];
   if (festivals.some(key => title.includes(key))) return 'festival';
   return 'event';

@@ -1,5 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, useReducer } from 'react';
-import { ChevronDown, ChevronRight, Search, Maximize2, Plus, CopyPlus, Trash2, ArrowUp, ArrowDown, MoreVertical, X, Copy } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  Search,
+  Maximize2,
+  Plus,
+  CopyPlus,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+  MoreVertical,
+  X,
+  Copy,
+} from 'lucide-react';
 import { LongTextEditorModal } from './LongTextEditorModal';
 
 export type NodeType = 'string' | 'list' | 'object';
@@ -139,7 +152,11 @@ function applyToTree(nodes: EditorNode[], nodeId: string, fn: (n: EditorNode) =>
   return result;
 }
 
-function addSiblingAfter(nodes: EditorNode[], afterId: string, containerType: NodeType | 'root'): { nodes: EditorNode[]; changed: boolean } {
+function addSiblingAfter(
+  nodes: EditorNode[],
+  afterId: string,
+  containerType: NodeType | 'root',
+): { nodes: EditorNode[]; changed: boolean } {
   let changed = false;
   const result: EditorNode[] = [];
 
@@ -164,7 +181,11 @@ function addSiblingAfter(nodes: EditorNode[], afterId: string, containerType: No
   return { nodes: result, changed };
 }
 
-function moveNode(nodes: EditorNode[], nodeId: string, direction: 'up' | 'down'): { nodes: EditorNode[]; changed: boolean } {
+function moveNode(
+  nodes: EditorNode[],
+  nodeId: string,
+  direction: 'up' | 'down',
+): { nodes: EditorNode[]; changed: boolean } {
   let changed = false;
   const result: EditorNode[] = [];
 
@@ -220,7 +241,7 @@ function cloneNodeWithNewIds(node: EditorNode, siblingKeys: Set<string>): Editor
     return children.map(c => ({
       ...c,
       id: nextNodeId(),
-      children: cloneChildren(c.children)
+      children: cloneChildren(c.children),
     }));
   };
 
@@ -229,7 +250,7 @@ function cloneNodeWithNewIds(node: EditorNode, siblingKeys: Set<string>): Editor
     key: newKey,
     type: node.type,
     value: node.value,
-    children: cloneChildren(node.children)
+    children: cloneChildren(node.children),
   };
 }
 
@@ -315,12 +336,13 @@ function getCharWidth(str: string): number {
 
 const TypeBadge: React.FC<{ type: NodeType }> = ({ type }) => {
   const label = type === 'string' ? 'T 文本' : type === 'list' ? '≡ 列表' : '{} 物件';
-  const color = type === 'string' ? 'text-purple-400 bg-purple-900/30 border-purple-700/50' : type === 'list' ? 'text-purple-400 bg-purple-900/30 border-purple-700/50' : 'text-purple-400 bg-purple-900/30 border-purple-700/50';
-  return (
-    <span className={`text-[9px] px-1.5 py-0.5 rounded border shrink-0 font-mono ${color}`}>
-      {label}
-    </span>
-  );
+  const color =
+    type === 'string'
+      ? 'text-purple-400 bg-purple-900/30 border-purple-700/50'
+      : type === 'list'
+        ? 'text-purple-400 bg-purple-900/30 border-purple-700/50'
+        : 'text-purple-400 bg-purple-900/30 border-purple-700/50';
+  return <span className={`text-[9px] px-1.5 py-0.5 rounded border shrink-0 font-mono ${color}`}>{label}</span>;
 };
 
 const TreeNode: React.FC<{
@@ -377,12 +399,14 @@ const TreeNode: React.FC<{
   return (
     <div className="relative font-mono text-sm">
       <div className="group flex flex-col relative py-1.5 hover:bg-white/5 -mx-2 px-2 rounded transition-colors">
-
         {/* Row 1: Key, Type, Actions */}
         <div className="flex items-center gap-2 w-full relative">
           {/* Collapse toggle */}
           {hasChildren ? (
-            <button onClick={() => setCollapsed(!collapsed)} className="mt-1 text-gray-500 hover:text-gray-300 shrink-0">
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="mt-1 text-gray-500 hover:text-gray-300 shrink-0"
+            >
               {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
             </button>
           ) : (
@@ -414,28 +438,30 @@ const TreeNode: React.FC<{
             {typeDropdownOpen && (
               <div className="absolute left-0 top-full pt-1 z-50 w-24">
                 <div className="bg-[#1a153a] border border-purple-500/30 shadow-xl rounded py-1 flex flex-col">
-                  {['string', 'list', 'object'].filter(t => t !== node.type).map(t => (
-                    <button
-                      key={t}
-                      onClick={() => {
-                        if (t === 'string' && hasChildren) {
-                          setConfirmConfig({
-                            message: '轉換為 String 可能會遺失子節點資料，確定繼續嗎？',
-                            onConfirm: () => {
-                              dispatch({ type: 'CHANGE_TYPE', nodeId: node.id, newType: t as NodeType });
-                              setConfirmConfig(null);
-                            }
-                          });
-                        } else {
-                          dispatch({ type: 'CHANGE_TYPE', nodeId: node.id, newType: t as NodeType });
-                        }
-                        setTypeDropdownOpen(false);
-                      }}
-                      className="text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-purple-600/50 hover:text-white transition"
-                    >
-                      {t === 'string' ? '文本' : t === 'list' ? '列表' : '物件'}
-                    </button>
-                  ))}
+                  {['string', 'list', 'object']
+                    .filter(t => t !== node.type)
+                    .map(t => (
+                      <button
+                        key={t}
+                        onClick={() => {
+                          if (t === 'string' && hasChildren) {
+                            setConfirmConfig({
+                              message: '轉換為 String 可能會遺失子節點資料，確定繼續嗎？',
+                              onConfirm: () => {
+                                dispatch({ type: 'CHANGE_TYPE', nodeId: node.id, newType: t as NodeType });
+                                setConfirmConfig(null);
+                              },
+                            });
+                          } else {
+                            dispatch({ type: 'CHANGE_TYPE', nodeId: node.id, newType: t as NodeType });
+                          }
+                          setTypeDropdownOpen(false);
+                        }}
+                        className="text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-purple-600/50 hover:text-white transition"
+                      >
+                        {t === 'string' ? '文本' : t === 'list' ? '列表' : '物件'}
+                      </button>
+                    ))}
                 </div>
               </div>
             )}
@@ -443,7 +469,7 @@ const TreeNode: React.FC<{
 
           {/* Mobile menu trigger */}
           <button
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation();
               setShowActions(!showActions);
             }}
@@ -454,11 +480,13 @@ const TreeNode: React.FC<{
           </button>
 
           {/* Hover Actions (Yellow) */}
-          <div className={`absolute right-0 top-1/2 -translate-y-1/2 z-40 flex items-center gap-1 bg-[#1a153a] p-1 rounded-lg border border-yellow-500/30 shadow-lg transition-all duration-200 ${
-            showActions
-              ? 'opacity-100 pointer-events-auto scale-100'
-              : 'opacity-0 pointer-events-none scale-95 md:group-hover:opacity-100 md:group-hover:pointer-events-auto md:group-hover:scale-100'
-          }`}>
+          <div
+            className={`absolute right-0 top-1/2 -translate-y-1/2 z-40 flex items-center gap-1 bg-[#1a153a] p-1 rounded-lg border border-yellow-500/30 shadow-lg transition-all duration-200 ${
+              showActions
+                ? 'opacity-100 pointer-events-auto scale-100'
+                : 'opacity-0 pointer-events-none scale-95 md:group-hover:opacity-100 md:group-hover:pointer-events-auto md:group-hover:scale-100'
+            }`}
+          >
             <button
               onClick={() => {
                 dispatch({ type: 'MOVE_UP', nodeId: node.id });
@@ -555,7 +583,10 @@ const TreeNode: React.FC<{
                 dispatch({ type: 'UPDATE_VALUE', nodeId: node.id, newValue: e.target.value });
               }}
               onDoubleClick={() => setLongEditorOpen(true)}
-              style={{ width: `calc(${Math.max(...node.value.split('\n').map(l => getCharWidth(l)), 5)}ch + 16px)`, maxWidth: '60cqw' }}
+              style={{
+                width: `calc(${Math.max(...node.value.split('\n').map(l => getCharWidth(l)), 5)}ch + 16px)`,
+                maxWidth: '60cqw',
+              }}
               className="bg-transparent text-red-300 min-h-[28px] outline-none border border-transparent hover:border-white/10 focus:border-red-500/50 focus:bg-black/20 rounded px-2 py-1 resize-none transition-colors [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-red-500/30 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-red-500/50"
               rows={1}
               placeholder="value"
@@ -613,7 +644,10 @@ const TreeNode: React.FC<{
           <div className="relative w-full max-w-sm bg-[#120e24]/95 border border-purple-500/30 rounded-2xl p-6 shadow-[0_0_25px_rgba(168,85,247,0.15)] animate-in fade-in zoom-in-95 duration-200 flex flex-col gap-4 text-left">
             <div className="flex justify-between items-center pb-2 border-b border-purple-500/10">
               <h3 className="text-base font-semibold text-purple-200">確認操作</h3>
-              <button onClick={() => setConfirmConfig(null)} className="text-gray-400 hover:text-white transition-colors">
+              <button
+                onClick={() => setConfirmConfig(null)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
                 <X size={18} />
               </button>
             </div>

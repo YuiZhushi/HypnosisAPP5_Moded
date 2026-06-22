@@ -1,7 +1,21 @@
 import React, { useState } from 'react';
 import { RuntimeData } from '../mock/mockModels';
 import { MockApi } from '../mock/mockApi';
-import { User, Crown, Zap, Coins, Star, ShieldAlert, Clock, RefreshCw, Activity, ArrowRightLeft, ArrowUpCircle, X, Plus } from 'lucide-react';
+import {
+  User,
+  Crown,
+  Zap,
+  Coins,
+  Star,
+  ShieldAlert,
+  Clock,
+  RefreshCw,
+  Activity,
+  ArrowRightLeft,
+  ArrowUpCircle,
+  X,
+  Plus,
+} from 'lucide-react';
 
 export const HypnosisProfileTab: React.FC<{
   data: RuntimeData | null;
@@ -12,7 +26,9 @@ export const HypnosisProfileTab: React.FC<{
 }> = ({ data, reload, vipEndDate, mcPercent, formatMoney }) => {
   const [showVipModal, setShowVipModal] = useState(false);
   const [showExchangeModal, setShowExchangeModal] = useState(false);
-  const [exchangeType, setExchangeType] = useState<'moneyToMc' | 'moneyToPts' | 'ptsToMcMax' | 'ptsToMoney'>('moneyToMc');
+  const [exchangeType, setExchangeType] = useState<'moneyToMc' | 'moneyToPts' | 'ptsToMcMax' | 'ptsToMoney'>(
+    'moneyToMc',
+  );
 
   if (!data) return null;
 
@@ -64,11 +80,15 @@ export const HypnosisProfileTab: React.FC<{
                 <span className="text-[13px] md:text-sm font-bold text-white">MC 能量</span>
               </div>
               <div className="text-[13px] md:text-sm font-mono text-white font-bold">
-                {data.user.mcEnergy} <span className="text-[11px] md:text-xs text-gray-500">/ {data.user.mcEnergyMax}</span>
+                {data.user.mcEnergy}{' '}
+                <span className="text-[11px] md:text-xs text-gray-500">/ {data.user.mcEnergyMax}</span>
               </div>
             </div>
             <div className="w-full h-[5px] md:h-[6px] bg-[#1a1530] rounded-full overflow-hidden">
-              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${mcPercent}%`, background: 'linear-gradient(90deg, #a855f7, #c084fc)' }} />
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${mcPercent}%`, background: 'linear-gradient(90deg, #a855f7, #c084fc)' }}
+              />
             </div>
             <div className="flex justify-between items-center text-[10px] md:text-[11px] text-gray-400">
               <div className="flex items-center gap-1">
@@ -102,7 +122,9 @@ export const HypnosisProfileTab: React.FC<{
                 <Coins className="w-[13px] h-[13px] md:w-3.5 md:h-3.5 text-yellow-400" />
                 <span className="text-[11px] md:text-xs font-bold text-gray-300">持有金錢</span>
               </div>
-              <div className="text-[15px] md:text-base font-mono text-white font-bold">{formatMoney(data.user.money)}</div>
+              <div className="text-[15px] md:text-base font-mono text-white font-bold">
+                {formatMoney(data.user.money)}
+              </div>
               <button
                 onClick={() => openExchangeModal('ptsToMoney')}
                 className="w-full py-1 md:py-1.5 rounded-md bg-yellow-900/20 hover:bg-yellow-900/40 border border-yellow-900/50 text-[10px] md:text-[11px] font-semibold text-yellow-500 transition-colors flex items-center justify-center gap-1"
@@ -150,9 +172,11 @@ export const HypnosisProfileTab: React.FC<{
                 data.user.vipAutoRenew ? 'bg-emerald-500' : 'bg-gray-700'
               }`}
             >
-              <div className={`absolute top-[2px] md:top-0.5 w-3.5 md:w-4 h-3.5 md:h-4 rounded-full bg-white shadow transition-transform ${
-                data.user.vipAutoRenew ? 'translate-x-[20px] md:translate-x-[22px]' : 'translate-x-0.5'
-              }`} />
+              <div
+                className={`absolute top-[2px] md:top-0.5 w-3.5 md:w-4 h-3.5 md:h-4 rounded-full bg-white shadow transition-transform ${
+                  data.user.vipAutoRenew ? 'translate-x-[20px] md:translate-x-[22px]' : 'translate-x-0.5'
+                }`}
+              />
             </button>
           </div>
 
@@ -175,24 +199,28 @@ export const HypnosisProfileTab: React.FC<{
             <span className="text-[13px] md:text-sm font-mono font-bold text-red-400">{data.user.suspicion}%</span>
           </div>
           <div className="w-full h-[5px] md:h-[6px] bg-[#1a1530] rounded-full overflow-hidden">
-            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, data.user.suspicion)}%`, background: 'linear-gradient(90deg, #ef4444, #f87171)' }} />
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${Math.min(100, data.user.suspicion)}%`,
+                background: 'linear-gradient(90deg, #ef4444, #f87171)',
+              }}
+            />
           </div>
           <div className="text-[10px] md:text-[11px] text-gray-400">
-            {data.user.suspicion > 80 ? '極度危險！請立即停止可疑行為！' :
-             data.user.suspicion > 50 ? '警告：可疑度偏高。' :
-             data.user.suspicion > 20 ? '注意：已引起部分懷疑。' : '安全：目前未引起明顯懷疑。'}
+            {data.user.suspicion > 80
+              ? '極度危險！請立即停止可疑行為！'
+              : data.user.suspicion > 50
+                ? '警告：可疑度偏高。'
+                : data.user.suspicion > 20
+                  ? '注意：已引起部分懷疑。'
+                  : '安全：目前未引起明顯懷疑。'}
           </div>
         </div>
       </div>
 
       {/* Modal 區 */}
-      {showVipModal && (
-        <VipUpgradeModal
-          data={data}
-          reload={reload}
-          onClose={() => setShowVipModal(false)}
-        />
-      )}
+      {showVipModal && <VipUpgradeModal data={data} reload={reload} onClose={() => setShowVipModal(false)} />}
 
       {showExchangeModal && (
         <ResourceExchangeModal
@@ -217,26 +245,40 @@ const VipUpgradeModal: React.FC<{
   React.useEffect(() => {
     const containers = document.querySelectorAll('.overflow-y-auto');
     const originalStyles = Array.from(containers).map(c => (c as HTMLElement).style.overflow);
-    containers.forEach(c => (c as HTMLElement).style.overflow = 'hidden');
+    containers.forEach(c => ((c as HTMLElement).style.overflow = 'hidden'));
     return () => {
-      containers.forEach((c, i) => (c as HTMLElement).style.overflow = originalStyles[i]);
+      containers.forEach((c, i) => ((c as HTMLElement).style.overflow = originalStyles[i]));
     };
   }, []);
 
   const currentTier = data.user.vipTier;
   const nextTier = currentTier + 1;
 
-  const upgradeCost = nextTier === 1 ? 3000 :
-                      nextTier === 2 ? 6000 :
-                      nextTier === 3 ? 10000 :
-                      nextTier === 4 ? 20000 :
-                      nextTier === 5 ? 40000 : 0;
+  const upgradeCost =
+    nextTier === 1
+      ? 3000
+      : nextTier === 2
+        ? 6000
+        : nextTier === 3
+          ? 10000
+          : nextTier === 4
+            ? 20000
+            : nextTier === 5
+              ? 40000
+              : 0;
 
-  const requiredMc = nextTier === 1 ? 50 :
-                     nextTier === 2 ? 100 :
-                     nextTier === 3 ? 300 :
-                     nextTier === 4 ? 500 :
-                     nextTier === 5 ? 1000 : 0;
+  const requiredMc =
+    nextTier === 1
+      ? 50
+      : nextTier === 2
+        ? 100
+        : nextTier === 3
+          ? 300
+          : nextTier === 4
+            ? 500
+            : nextTier === 5
+              ? 1000
+              : 0;
 
   const canUpgrade = nextTier <= 5 && data.user.money >= upgradeCost && data.user.totalConsumedMc >= requiredMc;
 
@@ -244,7 +286,7 @@ const VipUpgradeModal: React.FC<{
     if (!canUpgrade) return;
     await MockApi.updateUserResource({
       vipTier: nextTier,
-      money: data.user.money - upgradeCost
+      money: data.user.money - upgradeCost,
     });
     reload();
     onClose();
@@ -268,19 +310,25 @@ const VipUpgradeModal: React.FC<{
             <div className="flex items-center justify-center gap-3 md:gap-4 py-3 md:py-4">
               <div className="flex flex-col items-center gap-1">
                 <span className="text-[13px] md:text-sm text-gray-400">目前等級</span>
-                <span className="px-2.5 md:px-3 py-1 bg-gray-800 rounded-lg font-bold text-gray-300">VIP {currentTier}</span>
+                <span className="px-2.5 md:px-3 py-1 bg-gray-800 rounded-lg font-bold text-gray-300">
+                  VIP {currentTier}
+                </span>
               </div>
               <ArrowRightLeft size={20} className="text-gray-500" />
               <div className="flex flex-col items-center gap-1">
                 <span className="text-[13px] md:text-sm text-amber-400">下一等級</span>
-                <span className="px-2.5 md:px-3 py-1 bg-amber-900/30 border border-amber-500/50 rounded-lg font-bold text-amber-400">VIP {nextTier}</span>
+                <span className="px-2.5 md:px-3 py-1 bg-amber-900/30 border border-amber-500/50 rounded-lg font-bold text-amber-400">
+                  VIP {nextTier}
+                </span>
               </div>
             </div>
 
             <div className="bg-[#0c0a1e] rounded-lg p-2.5 md:p-3 border border-amber-900/30 flex flex-col gap-2">
               <div>
                 <div className="text-[10px] md:text-[11px] text-gray-400 mb-1">升級費用 (金錢)</div>
-                <div className={`text-base md:text-lg font-mono font-bold ${data.user.money >= upgradeCost ? 'text-yellow-400' : 'text-red-400'}`}>
+                <div
+                  className={`text-base md:text-lg font-mono font-bold ${data.user.money >= upgradeCost ? 'text-yellow-400' : 'text-red-400'}`}
+                >
                   ¥{upgradeCost.toLocaleString()}
                 </div>
                 <div className="text-[9px] md:text-[10px] text-gray-500 mt-1">
@@ -289,7 +337,9 @@ const VipUpgradeModal: React.FC<{
               </div>
               <div className="border-t border-amber-900/20 pt-2">
                 <div className="text-[10px] md:text-[11px] text-gray-400 mb-1">要求累計消耗 MC</div>
-                <div className={`text-base md:text-lg font-mono font-bold ${data.user.totalConsumedMc >= requiredMc ? 'text-cyan-400' : 'text-red-400'}`}>
+                <div
+                  className={`text-base md:text-lg font-mono font-bold ${data.user.totalConsumedMc >= requiredMc ? 'text-cyan-400' : 'text-red-400'}`}
+                >
                   {requiredMc.toLocaleString()} MC
                 </div>
                 <div className="text-[9px] md:text-[10px] text-gray-500 mt-1">
@@ -315,9 +365,7 @@ const VipUpgradeModal: React.FC<{
             </div>
           </>
         ) : (
-          <div className="py-6 text-center text-gray-300">
-            您已達到最高 VIP 等級！
-          </div>
+          <div className="py-6 text-center text-gray-300">您已達到最高 VIP 等級！</div>
         )}
       </div>
     </div>
@@ -333,7 +381,9 @@ const ResourceExchangeModal: React.FC<{
   onClose: () => void;
   initialType: 'moneyToMc' | 'moneyToPts' | 'ptsToMcMax' | 'ptsToMoney';
 }> = ({ data, reload, onClose, initialType }) => {
-  const [exchangeType, setExchangeType] = useState<'moneyToMc' | 'moneyToPts' | 'ptsToMcMax' | 'ptsToMoney'>(initialType);
+  const [exchangeType, setExchangeType] = useState<'moneyToMc' | 'moneyToPts' | 'ptsToMcMax' | 'ptsToMoney'>(
+    initialType,
+  );
   const [amount, setAmount] = useState(1);
 
   const getExchangeDetails = () => {
@@ -352,7 +402,7 @@ const ResourceExchangeModal: React.FC<{
         costLabel = '金錢';
         gainLabel = 'MC 能量';
         inputLabel = '購買多少 MC 能量';
-        canExchange = amount > 0 && data.user.money >= cost && (data.user.mcEnergy + gain <= data.user.mcEnergyMax);
+        canExchange = amount > 0 && data.user.money >= cost && data.user.mcEnergy + gain <= data.user.mcEnergyMax;
         if (data.user.mcEnergy + gain > data.user.mcEnergyMax) {
           warning = `警告：兌換後將超過 MC 能量上限 (${data.user.mcEnergyMax})`;
         }
@@ -467,7 +517,7 @@ const ResourceExchangeModal: React.FC<{
                 type="number"
                 min={1}
                 value={amount}
-                onChange={(e) => setAmount(Math.max(1, parseInt(e.target.value) || 1))}
+                onChange={e => setAmount(Math.max(1, parseInt(e.target.value) || 1))}
                 className="flex-1 min-w-0 text-center bg-[#0c0a1e] border-y border-purple-900/30 h-[28px] md:h-[32px] text-white outline-none focus:border-purple-500/50 px-0"
               />
               <button
@@ -482,12 +532,19 @@ const ResourceExchangeModal: React.FC<{
           <div className="bg-[#0c0a1e] rounded-lg p-2.5 md:p-3 border border-purple-900/30 grid grid-cols-2 gap-2 md:gap-3">
             <div>
               <div className="text-[9px] md:text-[10px] text-gray-500 mb-1">消耗 {costLabel}</div>
-              <div className={`text-[13px] md:text-sm font-mono font-bold ${
-                (exchangeType === 'moneyToMc' || exchangeType === 'moneyToPts')
-                  ? (data.user.money >= cost ? 'text-yellow-400' : 'text-red-400')
-                  : (data.user.mcPoints >= cost ? 'text-purple-400' : 'text-red-400')
-              }`}>
-                {(exchangeType === 'moneyToMc' || exchangeType === 'moneyToPts') ? '¥' : ''}{cost.toLocaleString()}
+              <div
+                className={`text-[13px] md:text-sm font-mono font-bold ${
+                  exchangeType === 'moneyToMc' || exchangeType === 'moneyToPts'
+                    ? data.user.money >= cost
+                      ? 'text-yellow-400'
+                      : 'text-red-400'
+                    : data.user.mcPoints >= cost
+                      ? 'text-purple-400'
+                      : 'text-red-400'
+                }`}
+              >
+                {exchangeType === 'moneyToMc' || exchangeType === 'moneyToPts' ? '¥' : ''}
+                {cost.toLocaleString()}
               </div>
             </div>
             <div>
@@ -498,11 +555,7 @@ const ResourceExchangeModal: React.FC<{
             </div>
           </div>
 
-          {warning && (
-            <div className="text-[10px] md:text-[11px] text-red-400 mt-1">
-              {warning}
-            </div>
-          )}
+          {warning && <div className="text-[10px] md:text-[11px] text-red-400 mt-1">{warning}</div>}
         </div>
 
         <div className="flex gap-2 md:gap-3 mt-1.5 md:mt-2">

@@ -29,14 +29,14 @@ export const QuestTab: React.FC<QuestTabProps> = ({ quests, userData, onAccept, 
           <div
             key={id}
             className={cn(
-              "p-2.5 md:p-3 rounded-xl border transition-all",
+              'p-2.5 md:p-3 rounded-xl border transition-all',
               state.status === 'claimed'
-                ? "bg-[#13102a]/40 border-purple-900/20 opacity-50 grayscale-[30%]"
+                ? 'bg-[#13102a]/40 border-purple-900/20 opacity-50 grayscale-[30%]'
                 : state.status === 'completed'
-                ? "bg-[#13102a] border-emerald-500/50 shadow-[0_0_8px_rgba(16,185,129,0.15)]"
-                : state.status === 'accepted'
-                ? "bg-[#13102a] border-purple-500/50 shadow-[0_0_8px_rgba(168,85,247,0.1)]"
-                : "bg-[#0c0a1e] border-purple-900/30"
+                  ? 'bg-[#13102a] border-emerald-500/50 shadow-[0_0_8px_rgba(16,185,129,0.15)]'
+                  : state.status === 'accepted'
+                    ? 'bg-[#13102a] border-purple-500/50 shadow-[0_0_8px_rgba(168,85,247,0.1)]'
+                    : 'bg-[#0c0a1e] border-purple-900/30',
             )}
           >
             <div className="flex justify-between items-start mb-1.5">

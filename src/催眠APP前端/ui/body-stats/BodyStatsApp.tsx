@@ -1,15 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Activity,
-  AlertTriangle,
-  ArrowLeft,
-  BookOpen,
-  ChevronDown,
-  ChevronUp,
-  Lock,
-  Search,
-  User,
-} from 'lucide-react';
+import { Activity, AlertTriangle, ArrowLeft, BookOpen, ChevronDown, ChevronUp, Lock, Search, User } from 'lucide-react';
 
 import { getRoleSnapshot, getOrderedStatEntries, STAT_ORDER, BAR_STATS, type RoleMap } from '../../backend/body-stats';
 import { getUnlocks } from '../../backend/hypnosis';
@@ -431,9 +421,9 @@ const StatRow: React.FC<{ label: string; value: unknown }> = ({ label, value }) 
         ? 'from-emerald-400 to-cyan-400'
         : label === '好感度'
           ? 'from-pink-400 to-rose-400'
-        : label === '性欲'
-          ? 'from-fuchsia-400 to-cyan-400'
-          : 'from-cyan-400 to-violet-400';
+          : label === '性欲'
+            ? 'from-fuchsia-400 to-cyan-400'
+            : 'from-cyan-400 to-violet-400';
 
   return (
     <div className="p-3 rounded-xl border border-white/10 bg-black/20">

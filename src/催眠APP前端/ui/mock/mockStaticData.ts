@@ -5,7 +5,7 @@ import {
   CalendarEvent,
   MockZone,
   MockLocationNode,
-  MockMapEdge
+  MockMapEdge,
 } from './mockModels';
 
 // ==========================================
@@ -13,7 +13,7 @@ import {
 // ==========================================
 
 export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
-  'evt_school_2027_01_0': {
+  evt_school_2027_01_0: {
     title: '元旦(祝日)',
     startDate: '2027-01-01',
     endDate: '2027-01-01',
@@ -21,7 +21,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 元旦(祝日)',
   },
-  'evt_school_2027_01_1': {
+  evt_school_2027_01_1: {
     title: '第三学期始业式',
     startDate: '2027-01-07',
     endDate: '2027-01-07',
@@ -29,7 +29,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 第三学期始业式',
   },
-  'evt_school_2027_01_2': {
+  evt_school_2027_01_2: {
     title: '成人之日(1月第2周一/祝日)',
     startDate: '2027-01-13',
     endDate: '2027-01-13',
@@ -37,7 +37,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 成人之日(1月第2周一/祝日)',
   },
-  'evt_school_2027_01_3': {
+  evt_school_2027_01_3: {
     title: '大学入学共通测试(三年级/校内禁声)',
     startDate: '2027-01-17',
     endDate: '2027-01-18',
@@ -45,7 +45,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 大学入学共通测试(三年级/校内禁声)',
   },
-  'evt_school_2027_01_4': {
+  evt_school_2027_01_4: {
     title: '马拉松大会/耐力跑',
     startDate: '2027-01-25',
     endDate: '2027-01-25',
@@ -53,7 +53,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 马拉松大会/耐力跑',
   },
-  'evt_school_2027_02_0': {
+  evt_school_2027_02_0: {
     title: '节分(撒豆驱鬼)',
     startDate: '2027-02-03',
     endDate: '2027-02-03',
@@ -61,7 +61,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 节分(撒豆驱鬼)',
   },
-  'evt_school_2027_02_1': {
+  evt_school_2027_02_1: {
     title: '建国纪念日(祝日)',
     startDate: '2027-02-11',
     endDate: '2027-02-11',
@@ -69,7 +69,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 建国纪念日(祝日)',
   },
-  'evt_school_2027_02_2': {
+  evt_school_2027_02_2: {
     title: '情人节',
     startDate: '2027-02-14',
     endDate: '2027-02-14',
@@ -77,7 +77,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 情人节',
   },
-  'evt_school_2027_02_3': {
+  evt_school_2027_02_3: {
     title: '天皇诞辰(祝日)',
     startDate: '2027-02-23',
     endDate: '2027-02-23',
@@ -85,7 +85,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 天皇诞辰(祝日)',
   },
-  'evt_school_2027_02_4': {
+  evt_school_2027_02_4: {
     title: '振替休日(补假)',
     startDate: '2027-02-24',
     endDate: '2027-02-24',
@@ -93,7 +93,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 振替休日(补假)',
   },
-  'evt_school_2027_02_5': {
+  evt_school_2027_02_5: {
     title: '学年末考试(一二年级)',
     startDate: '2027-02-25',
     endDate: '2027-02-27',
@@ -101,7 +101,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 学年末考试(一二年级)',
   },
-  'evt_school_2027_03_0': {
+  evt_school_2027_03_0: {
     title: '女儿节',
     startDate: '2027-03-03',
     endDate: '2027-03-03',
@@ -109,7 +109,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 女儿节',
   },
-  'evt_school_2027_03_1': {
+  evt_school_2027_03_1: {
     title: '白色情人节',
     startDate: '2027-03-14',
     endDate: '2027-03-14',
@@ -117,7 +117,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 白色情人节',
   },
-  'evt_school_2027_03_2': {
+  evt_school_2027_03_2: {
     title: '春分之日(祝日)',
     startDate: '2027-03-20',
     endDate: '2027-03-20',
@@ -125,7 +125,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 春分之日(祝日)',
   },
-  'evt_school_2027_03_3': {
+  evt_school_2027_03_3: {
     title: '修业式(年度结束)',
     startDate: '2027-03-24',
     endDate: '2027-03-24',
@@ -133,7 +133,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 修业式(年度结束)',
   },
-  'evt_school_2027_03_4': {
+  evt_school_2027_03_4: {
     title: '春假开始',
     startDate: '2027-03-25',
     endDate: '2027-03-25',
@@ -141,7 +141,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 春假开始',
   },
-  'evt_school_2026_04_0': {
+  evt_school_2026_04_0: {
     title: '愚人节',
     startDate: '2026-04-01',
     endDate: '2026-04-01',
@@ -149,7 +149,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 愚人节',
   },
-  'evt_school_2026_04_1': {
+  evt_school_2026_04_1: {
     title: '入学式/始业式',
     startDate: '2026-04-08',
     endDate: '2026-04-08',
@@ -157,7 +157,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 入学式/始业式',
   },
-  'evt_school_2026_04_2': {
+  evt_school_2026_04_2: {
     title: '社团招新周',
     startDate: '2026-04-10',
     endDate: '2026-04-14',
@@ -165,7 +165,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 社团招新周',
   },
-  'evt_school_2026_04_3': {
+  evt_school_2026_04_3: {
     title: '社团说明会',
     startDate: '2026-04-15',
     endDate: '2026-04-15',
@@ -173,7 +173,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 社团说明会',
   },
-  'evt_school_2026_04_4': {
+  evt_school_2026_04_4: {
     title: '身体检查',
     startDate: '2026-04-20',
     endDate: '2026-04-20',
@@ -181,7 +181,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 身体检查',
   },
-  'evt_school_2026_04_5': {
+  evt_school_2026_04_5: {
     title: '黄金周假期开始',
     startDate: '2026-04-29',
     endDate: '2026-04-29',
@@ -189,7 +189,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 黄金周假期开始',
   },
-  'evt_school_2026_05_0': {
+  evt_school_2026_05_0: {
     title: '黄金周假期结束',
     startDate: '2026-05-06',
     endDate: '2026-05-06',
@@ -197,7 +197,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 黄金周假期结束',
   },
-  'evt_school_2026_05_1': {
+  evt_school_2026_05_1: {
     title: '第一学期中考',
     startDate: '2026-05-20',
     endDate: '2026-05-23',
@@ -205,7 +205,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 第一学期中考',
   },
-  'evt_school_2026_05_2': {
+  evt_school_2026_05_2: {
     title: '球技大会',
     startDate: '2026-05-25',
     endDate: '2026-05-25',
@@ -213,7 +213,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 球技大会',
   },
-  'evt_school_2026_06_0': {
+  evt_school_2026_06_0: {
     title: '衣更(换夏装)',
     startDate: '2026-06-01',
     endDate: '2026-06-01',
@@ -221,7 +221,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 衣更(换夏装)',
   },
-  'evt_school_2026_06_1': {
+  evt_school_2026_06_1: {
     title: '全校体力测验',
     startDate: '2026-06-10',
     endDate: '2026-06-10',
@@ -229,7 +229,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 全校体力测验',
   },
-  'evt_school_2026_06_2': {
+  evt_school_2026_06_2: {
     title: '学生会选举',
     startDate: '2026-06-25',
     endDate: '2026-06-25',
@@ -237,7 +237,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 学生会选举',
   },
-  'evt_school_2026_06_3': {
+  evt_school_2026_06_3: {
     title: '夜间试胆大会',
     startDate: '2026-06-30',
     endDate: '2026-06-30',
@@ -245,7 +245,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 夜间试胆大会',
   },
-  'evt_school_2026_07_0': {
+  evt_school_2026_07_0: {
     title: '七夕',
     startDate: '2026-07-07',
     endDate: '2026-07-07',
@@ -253,7 +253,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 七夕',
   },
-  'evt_school_2026_07_1': {
+  evt_school_2026_07_1: {
     title: '第一学期末考',
     startDate: '2026-07-14',
     endDate: '2026-07-17',
@@ -261,7 +261,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 第一学期末考',
   },
-  'evt_school_2026_07_2': {
+  evt_school_2026_07_2: {
     title: '海之日(7月第3周一/祝日)',
     startDate: '2026-07-21',
     endDate: '2026-07-21',
@@ -269,7 +269,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 海之日(7月第3周一/祝日)',
   },
-  'evt_school_2026_07_3': {
+  evt_school_2026_07_3: {
     title: '第一学期结业式',
     startDate: '2026-07-22',
     endDate: '2026-07-22',
@@ -277,7 +277,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 第一学期结业式',
   },
-  'evt_school_2026_07_4': {
+  evt_school_2026_07_4: {
     title: '暑假开始',
     startDate: '2026-07-23',
     endDate: '2026-07-23',
@@ -285,7 +285,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 暑假开始',
   },
-  'evt_school_2026_07_5': {
+  evt_school_2026_07_5: {
     title: '社团夏季合宿',
     startDate: '2026-07-25',
     endDate: '2026-07-28',
@@ -293,7 +293,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 社团夏季合宿',
   },
-  'evt_school_2026_08_0': {
+  evt_school_2026_08_0: {
     title: '全校返校日',
     startDate: '2026-08-01',
     endDate: '2026-08-01',
@@ -301,7 +301,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 全校返校日',
   },
-  'evt_school_2026_08_1': {
+  evt_school_2026_08_1: {
     title: '山之日(祝日)',
     startDate: '2026-08-11',
     endDate: '2026-08-11',
@@ -309,7 +309,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 山之日(祝日)',
   },
-  'evt_school_2026_08_2': {
+  evt_school_2026_08_2: {
     title: '盂兰盆节',
     startDate: '2026-08-13',
     endDate: '2026-08-16',
@@ -317,7 +317,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 盂兰盆节',
   },
-  'evt_school_2026_08_3': {
+  evt_school_2026_08_3: {
     title: '夏Comi(同人展/东京BigSight)',
     startDate: '2026-08-16',
     endDate: '2026-08-17',
@@ -325,7 +325,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 夏Comi(同人展/东京BigSight)',
   },
-  'evt_school_2026_08_4': {
+  evt_school_2026_08_4: {
     title: '补习/作业最后冲刺',
     startDate: '2026-08-25',
     endDate: '2026-08-25',
@@ -333,7 +333,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 补习/作业最后冲刺',
   },
-  'evt_school_2026_08_5': {
+  evt_school_2026_08_5: {
     title: '暑假最后一日',
     startDate: '2026-08-31',
     endDate: '2026-08-31',
@@ -341,7 +341,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 暑假最后一日',
   },
-  'evt_school_2026_09_0': {
+  evt_school_2026_09_0: {
     title: '第二学期始业式',
     startDate: '2026-09-01',
     endDate: '2026-09-01',
@@ -349,7 +349,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 第二学期始业式',
   },
-  'evt_school_2026_09_1': {
+  evt_school_2026_09_1: {
     title: '敬老之日(9月第3周一/祝日)',
     startDate: '2026-09-15',
     endDate: '2026-09-15',
@@ -357,7 +357,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 敬老之日(9月第3周一/祝日)',
   },
-  'evt_school_2026_09_2': {
+  evt_school_2026_09_2: {
     title: '校庆执行委员会成立 / 班级展出项目决定',
     startDate: '2026-09-16',
     endDate: '2026-09-16',
@@ -365,7 +365,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 校庆执行委员会成立 / 班级展出项目决定',
   },
-  'evt_school_2026_09_3': {
+  evt_school_2026_09_3: {
     title: '秋分之日(祝日)',
     startDate: '2026-09-23',
     endDate: '2026-09-23',
@@ -373,7 +373,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 秋分之日(祝日)',
   },
-  'evt_school_2026_09_4': {
+  evt_school_2026_09_4: {
     title: '体育祭(运动会)',
     startDate: '2026-09-29',
     endDate: '2026-09-29',
@@ -381,7 +381,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 体育祭(运动会)',
   },
-  'evt_school_2026_10_0': {
+  evt_school_2026_10_0: {
     title: '衣更(换冬装)',
     startDate: '2026-10-01',
     endDate: '2026-10-01',
@@ -389,7 +389,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 衣更(换冬装)',
   },
-  'evt_school_2026_10_1': {
+  evt_school_2026_10_1: {
     title: '运动之日(10月第2周一/祝日)',
     startDate: '2026-10-13',
     endDate: '2026-10-13',
@@ -397,7 +397,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 运动之日(10月第2周一/祝日)',
   },
-  'evt_school_2026_10_2': {
+  evt_school_2026_10_2: {
     title: '第二学期中考',
     startDate: '2026-10-21',
     endDate: '2026-10-24',
@@ -405,7 +405,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 第二学期中考',
   },
-  'evt_school_2026_10_3': {
+  evt_school_2026_10_3: {
     title: '万圣节放学后的Cosplay派对',
     startDate: '2026-10-31',
     endDate: '2026-10-31',
@@ -413,7 +413,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 万圣节放学后的Cosplay派对',
   },
-  'evt_school_2026_11_0': {
+  evt_school_2026_11_0: {
     title: '文化祭(学园祭)',
     startDate: '2026-11-01',
     endDate: '2026-11-02',
@@ -421,7 +421,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 文化祭(学园祭)',
   },
-  'evt_school_2026_11_1': {
+  evt_school_2026_11_1: {
     title: '文化之日(祝日/文化祭后夜祭)',
     startDate: '2026-11-03',
     endDate: '2026-11-03',
@@ -429,7 +429,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 文化之日(祝日/文化祭后夜祭)',
   },
-  'evt_school_2026_11_2': {
+  evt_school_2026_11_2: {
     title: '七五三节',
     startDate: '2026-11-15',
     endDate: '2026-11-15',
@@ -437,7 +437,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 七五三节',
   },
-  'evt_school_2026_11_3': {
+  evt_school_2026_11_3: {
     title: '勤劳感谢日(祝日)',
     startDate: '2026-11-23',
     endDate: '2026-11-23',
@@ -445,7 +445,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 勤劳感谢日(祝日)',
   },
-  'evt_school_2026_11_4': {
+  evt_school_2026_11_4: {
     title: '振替休日(补假)',
     startDate: '2026-11-24',
     endDate: '2026-11-24',
@@ -453,7 +453,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 振替休日(补假)',
   },
-  'evt_school_2026_11_5': {
+  evt_school_2026_11_5: {
     title: '修学旅行',
     startDate: '2026-11-25',
     endDate: '2026-11-28',
@@ -461,7 +461,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 修学旅行',
   },
-  'evt_school_2026_12_0': {
+  evt_school_2026_12_0: {
     title: '第二学期末考',
     startDate: '2026-12-09',
     endDate: '2026-12-12',
@@ -469,7 +469,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 第二学期末考',
   },
-  'evt_school_2026_12_1': {
+  evt_school_2026_12_1: {
     title: '第二学期结业式/平安夜',
     startDate: '2026-12-24',
     endDate: '2026-12-24',
@@ -477,7 +477,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 第二学期结业式/平安夜',
   },
-  'evt_school_2026_12_2': {
+  evt_school_2026_12_2: {
     title: '圣诞节/寒假开始',
     startDate: '2026-12-25',
     endDate: '2026-12-25',
@@ -485,7 +485,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'red',
     description: '學校行事曆: 圣诞节/寒假开始',
   },
-  'evt_school_2026_12_3': {
+  evt_school_2026_12_3: {
     title: '冬Comi(同人展)',
     startDate: '2026-12-30',
     endDate: '2026-12-31',
@@ -493,7 +493,7 @@ export const CALENDAR_STATIC_EVENTS: Record<string, CalendarEvent> = {
     color: 'gray',
     description: '學校行事曆: 冬Comi(同人展)',
   },
-  'evt_school_2026_12_4': {
+  evt_school_2026_12_4: {
     title: '大晦日(除夕)',
     startDate: '2026-12-31',
     endDate: '2026-12-31',
@@ -760,7 +760,8 @@ export const HYPNOSIS_DICTIONARY: Record<string, HypnosisDef> = {
   },
   vip3_sense_sync: {
     name: '感覺同步',
-    description: '讓被催眠者在指定時間內，產生了自己與指定物體或人的某種感覺同步的幻覺，需認知到對象被刺激才會產生同步感覺。',
+    description:
+      '讓被催眠者在指定時間內，產生了自己與指定物體或人的某種感覺同步的幻覺，需認知到對象被刺激才會產生同步感覺。',
     tier: 3,
     cost: { pts: 150, money: 25000 },
     isCustom: false,
@@ -790,7 +791,8 @@ export const HYPNOSIS_DICTIONARY: Record<string, HypnosisDef> = {
   },
   vip4_advanced: {
     name: '潛意識支配',
-    description: '讓被催眠者無意識下遵循一個或多個簡單指示，指示範圍可達連續且不超過10個簡單舉動的動作序列。無法做出違反生存本能的行為，但可強行引導主觀上極度不願意及有生命危險的行為（不會直接致死但會陷入危險）。當明確查覺非自發或因生存本能暫停時，效果降低但無法掙脫，只會暫停直到時間結束。',
+    description:
+      '讓被催眠者無意識下遵循一個或多個簡單指示，指示範圍可達連續且不超過10個簡單舉動的動作序列。無法做出違反生存本能的行為，但可強行引導主觀上極度不願意及有生命危險的行為（不會直接致死但會陷入危險）。當明確查覺非自發或因生存本能暫停時，效果降低但無法掙脫，只會暫停直到時間結束。',
     tier: 4,
     cost: { pts: 300 },
     isCustom: false,
@@ -800,7 +802,8 @@ export const HYPNOSIS_DICTIONARY: Record<string, HypnosisDef> = {
   },
   vip4_cognitive_block: {
     name: '認知阻礙',
-    description: '讓被催眠者在催眠生效期間主觀上認知到或理解不到指定的事物，並且與指定事物相關的一切都會被忽略掉，但物理反應仍然會發生。',
+    description:
+      '讓被催眠者在催眠生效期間主觀上認知到或理解不到指定的事物，並且與指定事物相關的一切都會被忽略掉，但物理反應仍然會發生。',
     tier: 4,
     cost: { pts: 300, money: 25000 },
     isCustom: false,
@@ -810,7 +813,8 @@ export const HYPNOSIS_DICTIONARY: Record<string, HypnosisDef> = {
   },
   vip4_fetish_implant: {
     name: '臨時性癖植入',
-    description: '讓被催眠者在催眠生效期間，被植入指定的性癖，且會對指定性癖產生強烈的性興奮與快感，催眠時間結束後，植入的性癖會逐漸消失，但會在腦中留下印象。',
+    description:
+      '讓被催眠者在催眠生效期間，被植入指定的性癖，且會對指定性癖產生強烈的性興奮與快感，催眠時間結束後，植入的性癖會逐漸消失，但會在腦中留下印象。',
     tier: 4,
     cost: { pts: 300, money: 30000 },
     isCustom: false,
@@ -820,7 +824,8 @@ export const HYPNOSIS_DICTIONARY: Record<string, HypnosisDef> = {
   },
   vip4_conscious_action: {
     name: '保留意識控制身體行動',
-    description: '讓被催眠者在催眠生效期間，仍然保留主觀意識的完全控制能力，但是會無意識地強制執行指定的一或多項簡單指令(可疊加)。人是清醒的，但身體不是自己控制的。',
+    description:
+      '讓被催眠者在催眠生效期間，仍然保留主觀意識的完全控制能力，但是會無意識地強制執行指定的一或多項簡單指令(可疊加)。人是清醒的，但身體不是自己控制的。',
     tier: 4,
     cost: { pts: 300, money: 35000 },
     isCustom: false,
@@ -830,7 +835,8 @@ export const HYPNOSIS_DICTIONARY: Record<string, HypnosisDef> = {
   },
   vip4_unconscious_action: {
     name: '不保留意識控制身體行動',
-    description: '讓被催眠者在催眠生效期間，無意識地強制執行指定的一或多項簡單指令(可疊加)，並且無法保留主觀意識的控制能力。催眠結束後意識才恢復，並銜接催眠前的意識。',
+    description:
+      '讓被催眠者在催眠生效期間，無意識地強制執行指定的一或多項簡單指令(可疊加)，並且無法保留主觀意識的控制能力。催眠結束後意識才恢復，並銜接催眠前的意識。',
     tier: 4,
     cost: { pts: 300, money: 35000 },
     isCustom: false,
@@ -860,7 +866,8 @@ export const HYPNOSIS_DICTIONARY: Record<string, HypnosisDef> = {
   },
   vip4_excretion_control: {
     name: '排泄控制',
-    description: '讓被催眠者在催眠生效期間，在催眠者指定的條件下才能主動排泄，或是在特定的條件下才能主動停止排泄。當抵達生理極限卻仍然沒有滿足指定條件，就會直接失禁。',
+    description:
+      '讓被催眠者在催眠生效期間，在催眠者指定的條件下才能主動排泄，或是在特定的條件下才能主動停止排泄。當抵達生理極限卻仍然沒有滿足指定條件，就會直接失禁。',
     tier: 4,
     cost: { pts: 300, money: 50000 },
     isCustom: false,
@@ -880,7 +887,8 @@ export const HYPNOSIS_DICTIONARY: Record<string, HypnosisDef> = {
   },
   vip4_age_regression: {
     name: '幼兒退行',
-    description: '讓被催眠者在催眠生效期間，心智年齡逐漸退化至指定歲數，且生理年齡維持不變。催眠時間結束後，心智年齡會逐漸恢復到催眠前的狀態。',
+    description:
+      '讓被催眠者在催眠生效期間，心智年齡逐漸退化至指定歲數，且生理年齡維持不變。催眠時間結束後，心智年齡會逐漸恢復到催眠前的狀態。',
     tier: 4,
     cost: { pts: 300, money: 60000 },
     isCustom: false,
@@ -890,7 +898,8 @@ export const HYPNOSIS_DICTIONARY: Record<string, HypnosisDef> = {
   },
   vip4_reason_melt: {
     name: '理智溶解',
-    description: '讓被催眠者在催眠生效期間，判斷力與邏輯思考能力逐漸退化，直到完全失去理智，邏輯會變得混亂，無法正常思考。',
+    description:
+      '讓被催眠者在催眠生效期間，判斷力與邏輯思考能力逐漸退化，直到完全失去理智，邏輯會變得混亂，無法正常思考。',
     tier: 4,
     cost: { pts: 300, money: 65000 },
     isCustom: false,
@@ -900,7 +909,8 @@ export const HYPNOSIS_DICTIONARY: Record<string, HypnosisDef> = {
   },
   vip4_pseudo_time_stop: {
     name: '偽時停',
-    description: '讓被催眠者在催眠生效期間，舉動與意識會停在被催眠的那一刻，直到催眠時間結束。在催眠結束的瞬間，被催眠者會恢復意識，且恢復後，期間內所有的快感會一口氣爆發。',
+    description:
+      '讓被催眠者在催眠生效期間，舉動與意識會停在被催眠的那一刻，直到催眠時間結束。在催眠結束的瞬間，被催眠者會恢復意識，且恢復後，期間內所有的快感會一口氣爆發。',
     tier: 4,
     cost: { pts: 300, money: 70000 },
     isCustom: false,
@@ -910,7 +920,8 @@ export const HYPNOSIS_DICTIONARY: Record<string, HypnosisDef> = {
   },
   vip4_temp_personality: {
     name: '臨時人格植入',
-    description: '讓被催眠者在催眠生效期間，被植入指定的人格，且會表現出該人格，催眠時間結束後，植入的人格會立刻消失，但可能會殘留些微人格特質。',
+    description:
+      '讓被催眠者在催眠生效期間，被植入指定的人格，且會表現出該人格，催眠時間結束後，植入的人格會立刻消失，但可能會殘留些微人格特質。',
     tier: 4,
     cost: { pts: 300, money: 75000 },
     isCustom: false,
@@ -920,7 +931,8 @@ export const HYPNOSIS_DICTIONARY: Record<string, HypnosisDef> = {
   },
   vip4_space_common_sense: {
     name: '封閉空間常識修改',
-    description: '根據指定的規則，改變指定空間內的特定常識，預設影響指定空間內除了催眠使用者以外所有人的常識。只能對封閉空間生效。',
+    description:
+      '根據指定的規則，改變指定空間內的特定常識，預設影響指定空間內除了催眠使用者以外所有人的常識。只能對封閉空間生效。',
     tier: 4,
     cost: { pts: 300, money: 80000 },
     isCustom: false,
@@ -940,7 +952,8 @@ export const HYPNOSIS_DICTIONARY: Record<string, HypnosisDef> = {
   },
   vip5_personality: {
     name: '永久人格植入',
-    description: '永久催眠，可疊加。對被催眠者植入一個或多個可以被反覆觸發的開關暗號，每個暗號對應一個獨立的人格設定，預設保留原始人格。聽到特定暗號就會切換到對應人格。',
+    description:
+      '永久催眠，可疊加。對被催眠者植入一個或多個可以被反覆觸發的開關暗號，每個暗號對應一個獨立的人格設定，預設保留原始人格。聽到特定暗號就會切換到對應人格。',
     tier: 5,
     cost: { pts: 1000, money: 80000 },
     isCustom: false,
@@ -970,7 +983,8 @@ export const HYPNOSIS_DICTIONARY: Record<string, HypnosisDef> = {
   },
   vip5_meat_puppet: {
     name: '肉人偶化',
-    description: '永久催眠。植入隱蔽的開關暗號，接收到暗號後瞬間切換成絕對服從且沒有自我意識的肉人偶模式，此模式下生存本能會被覆蓋，即使瀕死也不會解除。',
+    description:
+      '永久催眠。植入隱蔽的開關暗號，接收到暗號後瞬間切換成絕對服從且沒有自我意識的肉人偶模式，此模式下生存本能會被覆蓋，即使瀕死也不會解除。',
     tier: 5,
     cost: { pts: 1000, money: 150000 },
     isCustom: false,
@@ -1000,7 +1014,8 @@ export const HYPNOSIS_DICTIONARY: Record<string, HypnosisDef> = {
   },
   vip5_perm_fake_memory: {
     name: '永久虚假记忆',
-    description: '永久催眠。將指定記憶修改為另一種記憶，或植入不存在的記憶。大腦會對與現實衝突的部分自行合理解釋或淡化。',
+    description:
+      '永久催眠。將指定記憶修改為另一種記憶，或植入不存在的記憶。大腦會對與現實衝突的部分自行合理解釋或淡化。',
     tier: 5,
     cost: { pts: 1000, money: 140000 },
     isCustom: false,
@@ -1010,7 +1025,8 @@ export const HYPNOSIS_DICTIONARY: Record<string, HypnosisDef> = {
   },
   vip5_open_space_sense: {
     name: '開放空間常識修改',
-    description: '對指定空間內的特定常識進行強制修改，預設影響空間內除了催眠使用者以外所有人的常識。催眠時間結束後解除。能對開放空間與封閉空間生效。',
+    description:
+      '對指定空間內的特定常識進行強制修改，預設影響空間內除了催眠使用者以外所有人的常識。催眠時間結束後解除。能對開放空間與封閉空間生效。',
     tier: 5,
     cost: { pts: 1000, money: 160000 },
     isCustom: false,
@@ -1020,14 +1036,15 @@ export const HYPNOSIS_DICTIONARY: Record<string, HypnosisDef> = {
   },
   vip5_forced_action: {
     name: '強制控制身體行動',
-    description: '一次性催眠。效果會持續到被催眠者執行指定的行動為止，且被催眠者在執行指定行動期間無法反抗或中斷，即使是違背自身意志或面臨死亡風險也無法中斷。',
+    description:
+      '一次性催眠。效果會持續到被催眠者執行指定的行動為止，且被催眠者在執行指定行動期間無法反抗或中斷，即使是違背自身意志或面臨死亡風險也無法中斷。',
     tier: 5,
     cost: { pts: 1000, money: 180000 },
     isCustom: false,
     isPermanent: false,
     isOneTime: true,
     energyCost: 6000,
-  }
+  },
 };
 
 export const EQUIPMENT_DICTIONARY: Record<string, EquipmentDef> = {
@@ -1190,7 +1207,7 @@ export const EQUIPMENT_DICTIONARY: Record<string, EquipmentDef> = {
     type: 'device',
     usageCostType: ['none'],
     usageCostRate: 0,
-  }
+  },
 };
 
 // ==========================================
@@ -1617,7 +1634,7 @@ export const QUEST_DICTIONARY: Record<string, AchievementOrQuestDef> = {
 
 export const MAP_ZONES: MockZone[] = [
   { id: 'school_zone', name: '學校區域', description: '主角與女主角們就讀的私立高中，此時正值課後社團時間。' },
-  { id: 'home_zone', name: '主角家中', description: '主角居住的公寓，也是與姐姐一同生活的地方。' }
+  { id: 'home_zone', name: '主角家中', description: '主角居住的公寓，也是與姐姐一同生活的地方。' },
 ];
 
 export const MAP_LOCATION_NODES: MockLocationNode[] = [
@@ -1626,101 +1643,95 @@ export const MAP_LOCATION_NODES: MockLocationNode[] = [
     id: 'school_gate',
     name: '學校大門',
     zoneId: 'school_zone',
-    description: '學校的主入口，此時校門半開，偶爾有放學的學生經過。右側是門衛室。'
+    description: '學校的主入口，此時校門半開，偶爾有放學的學生經過。右側是門衛室。',
   },
   {
     id: 'school_courtyard',
     name: '中庭噴水池',
     zoneId: 'school_zone',
-    description: '寬敞的中庭，中央有著落葉漂浮的噴水池，花壇裡盛開著季節性的花卉。'
+    description: '寬敞的中庭，中央有著落葉漂浮的噴水池，花壇裡盛開著季節性的花卉。',
   },
   {
     id: 'school_lobby',
     name: '鞋櫃升降口',
     zoneId: 'school_zone',
-    description: '本館大樓的入口處，排列著整齊的學生鞋櫃。夕陽從玻璃門灑進來。'
+    description: '本館大樓的入口處，排列著整齊的學生鞋櫃。夕陽從玻璃門灑進來。',
   },
   {
     id: 'school_playground',
     name: '學校操場',
     zoneId: 'school_zone',
     description: '開闊的塑膠跑道操場。夕陽斜照，空氣中餚漫著青草與泥土的氣味。',
-    hasQuest: true
+    hasQuest: true,
   },
   {
     id: 'school_classroom_2b',
     name: '二年B班教室',
     zoneId: 'school_zone',
     description: '放學後的二年B班教室，夕陽將課桌椅拉出長長的光影。靠窗的位置十分安靜。',
-    presentNpcs: [
-      { name: '月咏深雪', status: '值日生，正在整理講台' }
-    ]
+    presentNpcs: [{ name: '月咏深雪', status: '值日生，正在整理講台' }],
   },
   {
     id: 'school_corridor_2f',
     name: '二樓走廊',
     zoneId: 'school_zone',
-    description: '教學樓二樓的長廊，連接著教室、實驗室與通往體育館的走廊。'
+    description: '教學樓二樓的長廊，連接著教室、實驗室與通往體育館的走廊。',
   },
   {
     id: 'school_student_council',
     name: '學生會室',
     zoneId: 'school_zone',
-    description: '學生會的辦公室，陳設莊重整潔，有一張大會議桌與裝滿文件的檔案櫃。'
+    description: '學生會的辦公室，陳設莊重整潔，有一張大會議桌與裝滿文件的檔案櫃。',
   },
   {
     id: 'school_science_lab',
     name: '理科實驗室',
     zoneId: 'school_zone',
-    description: '擺滿燒杯與顯微鏡的物理化學實驗室，空氣中微有化學藥劑的氣味。'
+    description: '擺滿燒杯與顯微鏡的物理化學實驗室，空氣中微有化學藥劑的氣味。',
   },
   {
     id: 'school_gym',
     name: '體育館',
     zoneId: 'school_zone',
     description: '巨大的室內體育館，地板打蠟得反光。此時社團活動剛結束，有種空曠的迴音。',
-    presentNpcs: [
-      { name: '犬冢夏美', status: '社團自主練習中，滿身汗水' }
-    ]
+    presentNpcs: [{ name: '犬冢夏美', status: '社團自主練習中，滿身汗水' }],
   },
   {
     id: 'school_shower',
     name: '更衣淋浴間',
     zoneId: 'school_zone',
     description: '體育館附設的淋浴間，此時傳來嘩啦啦的水聲與溫熱的蒸汽。',
-    presentNpcs: [
-      { name: '犬冢夏美', status: '正在淋浴，霧氣騰騰' }
-    ]
+    presentNpcs: [{ name: '犬冢夏美', status: '正在淋浴，霧氣騰騰' }],
   },
   {
     id: 'school_warehouse',
     name: '體育器材倉庫',
     zoneId: 'school_zone',
-    description: '體育館後方一處偏僻陰暗的木製倉庫，平時用來存放廢棄的跳箱 and 軟墊。幾乎無人踏足。'
+    description: '體育館後方一處偏僻陰暗的木製倉庫，平時用來存放廢棄的跳箱 and 軟墊。幾乎無人踏足。',
   },
   {
     id: 'school_rooftop',
     name: '屋頂平台',
     zoneId: 'school_zone',
-    description: '視野開闊的屋頂平台，風很大，可以俯瞰整個齋明學園。四周設有鐵網。'
+    description: '視野開闊的屋頂平台，風很大，可以俯瞰整個齋明學園。四周設有鐵網。',
   },
   {
     id: 'school_greenhouse',
     name: '園藝部溫室',
     zoneId: 'school_zone',
-    description: '屋頂一角的玻璃溫室，種植著各種實驗用花草，陽光透過玻璃照得暖洋洋的。'
+    description: '屋頂一角的玻璃溫室，種植著各種實驗用花草，陽光透過玻璃照得暖洋洋的。',
   },
   {
     id: 'school_tennis_court',
     name: '網球場',
     zoneId: 'school_zone',
-    description: '開闊的網球場，綠色的塑膠地面上畫著白色的標線。課後社團時間會有網球部成員在此練習。'
+    description: '開闊的網球場，綠色的塑膠地面上畫著白色的標線。課後社團時間會有網球部成員在此練習。',
   },
   {
     id: 'school_kyudo_field',
     name: '弓道場',
     zoneId: 'school_zone',
-    description: '學校偏僻處的日式弓道場，鋪有乾淨的木地板。此時通常只有弓道部在特定深夜或清晨時段在此練習。'
+    description: '學校偏僻處的日式弓道場，鋪有乾淨的木地板。此時通常只有弓道部在特定深夜或清晨時段在此練習。',
   },
 
   // 主角家區域
@@ -1728,47 +1739,45 @@ export const MAP_LOCATION_NODES: MockLocationNode[] = [
     id: 'home_living_room',
     name: '客廳',
     zoneId: 'home_zone',
-    description: '溫馨整潔的客廳，中央放著茶几與沙發，電視機此時處於關閉狀態。'
+    description: '溫馨整潔的客廳，中央放著茶几與沙發，電視機此時處於關閉狀態。',
   },
   {
     id: 'home_my_room',
     name: '主角臥室',
     zoneId: 'home_zone',
-    description: '主角自己的房間，有一張單人床、電腦桌與散落著輕小說的書架。這也是最安全的避難所。'
+    description: '主角自己的房間，有一張單人床、電腦桌與散落著輕小說的書架。這也是最安全的避難所。',
   },
   {
     id: 'home_kitchen',
     name: '廚房',
     zoneId: 'home_zone',
-    description: '乾淨的廚房，抽油煙機乾乾淨淨，冰箱裡放滿了新鮮的食材。'
+    description: '乾淨的廚房，抽油煙機乾乾淨淨，冰箱裡放滿了新鮮的食材。',
   },
   {
     id: 'home_sister_room',
     name: '姐姐臥室',
     zoneId: 'home_zone',
     description: '散發著淡淡櫻花香氣的溫馨房間。床頭放著精緻的玩偶，平時姐姐不允許主角輕易進入。',
-    presentNpcs: [
-      { name: '西园寺爱丽莎', status: '正坐在書桌前用電腦' }
-    ]
+    presentNpcs: [{ name: '西园寺爱丽莎', status: '正坐在書桌前用電腦' }],
   },
   {
     id: 'home_bathroom',
     name: '浴室',
     zoneId: 'home_zone',
-    description: '乾濕分離的浴室，浴缸裡正散發著熱氣，鏡子上蒙著一層薄薄的水霧。'
+    description: '乾濕分離的浴室，浴缸裡正散發著熱氣，鏡子上蒙著一層薄薄的水霧。',
   },
   {
     id: 'home_basement_corridor',
     name: '地下室走道',
     zoneId: 'home_zone',
-    description: '公寓地下室的昏暗通道，平時只有管理員偶爾會來檢查線路。'
+    description: '公寓地下室的昏暗通道，平時只有管理員偶爾會來檢查線路。',
   },
   {
     id: 'home_basement_locked',
     name: '地下室被鎖的房間',
     zoneId: 'home_zone',
-    description: '落滿灰塵的神祕小房間，門鎖生鏽，不知道裡面存放著什麼舊物。'
-  }
+    description: '落滿灰塵的神祕小房間，門鎖生鏽，不知道裡面存放著什麼舊物。',
+  },
 ];
 
 export const MAP_MAP_EDGES: MockMapEdge[] = [

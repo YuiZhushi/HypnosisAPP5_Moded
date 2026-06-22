@@ -44,7 +44,12 @@ function resolveLowerBand(sectionId: string, threshold: number): number {
   return idx >= 0 ? idx : list.length;
 }
 
-function isHighBand(sectionId: string, operator: BehaviorOperator | undefined, threshold: number | undefined, kind: 'if' | 'else_if' | 'else'): boolean {
+function isHighBand(
+  sectionId: string,
+  operator: BehaviorOperator | undefined,
+  threshold: number | undefined,
+  kind: 'if' | 'else_if' | 'else',
+): boolean {
   if (kind === 'else') return true;
   if (!operator || typeof threshold !== 'number' || !Number.isFinite(threshold)) return false;
 
@@ -154,36 +159,17 @@ function buildDefaultStatusText(
   const stageIndex = resolveStageIndex(sectionId, kind, operator, threshold);
 
   if (sectionId === 'alert') {
-    const labels = [
-      '無警戒',
-      '微弱的違和感',
-      '低警戒',
-      '普通警戒',
-      '高警戒',
-      '極高警戒',
-    ];
+    const labels = ['無警戒', '微弱的違和感', '低警戒', '普通警戒', '高警戒', '極高警戒'];
     return labels[Math.min(Math.max(stageIndex, 0), labels.length - 1)] ?? labels[0];
   }
 
   if (sectionId === 'affection') {
-    const labels = [
-      '低好感度',
-      '中低好感度',
-      '普通好感度',
-      '高好感度',
-      '極高好感度',
-    ];
+    const labels = ['低好感度', '中低好感度', '普通好感度', '高好感度', '極高好感度'];
     return labels[Math.min(Math.max(stageIndex, 0), labels.length - 1)] ?? labels[0];
   }
 
   if (sectionId === 'obedience') {
-    const labels = [
-      '低服從度',
-      '較低服從度',
-      '普通服從度',
-      '高服從度',
-      '極高服從度',
-    ];
+    const labels = ['低服從度', '較低服從度', '普通服從度', '高服從度', '極高服從度'];
     return labels[Math.min(Math.max(stageIndex, 0), labels.length - 1)] ?? labels[0];
   }
 

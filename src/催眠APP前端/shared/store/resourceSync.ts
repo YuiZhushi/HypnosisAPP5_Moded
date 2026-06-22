@@ -151,9 +151,17 @@ export async function updateResources(newData: Partial<UserResources>): Promise<
 /**
  * 取得系統時鐘（MVU 優先）+ 自動同步訂閱等級
  */
-export async function getSystemClock(): Promise<{ dateText?: string; timeText?: string; virtualMinutes: number | null }> {
+export async function getSystemClock(): Promise<{
+  dateText?: string;
+  timeText?: string;
+  virtualMinutes: number | null;
+}> {
   const maybeSync = async (clock: { virtualMinutes: number | null }) => {
-    try { await syncSubscriptionTierLabel(clock.virtualMinutes); } catch (err) { logger.warn('同步订阅等级变量失败', err); }
+    try {
+      await syncSubscriptionTierLabel(clock.virtualMinutes);
+    } catch (err) {
+      logger.warn('同步订阅等级变量失败', err);
+    }
     return clock;
   };
 

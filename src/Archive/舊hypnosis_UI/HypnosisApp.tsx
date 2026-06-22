@@ -506,7 +506,9 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
         setSubscription(nextSub as any);
         if (auto.renewed && nextSub?.tier) {
           const price = SUBSCRIPTION_PRICES[nextSub.tier] ?? 0;
-          void MvuBridge.appendThisTurnAppOperationLog(`自动续订 VIP${nextSub.tier.slice(3)}（-¥${price.toLocaleString()}）`);
+          void MvuBridge.appendThisTurnAppOperationLog(
+            `自动续订 VIP${nextSub.tier.slice(3)}（-¥${price.toLocaleString()}）`,
+          );
         }
       } catch (err) {
         logger.warn('订阅/时间同步失败', err);
@@ -542,16 +544,14 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
 
   const getFeatureNumericConfig = (
     feature: HypnosisFeature,
-  ):
-    | {
-        label: string;
-        unit: string;
-        min: number;
-        max: number;
-        step?: number;
-        hint?: string;
-      }
-    | null => {
+  ): {
+    label: string;
+    unit: string;
+    min: number;
+    max: number;
+    step?: number;
+    hint?: string;
+  } | null => {
     switch (feature.id) {
       case 'vip1_temp_sensitivity':
         return { label: '敏感度增加', unit: '点', min: 1, max: 999, step: 1, hint: '每点2MC能量' };
@@ -984,9 +984,15 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
 
   const handleCreateCustomHypnosis = async () => {
     const name = customFormName.trim();
-    if (!name) { setCustomFormError('请输入催眠名称'); return; }
+    if (!name) {
+      setCustomFormError('请输入催眠名称');
+      return;
+    }
     const desc = customFormDesc.trim();
-    if (!desc) { setCustomFormError('请输入催眠说明'); return; }
+    if (!desc) {
+      setCustomFormError('请输入催眠说明');
+      return;
+    }
     setCustomFormError(null);
 
     const result = await addCustomHypnosis({
@@ -1008,7 +1014,9 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
     const refreshedFeatures = getFeatures();
     setFeatures(refreshedFeatures);
     setCustomHypnosisList(getCustomHypnosisList());
-    void MvuBridge.appendThisTurnAppOperationLog(`研发自定义催眠「${name}」（-¥${customFormResearchCost.toLocaleString()}）`);
+    void MvuBridge.appendThisTurnAppOperationLog(
+      `研发自定义催眠「${name}」（-¥${customFormResearchCost.toLocaleString()}）`,
+    );
 
     setShowCustomForm(false);
     setCustomFormName('');
@@ -1037,7 +1045,9 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
     const refreshedFeatures = getFeatures();
     setFeatures(refreshedFeatures);
     setCustomHypnosisList(getCustomHypnosisList());
-    void MvuBridge.appendThisTurnAppOperationLog(`删除自定义催眠「${entry.title}」（退款 +¥${(result.refund ?? 0).toLocaleString()}）`);
+    void MvuBridge.appendThisTurnAppOperationLog(
+      `删除自定义催眠「${entry.title}」（退款 +¥${(result.refund ?? 0).toLocaleString()}）`,
+    );
   };
 
   const canUseCustomHypnosisFeature = useMemo(() => {
@@ -1427,8 +1437,10 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
                       {Math.max(0, userData.mcEnergyMax - Math.floor(userData.mcEnergy)) <= 0
                         ? '已满'
                         : `¥${(
-                            Math.min(Math.max(0, userData.mcEnergyMax - Math.floor(userData.mcEnergy)), quickSupplyQty) *
-                            100
+                            Math.min(
+                              Math.max(0, userData.mcEnergyMax - Math.floor(userData.mcEnergy)),
+                              quickSupplyQty,
+                            ) * 100
                           ).toLocaleString()}`}
                     </span>
                   </div>
@@ -1557,7 +1569,11 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
             </div>
           )}
 
-          <div className={!canUseCustomHypnosisFeature ? 'opacity-30 pointer-events-none select-none filter blur-[2px]' : ''}>
+          <div
+            className={
+              !canUseCustomHypnosisFeature ? 'opacity-30 pointer-events-none select-none filter blur-[2px]' : ''
+            }
+          >
             {!showCustomForm && customHypnosisList.length < 10 && (
               <button
                 onClick={() => setShowCustomForm(true)}
@@ -1597,7 +1613,9 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
                       className="w-full bg-black/30 border border-white/10 rounded-lg px-2 py-2 text-xs text-white focus:outline-none focus:border-cyan-500/50"
                     >
                       {VIP_LEVELS.filter(v => v.tier !== 'VIP6').map(v => (
-                        <option key={v.tier} value={v.tier}>{v.label}</option>
+                        <option key={v.tier} value={v.tier}>
+                          {v.label}
+                        </option>
                       ))}
                     </select>
                   </label>
@@ -1641,7 +1659,9 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
 
                 <div className="flex items-center justify-between bg-black/20 rounded-lg p-2">
                   <span className="text-[10px] text-gray-400">研发费用</span>
-                  <span className={`text-sm font-bold ${userData.money < customFormResearchCost ? 'text-red-400' : 'text-yellow-300'}`}>
+                  <span
+                    className={`text-sm font-bold ${userData.money < customFormResearchCost ? 'text-red-400' : 'text-yellow-300'}`}
+                  >
                     ¥{customFormResearchCost.toLocaleString()}
                   </span>
                 </div>
@@ -1654,14 +1674,19 @@ export const HypnosisApp: React.FC<HypnosisAppProps> = ({ userData, onUpdateUser
 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => { setShowCustomForm(false); setCustomFormError(null); }}
+                    onClick={() => {
+                      setShowCustomForm(false);
+                      setCustomFormError(null);
+                    }}
                     className="flex-1 py-2 rounded-lg border border-white/10 text-gray-300 text-xs hover:bg-white/5 transition-colors"
                   >
                     取消
                   </button>
                   <button
                     onClick={() => void handleCreateCustomHypnosis()}
-                    disabled={userData.money < customFormResearchCost || !customFormName.trim() || !customFormDesc.trim()}
+                    disabled={
+                      userData.money < customFormResearchCost || !customFormName.trim() || !customFormDesc.trim()
+                    }
                     className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
                       userData.money >= customFormResearchCost && customFormName.trim() && customFormDesc.trim()
                         ? 'bg-cyan-600 hover:bg-cyan-500 text-white'

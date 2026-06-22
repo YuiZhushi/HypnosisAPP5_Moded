@@ -9,7 +9,7 @@ import {
   ConditionOnProgram,
   MockApiSettings,
   CalendarEvent,
-  MockMapState
+  MockMapState,
 } from './mockModels';
 
 import {
@@ -20,7 +20,7 @@ import {
   TestCustomHypnosisInput,
   TestComboDataInput,
   TestQuestDataInput,
-  TestCustomCalendarEvents
+  TestCustomCalendarEvents,
 } from './mockDatabase';
 
 import {
@@ -30,7 +30,7 @@ import {
   QUEST_DICTIONARY,
   CALENDAR_STATIC_EVENTS,
   MAP_LOCATION_NODES,
-  MAP_MAP_EDGES
+  MAP_MAP_EDGES,
 } from './mockStaticData';
 
 // 模擬網路延遲
@@ -58,9 +58,9 @@ function getDynamicAchievements(): Record<string, AchievementOrQuestDef> {
       description: `可疑度達到 ${val}%`,
       completionCondition: {
         type: 'program',
-        condition: [{ target: 'suspicion', operator: '>=', value: val }]
+        condition: [{ target: 'suspicion', operator: '>=', value: val }],
       },
-      reward: { pts: suspicionRewards[i] }
+      reward: { pts: suspicionRewards[i] },
     };
   });
 
@@ -75,9 +75,9 @@ function getDynamicAchievements(): Record<string, AchievementOrQuestDef> {
       description: `MC能量上限達到 ${val}`,
       completionCondition: {
         type: 'program',
-        condition: [{ target: 'mcEnergyMax', operator: '>=', value: val }]
+        condition: [{ target: 'mcEnergyMax', operator: '>=', value: val }],
       },
-      reward: { pts: energyMaxRewards[i] }
+      reward: { pts: energyMaxRewards[i] },
     };
   });
 
@@ -103,9 +103,9 @@ function getDynamicAchievements(): Record<string, AchievementOrQuestDef> {
         description: `敏感度達到 ${val}`,
         completionCondition: {
           type: 'program',
-          condition: [{ target: 'sensitivity', operator: '>=', value: val, charName }]
+          condition: [{ target: 'sensitivity', operator: '>=', value: val, charName }],
         },
-        reward: { pts: sensitivityRewards[i] }
+        reward: { pts: sensitivityRewards[i] },
       };
     });
 
@@ -117,9 +117,9 @@ function getDynamicAchievements(): Record<string, AchievementOrQuestDef> {
         description: `高潮次數達到 ${val} 次`,
         completionCondition: {
           type: 'program',
-          condition: [{ target: 'orgasm', operator: '>=', value: val, charName }]
+          condition: [{ target: 'orgasm', operator: '>=', value: val, charName }],
         },
-        reward: { pts: orgasmRewards[i] }
+        reward: { pts: orgasmRewards[i] },
       };
     });
 
@@ -131,9 +131,9 @@ function getDynamicAchievements(): Record<string, AchievementOrQuestDef> {
         description: `服從度達到 ${val}%`,
         completionCondition: {
           type: 'program',
-          condition: [{ target: 'obedience', operator: '>=', value: val, charName }]
+          condition: [{ target: 'obedience', operator: '>=', value: val, charName }],
         },
-        reward: { pts: obedienceRewards[i] }
+        reward: { pts: obedienceRewards[i] },
       };
     });
   }
@@ -163,9 +163,23 @@ function evaluateProgramConditions(conditions: ConditionOnProgram[] | string): b
 
     // 2. 檢查角色屬性 (char data)，將所有角色的該屬性值加入陣列
     const charTargets = [
-      'sensitivity', 'clitSensitivity', 'vaginaSensitivity', 'anusSensitivity', 'urethraSensitivity', 'nippleSensitivity',
-      'orgasm', 'clitOrgasms', 'vaginaOrgasms', 'anusOrgasms', 'urethraOrgasms', 'nippleOrgasms',
-      'alertness', 'affection', 'obedience', 'lust', 'arousal'
+      'sensitivity',
+      'clitSensitivity',
+      'vaginaSensitivity',
+      'anusSensitivity',
+      'urethraSensitivity',
+      'nippleSensitivity',
+      'orgasm',
+      'clitOrgasms',
+      'vaginaOrgasms',
+      'anusOrgasms',
+      'urethraOrgasms',
+      'nippleOrgasms',
+      'alertness',
+      'affection',
+      'obedience',
+      'lust',
+      'arousal',
     ];
     if (charTargets.includes(cond.target)) {
       for (const charName in TestCharDataInput) {
@@ -176,7 +190,13 @@ function evaluateProgramConditions(conditions: ConditionOnProgram[] | string): b
         const o = char.orgasm || {};
 
         if (cond.target === 'sensitivity') {
-          targetValues.push((s.clitSensitivity || 0) + (s.vaginaSensitivity || 0) + (s.anusSensitivity || 0) + (s.urethraSensitivity || 0) + (s.nippleSensitivity || 0));
+          targetValues.push(
+            (s.clitSensitivity || 0) +
+              (s.vaginaSensitivity || 0) +
+              (s.anusSensitivity || 0) +
+              (s.urethraSensitivity || 0) +
+              (s.nippleSensitivity || 0),
+          );
         } else if (cond.target === 'clitSensitivity') {
           targetValues.push(s.clitSensitivity || 0);
         } else if (cond.target === 'vaginaSensitivity') {
@@ -188,7 +208,13 @@ function evaluateProgramConditions(conditions: ConditionOnProgram[] | string): b
         } else if (cond.target === 'nippleSensitivity') {
           targetValues.push(s.nippleSensitivity || 0);
         } else if (cond.target === 'orgasm') {
-          targetValues.push((o.clitOrgasms || 0) + (o.vaginaOrgasms || 0) + (o.anusOrgasms || 0) + (o.urethraOrgasms || 0) + (o.nippleOrgasms || 0));
+          targetValues.push(
+            (o.clitOrgasms || 0) +
+              (o.vaginaOrgasms || 0) +
+              (o.anusOrgasms || 0) +
+              (o.urethraOrgasms || 0) +
+              (o.nippleOrgasms || 0),
+          );
         } else if (cond.target === 'clitOrgasms') {
           targetValues.push(o.clitOrgasms || 0);
         } else if (cond.target === 'vaginaOrgasms') {
@@ -217,12 +243,24 @@ function evaluateProgramConditions(conditions: ConditionOnProgram[] | string): b
     let isConditionMet = false;
     for (const val of targetValues) {
       switch (cond.operator) {
-        case '==': if (val === cond.value) isConditionMet = true; break;
-        case '!=': if (val !== cond.value) isConditionMet = true; break;
-        case '>=': if (val >= cond.value) isConditionMet = true; break;
-        case '<=': if (val <= cond.value) isConditionMet = true; break;
-        case '>':  if (val > cond.value) isConditionMet = true; break;
-        case '<':  if (val < cond.value) isConditionMet = true; break;
+        case '==':
+          if (val === cond.value) isConditionMet = true;
+          break;
+        case '!=':
+          if (val !== cond.value) isConditionMet = true;
+          break;
+        case '>=':
+          if (val >= cond.value) isConditionMet = true;
+          break;
+        case '<=':
+          if (val <= cond.value) isConditionMet = true;
+          break;
+        case '>':
+          if (val > cond.value) isConditionMet = true;
+          break;
+        case '<':
+          if (val < cond.value) isConditionMet = true;
+          break;
       }
       if (isConditionMet) break; // 只要有一個 target 達成即算通過此條件
     }
@@ -236,7 +274,7 @@ function evaluateProgramConditions(conditions: ConditionOnProgram[] | string): b
 
 const FULL_ACHIEVEMENT_DICTIONARY: Record<string, AchievementOrQuestDef> = {
   ...ACHIEVEMENT_DICTIONARY,
-  ...getDynamicAchievements()
+  ...getDynamicAchievements(),
 };
 
 export const MockApi = {
@@ -261,7 +299,7 @@ export const MockApi = {
         topP: 1,
         presencePenalty: 0,
         frequencyPenalty: 0,
-        streamMode: 'non_streaming'
+        streamMode: 'non_streaming',
       };
     }
     mockSystemData.apiSettings = { ...mockSystemData.apiSettings, ...newSettings };
@@ -269,7 +307,15 @@ export const MockApi = {
 
   async fetchAvailableModels(): Promise<string[]> {
     await delay(500);
-    return ['gpt-4o', 'gpt-4-turbo', 'gpt-3.5-turbo', 'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku', 'gemini-1.5-pro'];
+    return [
+      'gpt-4o',
+      'gpt-4-turbo',
+      'gpt-3.5-turbo',
+      'claude-3-opus',
+      'claude-3-sonnet',
+      'claude-3-haiku',
+      'gemini-1.5-pro',
+    ];
   },
 
   // ==========================================
@@ -306,7 +352,22 @@ export const MockApi = {
     return { ...TestComboDataInput };
   },
 
-  async updateUserResource(patch: Partial<Pick<MockUserData, 'money' | 'mcEnergy' | 'mcEnergyMax' | 'mcPoints' | 'totalConsumedMc' | 'suspicion' | 'vipTier' | 'vipEndVirtualMinutes' | 'vipAutoRenew'>>): Promise<void> {
+  async updateUserResource(
+    patch: Partial<
+      Pick<
+        MockUserData,
+        | 'money'
+        | 'mcEnergy'
+        | 'mcEnergyMax'
+        | 'mcPoints'
+        | 'totalConsumedMc'
+        | 'suspicion'
+        | 'vipTier'
+        | 'vipEndVirtualMinutes'
+        | 'vipAutoRenew'
+      >
+    >,
+  ): Promise<void> {
     await delay(300);
     const newData = { ...mockDatabase };
 
@@ -400,7 +461,7 @@ export const MockApi = {
     const filtered: Record<string, AchievementOrQuestDef> = {};
 
     // Group dynamic achievements by series
-    const seriesMap: Record<string, { id: string, threshold: number, charName?: string }[]> = {};
+    const seriesMap: Record<string, { id: string; threshold: number; charName?: string }[]> = {};
     const staticAchievements: string[] = [];
 
     for (const id in fullDict) {
@@ -520,7 +581,8 @@ export const MockApi = {
 
   async checkCondition(id: string, type: 'achievement' | 'quest'): Promise<boolean> {
     await delay(150);
-    const def = type === 'achievement' ? FULL_ACHIEVEMENT_DICTIONARY[id] : ({...QUEST_DICTIONARY, ...TestQuestDataInput}[id]);
+    const def =
+      type === 'achievement' ? FULL_ACHIEVEMENT_DICTIONARY[id] : { ...QUEST_DICTIONARY, ...TestQuestDataInput }[id];
     if (!def) return false;
     if (def.completionCondition.type === 'ai') {
       return false; // AI 判斷暫不處理
@@ -546,7 +608,7 @@ export const MockApi = {
     if (questState && questState.status === 'completed') {
       questState.status = 'claimed';
 
-      const def = {...QUEST_DICTIONARY, ...TestQuestDataInput}[id];
+      const def = { ...QUEST_DICTIONARY, ...TestQuestDataInput }[id];
       if (def && def.reward) {
         if (def.reward.pts) mockDatabase.mcPoints += def.reward.pts;
         if (def.reward.money) mockDatabase.money += def.reward.money;
@@ -609,7 +671,9 @@ export const MockApi = {
   async getMapState(): Promise<MockMapState> {
     await delay(100);
     if (!mockDatabase.mapState) {
-      throw new Error('[HypnoOS][MapMock] 偵測到 mockDatabase.mapState 缺少模擬運行時資料！請檢查 mockDatabase.ts 中是否正確配置。');
+      throw new Error(
+        '[HypnoOS][MapMock] 偵測到 mockDatabase.mapState 缺少模擬運行時資料！請檢查 mockDatabase.ts 中是否正確配置。',
+      );
     }
     return JSON.parse(JSON.stringify(mockDatabase.mapState));
   },
@@ -617,7 +681,7 @@ export const MockApi = {
   async moveToLocation(
     targetNodeId: string,
     items: string[] = [],
-    npcObedience: Record<string, number> = {}
+    npcObedience: Record<string, number> = {},
   ): Promise<{
     success: boolean;
     path: string[];
@@ -628,7 +692,9 @@ export const MockApi = {
   }> {
     await delay(150);
     if (!mockDatabase.mapState) {
-      throw new Error('[HypnoOS][MapMock] 偵測到 mockDatabase.mapState 缺少模擬運行時資料！請檢查 mockDatabase.ts 中是否正確配置。');
+      throw new Error(
+        '[HypnoOS][MapMock] 偵測到 mockDatabase.mapState 缺少模擬運行時資料！請檢查 mockDatabase.ts 中是否正確配置。',
+      );
     }
     const state = mockDatabase.mapState;
     const startNodeId = state.currentLocationId;
@@ -637,7 +703,14 @@ export const MockApi = {
     }
 
     if (!state.discoveredNodeIds.includes(targetNodeId)) {
-      return { success: false, path: [], timeCost: 0, energyCost: 0, errorMsg: '該地點尚未被發現。', nextState: { ...state } };
+      return {
+        success: false,
+        path: [],
+        timeCost: 0,
+        energyCost: 0,
+        errorMsg: '該地點尚未被發現。',
+        nextState: { ...state },
+      };
     }
 
     // 移動前動態解鎖檢測：若滿足條件，將已發現的 locked 通道升格為 open (Runtime)
@@ -658,7 +731,14 @@ export const MockApi = {
 
     const path = findShortestPath(startNodeId, targetNodeId, state.discoveredNodeIds, items);
     if (path.length === 0) {
-      return { success: false, path: [], timeCost: 0, energyCost: 0, errorMsg: '兩地點之間沒有通路，無法前往。', nextState: { ...state } };
+      return {
+        success: false,
+        path: [],
+        timeCost: 0,
+        energyCost: 0,
+        errorMsg: '兩地點之間沒有通路，無法前往。',
+        nextState: { ...state },
+      };
     }
 
     let totalTime = 0;
@@ -667,8 +747,7 @@ export const MockApi = {
       const from = path[i];
       const to = path[i + 1];
       const edge = MAP_MAP_EDGES.find(
-        e => (e.StartNodeId === from && e.EndNodeId === to) ||
-             (e.StartNodeId === to && e.EndNodeId === from)
+        e => (e.StartNodeId === from && e.EndNodeId === to) || (e.StartNodeId === to && e.EndNodeId === from),
       );
       if (edge) {
         const pathInfo = edge.StartNodeId === from ? edge.forwardPath : edge.ReversePath;
@@ -690,13 +769,13 @@ export const MockApi = {
       path,
       timeCost: totalTime,
       energyCost: totalEnergy,
-      nextState: { ...state }
+      nextState: { ...state },
     };
   },
 
   async scanForLocations(
     items: string[],
-    npcObedience: Record<string, number>
+    npcObedience: Record<string, number>,
   ): Promise<{
     success: boolean;
     unlockedNodeIds: string[];
@@ -705,7 +784,9 @@ export const MockApi = {
   }> {
     await delay(200);
     if (!mockDatabase.mapState) {
-      throw new Error('[HypnoOS][MapMock] 偵測到 mockDatabase.mapState 缺少模擬運行時資料！請檢查 mockDatabase.ts 中是否正確配置。');
+      throw new Error(
+        '[HypnoOS][MapMock] 偵測到 mockDatabase.mapState 缺少模擬運行時資料！請檢查 mockDatabase.ts 中是否正確配置。',
+      );
     }
     const state = mockDatabase.mapState;
     const unlockedNodeIds: string[] = [];
@@ -713,7 +794,12 @@ export const MockApi = {
 
     const currentZoneId = MAP_LOCATION_NODES.find(n => n.id === state.currentLocationId)?.zoneId;
     if (!currentZoneId) {
-      return { success: false, unlockedNodeIds: [], messages: ['定位失敗，無法判定當前區域。'], nextState: { ...state } };
+      return {
+        success: false,
+        unlockedNodeIds: [],
+        messages: ['定位失敗，無法判定當前區域。'],
+        nextState: { ...state },
+      };
     }
 
     let changed = true;
@@ -819,7 +905,7 @@ export const MockApi = {
       success: true,
       unlockedNodeIds,
       messages,
-      nextState: { ...state }
+      nextState: { ...state },
     };
   },
 
@@ -828,7 +914,7 @@ export const MockApi = {
     edgeId: string,
     isForward: boolean,
     items: string[] = [],
-    npcObedience: Record<string, number> = {}
+    npcObedience: Record<string, number> = {},
   ): Promise<{ success: boolean; errorMsg?: string }> {
     await delay(150);
     const edge = MAP_MAP_EDGES.find(e => e.id === edgeId);
@@ -859,14 +945,9 @@ export const MockApi = {
     return false;
   },
 
-  findShortestPath(
-    startId: string,
-    endId: string,
-    discovered: string[],
-    items: string[] = []
-  ): string[] {
+  findShortestPath(startId: string, endId: string, discovered: string[], items: string[] = []): string[] {
     return findShortestPath(startId, endId, discovered, items);
-  }
+  },
 };
 
 // ====== 輔助函式 ======
@@ -874,7 +955,7 @@ export const MockApi = {
 function checkUnlockCondition(
   cond: { type: 'obedience' | 'item' | 'always_locked'; targetName?: string; value?: number },
   items: string[],
-  npcObedience: Record<string, number>
+  npcObedience: Record<string, number>,
 ): boolean {
   if (cond.type === 'item') {
     return cond.targetName ? items.includes(cond.targetName) : false;
@@ -896,14 +977,14 @@ function isTimeInPeriod(currentDateTimeStr: string, periodString: string): boole
     const parts = currentDateTimeStr.split(' ');
     const datePart = parts[0];
     const timePart = parts[1];
-    
+
     // 解析星期幾 (用 / 替換 - 防止部分環境解析錯誤)
     const dateObj = new Date(datePart.replace(/-/g, '/'));
     if (!isNaN(dateObj.getTime())) {
       const rawDay = dateObj.getDay(); // 0-6 (0 是週日)
       currentDayOfWeek = rawDay === 0 ? 7 : rawDay;
     }
-    
+
     const [h, m] = timePart.split(':').map(Number);
     currentMinutes = h * 60 + m;
   } else if (currentDateTimeStr.includes(':')) {
@@ -913,12 +994,12 @@ function isTimeInPeriod(currentDateTimeStr: string, periodString: string): boole
 
   // 以分號分隔多個時段
   const periods = periodString.split(';');
-  
+
   return periods.some(period => {
     const trimmed = period.trim();
     if (!trimmed) return false;
 
-    let weekPart = "";
+    let weekPart = '';
     let timePart = trimmed;
 
     // 檢查是否有空格分隔星期與時間，例如 "1-5 15:00-18:00"
@@ -963,11 +1044,7 @@ function isTimeInPeriod(currentDateTimeStr: string, periodString: string): boole
   });
 }
 
-function checkTempCondition(
-  pathInfo: any,
-  toId: string,
-  items: string[]
-): boolean {
+function checkTempCondition(pathInfo: any, toId: string, items: string[]): boolean {
   const cond = pathInfo.tempConditon;
   if (!cond) return true;
 
@@ -984,11 +1061,7 @@ function checkTempCondition(
   return false;
 }
 
-function findReachableNodes(
-  startId: string,
-  discovered: string[],
-  items: string[]
-): Set<string> {
+function findReachableNodes(startId: string, discovered: string[], items: string[]): Set<string> {
   const reachable = new Set<string>([startId]);
   const queue = [startId];
 
@@ -998,7 +1071,10 @@ function findReachableNodes(
       // 情況 A：正向 (Start -> End)
       if (edge.StartNodeId === curr && discovered.includes(edge.EndNodeId) && edge.forwardPath) {
         const path = edge.forwardPath;
-        if (path.status === 'open' || (path.status === 'temp_open' && checkTempCondition(path, edge.EndNodeId, items))) {
+        if (
+          path.status === 'open' ||
+          (path.status === 'temp_open' && checkTempCondition(path, edge.EndNodeId, items))
+        ) {
           if (!reachable.has(edge.EndNodeId)) {
             reachable.add(edge.EndNodeId);
             queue.push(edge.EndNodeId);
@@ -1008,7 +1084,10 @@ function findReachableNodes(
       // 情況 B：反向 (End -> Start)
       if (edge.EndNodeId === curr && discovered.includes(edge.StartNodeId) && edge.ReversePath) {
         const path = edge.ReversePath;
-        if (path.status === 'open' || (path.status === 'temp_open' && checkTempCondition(path, edge.StartNodeId, items))) {
+        if (
+          path.status === 'open' ||
+          (path.status === 'temp_open' && checkTempCondition(path, edge.StartNodeId, items))
+        ) {
           if (!reachable.has(edge.StartNodeId)) {
             reachable.add(edge.StartNodeId);
             queue.push(edge.StartNodeId);
@@ -1020,18 +1099,11 @@ function findReachableNodes(
   return reachable;
 }
 
-function findShortestPath(
-  startId: string,
-  endId: string,
-  discovered: string[],
-  items: string[] = []
-): string[] {
+function findShortestPath(startId: string, endId: string, discovered: string[], items: string[] = []): string[] {
   if (startId === endId) return [startId];
-  
-  const queue: Array<{ path: string[]; cost: number }> = [
-    { path: [startId], cost: 0 }
-  ];
-  
+
+  const queue: Array<{ path: string[]; cost: number }> = [{ path: [startId], cost: 0 }];
+
   const visited: Record<string, number> = {};
   visited[startId] = 0;
 
@@ -1051,16 +1123,16 @@ function findShortestPath(
         const u = path[i];
         const v = path[i + 1];
         const edge = MAP_MAP_EDGES.find(
-          e => (e.StartNodeId === u && e.EndNodeId === v) || (e.EndNodeId === u && e.StartNodeId === v)
+          e => (e.StartNodeId === u && e.EndNodeId === v) || (e.EndNodeId === u && e.StartNodeId === v),
         );
         if (edge) {
           let isOpen = false;
           if (edge.StartNodeId === u && edge.EndNodeId === v) {
             const p = edge.forwardPath;
-            isOpen = p ? (p.status === 'open' || (p.status === 'temp_open' && checkTempCondition(p, v, items))) : false;
+            isOpen = p ? p.status === 'open' || (p.status === 'temp_open' && checkTempCondition(p, v, items)) : false;
           } else {
             const p = edge.ReversePath;
-            isOpen = p ? (p.status === 'open' || (p.status === 'temp_open' && checkTempCondition(p, u, items))) : false;
+            isOpen = p ? p.status === 'open' || (p.status === 'temp_open' && checkTempCondition(p, u, items)) : false;
           }
           truncatedPath.push(v);
           if (!isOpen) {
@@ -1077,23 +1149,25 @@ function findShortestPath(
       // 情況 A：正向 (Start -> End)
       if (edge.StartNodeId === curr && discovered.includes(edge.EndNodeId) && edge.forwardPath) {
         const p = edge.forwardPath;
-        const isOpen = p.status === 'open' || (p.status === 'temp_open' && checkTempCondition(p, edge.EndNodeId, items));
+        const isOpen =
+          p.status === 'open' || (p.status === 'temp_open' && checkTempCondition(p, edge.EndNodeId, items));
         const edgeWeight = isOpen ? 1 : 1000;
         const newCost = cost + edgeWeight;
-        
+
         if (visited[edge.EndNodeId] === undefined || newCost < visited[edge.EndNodeId]) {
           visited[edge.EndNodeId] = newCost;
           queue.push({ path: [...path, edge.EndNodeId], cost: newCost });
         }
       }
-      
+
       // 情況 B：反向 (End -> Start)
       if (edge.EndNodeId === curr && discovered.includes(edge.StartNodeId) && edge.ReversePath) {
         const p = edge.ReversePath;
-        const isOpen = p.status === 'open' || (p.status === 'temp_open' && checkTempCondition(p, edge.StartNodeId, items));
+        const isOpen =
+          p.status === 'open' || (p.status === 'temp_open' && checkTempCondition(p, edge.StartNodeId, items));
         const edgeWeight = isOpen ? 1 : 1000;
         const newCost = cost + edgeWeight;
-        
+
         if (visited[edge.StartNodeId] === undefined || newCost < visited[edge.StartNodeId]) {
           visited[edge.StartNodeId] = newCost;
           queue.push({ path: [...path, edge.StartNodeId], cost: newCost });

@@ -19,7 +19,10 @@ let writeQueue: Promise<unknown> = Promise.resolve();
 
 function enqueueMvuWrite<T>(task: () => Promise<T>): Promise<T> {
   const next = writeQueue.then(task, task);
-  writeQueue = next.then(() => undefined, () => undefined);
+  writeQueue = next.then(
+    () => undefined,
+    () => undefined,
+  );
   return next;
 }
 
@@ -34,8 +37,14 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): 
   return new Promise((resolve, reject) => {
     const timer = globalThis.setTimeout(() => reject(new Error(`${label} timeout after ${timeoutMs}ms`)), timeoutMs);
     promise.then(
-      value => { globalThis.clearTimeout(timer); resolve(value); },
-      err => { globalThis.clearTimeout(timer); reject(err); },
+      value => {
+        globalThis.clearTimeout(timer);
+        resolve(value);
+      },
+      err => {
+        globalThis.clearTimeout(timer);
+        reject(err);
+      },
     );
   });
 }
@@ -59,7 +68,9 @@ export async function waitForMvuReady(options: WaitOptions = {}): Promise<boolea
   while (Date.now() < deadline) {
     try {
       await safeWaitGlobalInitialized('Mvu', Math.min(pollMs, Math.max(0, deadline - Date.now())));
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     if (isMvuDefined()) return true;
     await new Promise<void>(resolve => globalThis.setTimeout(resolve, pollMs));
   }
@@ -93,7 +104,16 @@ export async function setIfChanged(mvu: Mvu.MvuData, path: string, nextValue: un
   const prev = _.get(mvu.stat_data, path);
   if (_.isEqual(prev, nextValue)) return false;
 
-  const setter = (Mvu as { setMvuVariable?: (mvuData: Mvu.MvuData, variablePath: string, value: unknown, options?: { reason?: string }) => Promise<boolean> }).setMvuVariable;
+  const setter = (
+    Mvu as {
+      setMvuVariable?: (
+        mvuData: Mvu.MvuData,
+        variablePath: string,
+        value: unknown,
+        options?: { reason?: string },
+      ) => Promise<boolean>;
+    }
+  ).setMvuVariable;
 
   if (typeof setter === 'function') {
     const ok = await setter(mvu, path, nextValue, { reason });

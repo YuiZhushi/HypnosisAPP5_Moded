@@ -22,12 +22,14 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
   const [conditionType, setConditionType] = useState<'program' | 'ai'>('program');
   const [aiCondition, setAiCondition] = useState('');
 
-  const [programConditions, setProgramConditions] = useState<(ConditionOnProgram & { charName: string })[]>([{
-    target: 'pts',
-    operator: '>=',
-    value: 10,
-    charName: ''
-  }]);
+  const [programConditions, setProgramConditions] = useState<(ConditionOnProgram & { charName: string })[]>([
+    {
+      target: 'pts',
+      operator: '>=',
+      value: 10,
+      charName: '',
+    },
+  ]);
 
   const [totalAllocPoints, setTotalAllocPoints] = useState<number>(10);
   const [allocations, setAllocations] = useState<Record<string, number>>({
@@ -35,7 +37,7 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
     mcEnergy: 0,
     mcEnergyMax: 0,
     pts: 0,
-    suspicion: 0
+    suspicion: 0,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,7 +48,7 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
     { id: 'mcEnergy', label: 'MC 能量', icon: 'mcEnergy', conversionRate: 10 },
     { id: 'mcEnergyMax', label: 'MC 能量最大值', icon: 'mcEnergyMax', conversionRate: 1 },
     { id: 'pts', label: 'MC 點', icon: 'pts', conversionRate: 1 },
-    { id: 'suspicion', label: '可疑度', icon: 'suspicion', conversionRate: -0.2 }
+    { id: 'suspicion', label: '可疑度', icon: 'suspicion', conversionRate: -0.2 },
   ] as const;
 
   const totalCostMoney = totalAllocPoints * 1000;
@@ -100,16 +102,17 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
       isCustom: true,
       completionCondition: {
         type: conditionType,
-        condition: conditionType === 'ai'
-          ? aiCondition
-          : programConditions.map(c => ({
-              target: c.target,
-              operator: c.operator,
-              value: c.value,
-              ...(c.charName ? { charName: c.charName } : {})
-            }))
+        condition:
+          conditionType === 'ai'
+            ? aiCondition
+            : programConditions.map(c => ({
+                target: c.target,
+                operator: c.operator,
+                value: c.value,
+                ...(c.charName ? { charName: c.charName } : {}),
+              })),
       },
-      reward: reward as any
+      reward: reward as any,
     };
 
     await MockApi.updateUserResource({ money: userData.money - actualCostMoney });
@@ -149,7 +152,8 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
 
   if (isSubmitting) {
     buttonText = '發布中...';
-    buttonClass = 'w-full py-2.5 text-sm font-bold rounded-lg transition-colors mt-4 text-white bg-gray-700 text-gray-500 cursor-not-allowed';
+    buttonClass =
+      'w-full py-2.5 text-sm font-bold rounded-lg transition-colors mt-4 text-white bg-gray-700 text-gray-500 cursor-not-allowed';
   }
 
   return (
@@ -170,7 +174,7 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={e => setName(e.target.value)}
               className="w-full bg-[#0c0a1e] border border-purple-900/30 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500"
               placeholder="例如：讓愛麗莎變得更敏感"
             />
@@ -179,7 +183,7 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
             <label className="block text-xs text-gray-400 mb-1">任務描述</label>
             <textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={e => setDescription(e.target.value)}
               className="w-full bg-[#0c0a1e] border border-purple-900/30 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500 h-20 resize-none"
               placeholder="描述這個任務的背景與目的..."
             />
@@ -192,13 +196,23 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
             <div className="flex gap-2 mb-3">
               <button
                 onClick={() => setConditionType('program')}
-                className={cn("flex-1 py-1.5 text-xs rounded-md border", conditionType === 'program' ? "bg-purple-900/50 border-purple-500 text-white" : "bg-[#0c0a1e] border-purple-900/30 text-gray-400")}
+                className={cn(
+                  'flex-1 py-1.5 text-xs rounded-md border',
+                  conditionType === 'program'
+                    ? 'bg-purple-900/50 border-purple-500 text-white'
+                    : 'bg-[#0c0a1e] border-purple-900/30 text-gray-400',
+                )}
               >
                 程式精確判定
               </button>
               <button
                 onClick={() => setConditionType('ai')}
-                className={cn("flex-1 py-1.5 text-xs rounded-md border", conditionType === 'ai' ? "bg-purple-900/50 border-purple-500 text-white" : "bg-[#0c0a1e] border-purple-900/30 text-gray-400")}
+                className={cn(
+                  'flex-1 py-1.5 text-xs rounded-md border',
+                  conditionType === 'ai'
+                    ? 'bg-purple-900/50 border-purple-500 text-white'
+                    : 'bg-[#0c0a1e] border-purple-900/30 text-gray-400',
+                )}
               >
                 AI 語意判定
               </button>
@@ -207,14 +221,17 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
             {conditionType === 'ai' ? (
               <textarea
                 value={aiCondition}
-                onChange={(e) => setAiCondition(e.target.value)}
+                onChange={e => setAiCondition(e.target.value)}
                 className="w-full bg-[#0c0a1e] border border-purple-900/30 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500 h-16 resize-none"
                 placeholder="例如：讓目標在全班面前承認自己是母狗..."
               />
             ) : (
               <div className="space-y-3">
                 {programConditions.map((cond, index) => (
-                  <div key={index} className="relative space-y-2 bg-[#0c0a1e] p-3 rounded-lg border border-purple-900/30">
+                  <div
+                    key={index}
+                    className="relative space-y-2 bg-[#0c0a1e] p-3 rounded-lg border border-purple-900/30"
+                  >
                     {programConditions.length > 1 && (
                       <button
                         onClick={() => setProgramConditions(prev => prev.filter((_, i) => i !== index))}
@@ -228,7 +245,11 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
                         <label className="block text-[10px] text-gray-500 mb-1">目標屬性</label>
                         <select
                           value={cond.target}
-                          onChange={(e) => setProgramConditions(prev => prev.map((c, i) => i === index ? { ...c, target: e.target.value as any } : c))}
+                          onChange={e =>
+                            setProgramConditions(prev =>
+                              prev.map((c, i) => (i === index ? { ...c, target: e.target.value as any } : c)),
+                            )
+                          }
                           className="w-full bg-[#13102a] border border-purple-900/50 rounded px-2 py-1.5 text-xs text-white"
                         >
                           <optgroup label="全域資源">
@@ -265,12 +286,18 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
                         <label className="block text-[10px] text-gray-500 mb-1">指定角色 (選填)</label>
                         <select
                           value={cond.charName}
-                          onChange={(e) => setProgramConditions(prev => prev.map((c, i) => i === index ? { ...c, charName: e.target.value } : c))}
+                          onChange={e =>
+                            setProgramConditions(prev =>
+                              prev.map((c, i) => (i === index ? { ...c, charName: e.target.value } : c)),
+                            )
+                          }
                           className="w-full bg-[#13102a] border border-purple-900/50 rounded px-2 py-1.5 text-xs text-white"
                         >
                           <option value="">(不指定，任意角色)</option>
                           {charNames.map(name => (
-                            <option key={name} value={name}>{name}</option>
+                            <option key={name} value={name}>
+                              {name}
+                            </option>
                           ))}
                         </select>
                       </div>
@@ -280,7 +307,11 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
                         <label className="block text-[10px] text-gray-500 mb-1">比較方式</label>
                         <select
                           value={cond.operator}
-                          onChange={(e) => setProgramConditions(prev => prev.map((c, i) => i === index ? { ...c, operator: e.target.value as any } : c))}
+                          onChange={e =>
+                            setProgramConditions(prev =>
+                              prev.map((c, i) => (i === index ? { ...c, operator: e.target.value as any } : c)),
+                            )
+                          }
                           className="w-full bg-[#13102a] border border-purple-900/50 rounded px-2 py-1.5 text-xs text-white"
                         >
                           <option value=">=">大於等於 (&gt;=)</option>
@@ -293,7 +324,11 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
                         <input
                           type="number"
                           value={cond.value}
-                          onChange={(e) => setProgramConditions(prev => prev.map((c, i) => i === index ? { ...c, value: Number(e.target.value) } : c))}
+                          onChange={e =>
+                            setProgramConditions(prev =>
+                              prev.map((c, i) => (i === index ? { ...c, value: Number(e.target.value) } : c)),
+                            )
+                          }
                           className="w-full bg-[#13102a] border border-purple-900/50 rounded px-2 py-1.5 text-xs text-white"
                         />
                       </div>
@@ -302,7 +337,9 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
                 ))}
 
                 <button
-                  onClick={() => setProgramConditions(prev => [...prev, { target: 'pts', operator: '>=', value: 10, charName: '' }])}
+                  onClick={() =>
+                    setProgramConditions(prev => [...prev, { target: 'pts', operator: '>=', value: 10, charName: '' }])
+                  }
                   className="w-full py-1.5 border border-dashed border-purple-900/50 rounded-lg text-xs text-purple-400 hover:text-purple-300 hover:bg-purple-900/20 transition-colors"
                 >
                   + 新增條件
@@ -336,7 +373,7 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
                     min="1"
                     step="1"
                     value={totalAllocPoints}
-                    onChange={(e) => setTotalAllocPoints(Math.max(1, Number(e.target.value)))}
+                    onChange={e => setTotalAllocPoints(Math.max(1, Number(e.target.value)))}
                     className="flex-1 text-center bg-[#13102a] border-y border-purple-900/50 py-1.5 text-xs text-white focus:outline-none"
                     style={{ WebkitAppearance: 'none', MozAppearance: 'textfield' }}
                   />
@@ -355,7 +392,9 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
               <div>
                 <label className="flex justify-between text-xs text-gray-300 mb-2">
                   <span>獎勵分配</span>
-                  <span className={cn("font-mono text-[10px]", remainingPoints === 0 ? "text-green-400" : "text-red-400")}>
+                  <span
+                    className={cn('font-mono text-[10px]', remainingPoints === 0 ? 'text-green-400' : 'text-red-400')}
+                  >
                     剩餘分配值: {remainingPoints}
                   </span>
                 </label>
@@ -365,7 +404,10 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
                     const allocated = allocations[type.id] || 0;
                     const calculated = Math.trunc(allocated * type.conversionRate);
                     return (
-                      <div key={type.id} className="flex items-center justify-between bg-[#13102a] border border-purple-900/30 p-2 rounded-lg">
+                      <div
+                        key={type.id}
+                        className="flex items-center justify-between bg-[#13102a] border border-purple-900/30 p-2 rounded-lg"
+                      >
                         <div className="flex flex-col">
                           <div className="text-[11px] text-gray-200 flex items-center gap-1">
                             <RewardIcon type={type.icon as any} /> {type.label}
@@ -377,20 +419,27 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
 
                         <div className="flex items-center gap-3">
                           <div className="text-[10px] text-gray-400 text-right w-16">
-                            預計: <span className={cn("font-medium", calculated !== 0 ? "text-white" : "text-gray-500")}>{calculated}</span>
+                            預計:{' '}
+                            <span className={cn('font-medium', calculated !== 0 ? 'text-white' : 'text-gray-500')}>
+                              {calculated}
+                            </span>
                           </div>
                           <div className="flex items-center">
                             <button
-                              onClick={() => setAllocations(prev => ({ ...prev, [type.id]: Math.max(0, (prev[type.id] || 0) - 1) }))}
+                              onClick={() =>
+                                setAllocations(prev => ({ ...prev, [type.id]: Math.max(0, (prev[type.id] || 0) - 1) }))
+                              }
                               className="w-7 h-7 flex items-center justify-center bg-purple-900/50 rounded-l border border-purple-900/50 text-white hover:bg-purple-700 transition-colors"
                             >
                               -
                             </button>
                             <input
                               type="number"
-                              min="0" max={totalAllocPoints} step="1"
+                              min="0"
+                              max={totalAllocPoints}
+                              step="1"
                               value={allocated}
-                              onChange={(e) => {
+                              onChange={e => {
                                 const val = Math.max(0, Number(e.target.value));
                                 setAllocations(prev => ({ ...prev, [type.id]: val }));
                               }}
@@ -398,7 +447,9 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
                               style={{ WebkitAppearance: 'none', MozAppearance: 'textfield' }}
                             />
                             <button
-                              onClick={() => setAllocations(prev => ({ ...prev, [type.id]: Math.max(0, (prev[type.id] || 0) + 1) }))}
+                              onClick={() =>
+                                setAllocations(prev => ({ ...prev, [type.id]: Math.max(0, (prev[type.id] || 0) + 1) }))
+                              }
                               className="w-7 h-7 flex items-center justify-center bg-purple-900/50 rounded-r border border-purple-900/50 text-white hover:bg-purple-700 transition-colors"
                             >
                               +
@@ -419,9 +470,12 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
                     const calculated = Math.trunc(allocated * type.conversionRate);
                     if (calculated === 0) return null;
                     return (
-                      <div key={type.id} className="flex items-center gap-1.5 text-[11px] font-medium bg-[#13102a] border border-purple-900/30 px-2.5 py-1.5 rounded-md shadow-sm">
+                      <div
+                        key={type.id}
+                        className="flex items-center gap-1.5 text-[11px] font-medium bg-[#13102a] border border-purple-900/30 px-2.5 py-1.5 rounded-md shadow-sm"
+                      >
                         <RewardIcon type={type.icon as any} />
-                        <span className={type.id === 'suspicion' && calculated < 0 ? "text-green-400" : "text-white"}>
+                        <span className={type.id === 'suspicion' && calculated < 0 ? 'text-green-400' : 'text-white'}>
                           {calculated > 0 ? `+${calculated}` : calculated} {type.label}
                         </span>
                       </div>
@@ -435,11 +489,7 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
             </div>
           </div>
 
-          <button
-            onClick={handleSubmit}
-            disabled={isDisabled}
-            className={buttonClass}
-          >
+          <button onClick={handleSubmit} disabled={isDisabled} className={buttonClass}>
             {buttonText}
           </button>
         </div>

@@ -66,7 +66,6 @@ function normalizeSettingsPromptConfig(
   };
 }
 
-
 // ====== 公開 API：API 設定 ======
 
 /** 讀取 API 設定 */
@@ -161,4 +160,3 @@ export async function updateSettingsPromptConfig(next: SettingsPromptTuningConfi
     };
   });
 }
-

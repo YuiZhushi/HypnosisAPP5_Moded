@@ -1,4 +1,13 @@
-import { MockUserData, MockSystemData, MockcharData, HypnosisDef, ComboDef, AchievementOrQuestDef, CalendarEvent, MockMapState } from './mockModels';
+import {
+  MockUserData,
+  MockSystemData,
+  MockcharData,
+  HypnosisDef,
+  ComboDef,
+  AchievementOrQuestDef,
+  CalendarEvent,
+  MockMapState,
+} from './mockModels';
 
 export const mockSystemData: MockSystemData = {
   time: '2026-05-01 11:28:00',
@@ -11,12 +20,12 @@ export const mockSystemData: MockSystemData = {
     topP: 0.95,
     presencePenalty: 0.2,
     frequencyPenalty: 0.3,
-    streamMode: 'non_streaming'
-  }
+    streamMode: 'non_streaming',
+  },
 };
 
 export const TestCharDataInput: Record<string, MockcharData> = {
-  '西园寺爱丽莎': {
+  西园寺爱丽莎: {
     identity: '青梅竹馬',
     alertness: 0,
     affection: 0,
@@ -38,13 +47,13 @@ export const TestCharDataInput: Record<string, MockcharData> = {
       nippleOrgasms: 0,
     },
     ownedHypnosisEffects: {
-      '潛意識引導': { endTime: '2026-05-08 12:00', hypnosisType: 'temporary', description: '舉起左手' },
-      '永久虚假记忆': { endTime: 'permanent', hypnosisType: 'permanent', description: '永遠記得這件事' }
+      潛意識引導: { endTime: '2026-05-08 12:00', hypnosisType: 'temporary', description: '舉起左手' },
+      永久虚假记忆: { endTime: 'permanent', hypnosisType: 'permanent', description: '永遠記得這件事' },
     },
     ownedEquipment: {},
     ownedBodyModifications: {},
   },
-  '月咏深雪': {
+  月咏深雪: {
     identity: '風紀委員',
     alertness: 0,
     affection: 0,
@@ -66,12 +75,12 @@ export const TestCharDataInput: Record<string, MockcharData> = {
       nippleOrgasms: 0,
     },
     ownedHypnosisEffects: {
-      '短期味嗅覺混淆': { endTime: '2026-05-08 15:30', hypnosisType: 'temporary', description: '把水看成酒' }
+      短期味嗅覺混淆: { endTime: '2026-05-08 15:30', hypnosisType: 'temporary', description: '把水看成酒' },
     },
     ownedEquipment: {},
     ownedBodyModifications: {},
   },
-  '犬冢夏美': {
+  犬冢夏美: {
     identity: '體育生',
     alertness: 0,
     affection: 0,
@@ -93,12 +102,12 @@ export const TestCharDataInput: Record<string, MockcharData> = {
       nippleOrgasms: 0,
     },
     ownedHypnosisEffects: {
-      '強制睡眠': { endTime: '2026-05-08 18:00', hypnosisType: 'temporary', description: '在教室睡覺' },
-      '身体固定': { endTime: '2026-05-08 14:00', hypnosisType: 'temporary', description: '無法移動雙腿' }
+      強制睡眠: { endTime: '2026-05-08 18:00', hypnosisType: 'temporary', description: '在教室睡覺' },
+      身体固定: { endTime: '2026-05-08 14:00', hypnosisType: 'temporary', description: '無法移動雙腿' },
     },
     ownedEquipment: {},
     ownedBodyModifications: {},
-  }
+  },
 };
 
 export const TestCustomHypnosisInput: Record<string, HypnosisDef> = {
@@ -106,7 +115,7 @@ export const TestCustomHypnosisInput: Record<string, HypnosisDef> = {
     name: '測試用自訂催眠1',
     description: '這是用來測試自訂催眠的',
     tier: 1,
-    cost: {money:0},
+    cost: { money: 0 },
     isCustom: true,
     isPermanent: false,
     isOneTime: false,
@@ -117,13 +126,13 @@ export const TestCustomHypnosisInput: Record<string, HypnosisDef> = {
     name: '測試用自訂催眠2',
     description: '這是用來測試自訂催眠的',
     tier: 3,
-    cost: {mc:10,pts:12},
+    cost: { mc: 10, pts: 12 },
     isCustom: true,
     isPermanent: false,
     isOneTime: false,
     energyCost: 132,
     defaultNote: '請填入描述',
-  }
+  },
 };
 
 export const TestComboDataInput: Record<string, ComboDef> = {
@@ -249,14 +258,14 @@ export const TestQuestDataInput: Record<string, AchievementOrQuestDef> = {
     isCustom: true,
     completionCondition: {
       type: 'program',
-      condition: [{ target: 'nippleSensitivity', operator: '>=', value: 120}],
+      condition: [{ target: 'nippleSensitivity', operator: '>=', value: 120 }],
     },
     reward: { mcEnergyMax: 50 },
   },
 };
 
 export const TestCustomCalendarEvents: Record<string, CalendarEvent> = {
-  'evt_custom_1': {
+  evt_custom_1: {
     title: '約會',
     startDate: '2026-05-15',
     endDate: '2026-05-15',
@@ -264,14 +273,14 @@ export const TestCustomCalendarEvents: Record<string, CalendarEvent> = {
     color: 'blue',
     description: '與愛麗莎的約會',
   },
-  'evt_custom_2': {
+  evt_custom_2: {
     title: '催眠實驗',
     startDate: '2026-05-20',
     endDate: '2026-05-22',
     type: 'custom',
     color: 'purple',
     description: '測試新的催眠組合',
-  }
+  },
 };
 
 export const defaultMockUserData: MockUserData = {
@@ -345,7 +354,7 @@ export const defaultMockUserData: MockUserData = {
       'school_shower',
       'school_rooftop',
       'school_tennis_court',
-      'school_kyudo_field'
+      'school_kyudo_field',
     ],
   },
 };

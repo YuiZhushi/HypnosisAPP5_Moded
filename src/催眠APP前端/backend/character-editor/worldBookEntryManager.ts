@@ -35,11 +35,16 @@ const RESERVED_ROLE_NAMES = new Set(['任务', '任務', '系统', '系統']);
 // ====== 內部工具 ======
 
 function normalizeEntryName(name: unknown): string {
-  return String(name ?? '').replace(/\s+/g, '').replace(/　/g, '').trim();
+  return String(name ?? '')
+    .replace(/\s+/g, '')
+    .replace(/　/g, '')
+    .trim();
 }
 
 function normalizeContent(content: unknown): string {
-  return String(content ?? '').replace(/\r\n/g, '\n').trim();
+  return String(content ?? '')
+    .replace(/\r\n/g, '\n')
+    .trim();
 }
 
 function buildEntryName(roleName: string): string {
@@ -81,7 +86,10 @@ function buildPlotRoleProfileEntryName(roleName: string): string {
 
 function isPlotRoleProfileEntryName(name: unknown): boolean {
   const normalized = normalizeEntryName(name);
-  return normalized.startsWith(normalizeEntryName(PLOT_PREFIX)) && (normalized.endsWith('人设') || normalized.endsWith('人設'));
+  return (
+    normalized.startsWith(normalizeEntryName(PLOT_PREFIX)) &&
+    (normalized.endsWith('人设') || normalized.endsWith('人設'))
+  );
 }
 
 function isPlotRoleProfileEntryForRole(name: unknown, roleName: string): boolean {
@@ -121,9 +129,13 @@ function collectRoleNamesFromMvuVariables(): string[] {
     const chatVars = getVariables({ type: 'chat' });
     const roleObj = chatVars?.stat_data?.角色;
     if (!roleObj || typeof roleObj !== 'object') return [];
-    return Array.from(new Set(
-      Object.keys(roleObj).map(n => String(n ?? '').trim()).filter(n => n && !isReservedRoleName(n)),
-    )).sort((a, b) => a.localeCompare(b, 'zh-CN'));
+    return Array.from(
+      new Set(
+        Object.keys(roleObj)
+          .map(n => String(n ?? '').trim())
+          .filter(n => n && !isReservedRoleName(n)),
+      ),
+    ).sort((a, b) => a.localeCompare(b, 'zh-CN'));
   } catch {
     logger.warn('从 MVU 变量读取角色列表失败，回退到世界书条目来源');
     return [];
@@ -149,7 +161,10 @@ async function verifyPlotRoleListContent(wbName: string, expectedContent: string
 
 // ====== 人物列表條目管理 ======
 
-async function ensurePlotRoleListEntry(wbName: string, roleNameToEnsure: string): Promise<'pass' | 'created' | 'updated'> {
+async function ensurePlotRoleListEntry(
+  wbName: string,
+  roleNameToEnsure: string,
+): Promise<'pass' | 'created' | 'updated'> {
   const latestEntries = await WBRepo.getEntries(wbName);
   const existing = latestEntries.find(e => isPlotRoleListEntryName(e.name));
 
@@ -172,12 +187,17 @@ async function ensurePlotRoleListEntry(wbName: string, roleNameToEnsure: string)
 
     const targetUid = existing.uid;
     let updated = false;
-    await WBRepo.updateEntries(wbName, worldbook => worldbook.map(entry => {
-      const hit = targetUid != null ? String(entry.uid) === String(targetUid) : isPlotRoleListEntryName(entry.name);
-      if (!hit) return entry;
-      updated = true;
-      return { ...entry, content: expectedContent };
-    }), { render: 'immediate' });
+    await WBRepo.updateEntries(
+      wbName,
+      worldbook =>
+        worldbook.map(entry => {
+          const hit = targetUid != null ? String(entry.uid) === String(targetUid) : isPlotRoleListEntryName(entry.name);
+          if (!hit) return entry;
+          updated = true;
+          return { ...entry, content: expectedContent };
+        }),
+      { render: 'immediate' },
+    );
 
     if (!updated) throw new Error(`更新人物列表失败：目标条目不存在 (${PLOT_ROLE_LIST_ENTRY_NAME})`);
     await verifyPlotRoleListContent(wbName, expectedContent);
@@ -193,15 +213,17 @@ async function ensurePlotRoleListEntry(wbName: string, roleNameToEnsure: string)
     if (typeof order === 'number' && order > maxOrder) maxOrder = order;
   }
 
-  await WBRepo.createEntries(wbName, [{
-    name: PLOT_ROLE_LIST_ENTRY_NAME,
-    enabled: true,
-    strategy: { type: 'constant', keys: ['人物列表'] },
-    position: { type: 'before_character_definition', order: 70 },
-    content: expectedContent,
-    probability: 100,
-    recursion: { prevent_incoming: true, prevent_outgoing: true },
-  }]);
+  await WBRepo.createEntries(wbName, [
+    {
+      name: PLOT_ROLE_LIST_ENTRY_NAME,
+      enabled: true,
+      strategy: { type: 'constant', keys: ['人物列表'] },
+      position: { type: 'before_character_definition', order: 70 },
+      content: expectedContent,
+      probability: 100,
+      recursion: { prevent_incoming: true, prevent_outgoing: true },
+    },
+  ]);
 
   await verifyPlotRoleListContent(wbName, expectedContent);
   logger.info(`已建立条目「${PLOT_ROLE_LIST_ENTRY_NAME}」`);
@@ -210,10 +232,7 @@ async function ensurePlotRoleListEntry(wbName: string, roleNameToEnsure: string)
 
 // ====== 公開 API ======
 
-export type WbCheckResult =
-  | { status: 'pass' }
-  | { status: 'created' }
-  | { status: 'error'; message: string };
+export type WbCheckResult = { status: 'pass' } | { status: 'created' } | { status: 'error'; message: string };
 
 /** 檢查並建立 [mvu_update] 變量條目 + [mvu_plot]人物列表 */
 export async function checkAndEnsureEntry(roleName: string): Promise<WbCheckResult> {
@@ -223,9 +242,7 @@ export async function checkAndEnsureEntry(roleName: string): Promise<WbCheckResu
 
     const entries = await WBRepo.getEntries(wbName);
     const targetName = buildEntryName(roleName);
-    const existing = entries.find(
-      e => e.name === targetName || e.name === `${ENTRY_PREFIX}${roleName}變量`,
-    );
+    const existing = entries.find(e => e.name === targetName || e.name === `${ENTRY_PREFIX}${roleName}變量`);
 
     let updateEntryStatus: 'pass' | 'created' = 'pass';
 
@@ -238,15 +255,17 @@ export async function checkAndEnsureEntry(roleName: string): Promise<WbCheckResu
         }
       }
 
-      await WBRepo.createEntries(wbName, [{
-        name: targetName,
-        enabled: true,
-        strategy: { type: 'selective', keys: [roleName] },
-        position: { type: 'before_character_definition', order: maxOrder >= 0 ? maxOrder + 1 : DEFAULT_ORDER },
-        content: buildEntryContent(roleName),
-        probability: 100,
-        recursion: { prevent_incoming: true, prevent_outgoing: true },
-      }]);
+      await WBRepo.createEntries(wbName, [
+        {
+          name: targetName,
+          enabled: true,
+          strategy: { type: 'selective', keys: [roleName] },
+          position: { type: 'before_character_definition', order: maxOrder >= 0 ? maxOrder + 1 : DEFAULT_ORDER },
+          content: buildEntryContent(roleName),
+          probability: 100,
+          recursion: { prevent_incoming: true, prevent_outgoing: true },
+        },
+      ]);
 
       logger.info(`已补入世界书条目「${targetName}」`);
       updateEntryStatus = 'created';
@@ -288,15 +307,17 @@ export async function checkAndEnsurePlotEntry(roleName: string): Promise<WbCheck
       }
     }
 
-    await WBRepo.createEntries(wbName, [{
-      name: entryName,
-      enabled: true,
-      strategy: { type: 'selective', keys: [roleName] },
-      position: { type: 'before_character_definition', order: maxOrder >= 0 ? maxOrder + 1 : DEFAULT_PLOT_ORDER },
-      content: buildDefaultPlotContent(roleName),
-      probability: 100,
-      recursion: { prevent_incoming: true, prevent_outgoing: true },
-    }]);
+    await WBRepo.createEntries(wbName, [
+      {
+        name: entryName,
+        enabled: true,
+        strategy: { type: 'selective', keys: [roleName] },
+        position: { type: 'before_character_definition', order: maxOrder >= 0 ? maxOrder + 1 : DEFAULT_PLOT_ORDER },
+        content: buildDefaultPlotContent(roleName),
+        probability: 100,
+        recursion: { prevent_incoming: true, prevent_outgoing: true },
+      },
+    ]);
 
     logger.info(`已建立 [mvu_plot] 條目「${entryName}」`);
     return { status: 'created' };

@@ -234,9 +234,7 @@ const App = () => {
   return (
     <div className="w-full flex items-center justify-center p-2 sm:p-4">
       {/* Phone Bezel */}
-      <div
-        className="@container relative w-full max-w-[420px] aspect-9/19.5 bg-black rounded-[clamp(2rem,11.4cqw,3rem)] border-[clamp(4px,1.9cqw,8px)] border-gray-800 overflow-hidden shadow-2xl ring-2 ring-black/20"
-      >
+      <div className="@container relative w-full max-w-[420px] aspect-9/19.5 bg-black rounded-[clamp(2rem,11.4cqw,3rem)] border-[clamp(4px,1.9cqw,8px)] border-gray-800 overflow-hidden shadow-2xl ring-2 ring-black/20">
         {/* Dynamic Notch/Status Bar Area - Only visible on Home */}
         {currentApp === AppMode.HOME && (
           <div className="absolute top-0 w-full z-50 pointer-events-none">
@@ -436,7 +434,9 @@ const HomeScreen = ({
                 </div>
               )}
             </div>
-            <span className="text-[9px] sm:text-[10px] text-white font-medium tracking-wide drop-shadow-md">{app.name}</span>
+            <span className="text-[9px] sm:text-[10px] text-white font-medium tracking-wide drop-shadow-md">
+              {app.name}
+            </span>
           </div>
         ))}
       </div>

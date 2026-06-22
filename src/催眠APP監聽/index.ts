@@ -9,20 +9,23 @@ function toFloor(messageId: unknown): number | null {
 }
 
 function updateBridge(mutator: (bridge: any) => void) {
-  updateVariablesWith((vars: Record<string, any>) => {
-    if (!vars.系统) vars.系统 = {};
-    if (!vars.系统._hypnoos) vars.系统._hypnoos = {};
-    if (!vars.系统._hypnoos.calendarCRUD) vars.系统._hypnoos.calendarCRUD = {};
-    if (!vars.系统._hypnoos.calendarCRUD.bridge) {
-      vars.系统._hypnoos.calendarCRUD.bridge = {
-        deleteFloor: { triggered: false },
-        deleteSwipe: { triggered: false },
-        switchSwipe: { triggered: false },
-      };
-    }
-    mutator(vars.系统._hypnoos.calendarCRUD.bridge);
-    return vars;
-  }, { type: 'chat' });
+  updateVariablesWith(
+    (vars: Record<string, any>) => {
+      if (!vars.系统) vars.系统 = {};
+      if (!vars.系统._hypnoos) vars.系统._hypnoos = {};
+      if (!vars.系统._hypnoos.calendarCRUD) vars.系统._hypnoos.calendarCRUD = {};
+      if (!vars.系统._hypnoos.calendarCRUD.bridge) {
+        vars.系统._hypnoos.calendarCRUD.bridge = {
+          deleteFloor: { triggered: false },
+          deleteSwipe: { triggered: false },
+          switchSwipe: { triggered: false },
+        };
+      }
+      mutator(vars.系统._hypnoos.calendarCRUD.bridge);
+      return vars;
+    },
+    { type: 'chat' },
+  );
 }
 
 $(() => {

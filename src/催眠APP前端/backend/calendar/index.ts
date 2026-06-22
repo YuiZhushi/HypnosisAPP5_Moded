@@ -21,7 +21,12 @@ import type {
   PersistedStore,
 } from '../../constants/schemas/storeSchema';
 import { DEFAULT_CALENDAR_CRUD, normalizeCalendarCrudStore } from '../../constants/schemas/storeSchema';
-import { normalizeChatVariables, readStoreSnapshot, updateStoreWith, CHAT_OPTION } from '../../shared/store/storeGateway';
+import {
+  normalizeChatVariables,
+  readStoreSnapshot,
+  updateStoreWith,
+  CHAT_OPTION,
+} from '../../shared/store/storeGateway';
 import * as MvuBridge from '../../shared/mvu/mvuBridge';
 import { logger } from '../../../催眠APP共用/debug/loggerService';
 
@@ -38,9 +43,10 @@ export function swipeKey(swipeId: number): string {
 function cloneResolvedState(state: CalendarResolvedState): CalendarResolvedState {
   return {
     ...state,
-    events: Object.fromEntries(
-      Object.entries(state.events).map(([k, v]) => [k, { ...v }]),
-    ) as Record<string, CalendarEventResolved>,
+    events: Object.fromEntries(Object.entries(state.events).map(([k, v]) => [k, { ...v }])) as Record<
+      string,
+      CalendarEventResolved
+    >,
   };
 }
 
@@ -90,11 +96,7 @@ function ensureNode(crud: CalendarCrudStore, floor: number, swipeId: number): Ca
 }
 
 /** 從快照基礎逐層回放 CRUD 操作，解析出目標樓層的日曆狀態 */
-function resolveCalendarStateAt(
-  store: PersistedStore,
-  targetFloor: number,
-  debug = false,
-): CalendarResolvedState {
+function resolveCalendarStateAt(store: PersistedStore, targetFloor: number, debug = false): CalendarResolvedState {
   const crud = ensureCalendarCrud(store);
   const interval = Math.max(1, crud.snapshotInterval || 50);
 
@@ -459,10 +461,8 @@ export async function processAiCalendarOps(): Promise<{ changed: boolean }> {
   if (!ops || ops.length === 0) return { changed: false };
 
   // 排序：刪除(0) → 修改(1) → 新增(2)
-  const ORDER: Record<string, number> = { '删除': 0, '刪除': 0, '修改': 1, '新增': 2 };
-  const sorted = [...ops].sort((a: any, b: any) =>
-    (ORDER[a['操作']] ?? 9) - (ORDER[b['操作']] ?? 9),
-  );
+  const ORDER: Record<string, number> = { 删除: 0, 刪除: 0, 修改: 1, 新增: 2 };
+  const sorted = [...ops].sort((a: any, b: any) => (ORDER[a['操作']] ?? 9) - (ORDER[b['操作']] ?? 9));
 
   let changed = false;
   for (const raw of sorted) {
@@ -480,12 +480,18 @@ export async function processAiCalendarOps(): Promise<{ changed: boolean }> {
     }
 
     if (action === '新增') {
-      if (!title) { logger.warn('AI日历操作: 缺少标题', op); continue; }
+      if (!title) {
+        logger.warn('AI日历操作: 缺少标题', op);
+        continue;
+      }
       await addCalendarEvent({ month, day, title, description: desc });
       changed = true;
     } else if (action === '修改') {
       const found = findCalendarEventByTitleAndDate(target, month, day);
-      if (!found) { logger.warn('AI日历操作: 未找到目标事件', op); continue; }
+      if (!found) {
+        logger.warn('AI日历操作: 未找到目标事件', op);
+        continue;
+      }
       await updateCalendarEvent(found.id, {
         ...(title ? { title } : {}),
         ...(desc !== undefined ? { description: desc } : {}),
@@ -493,7 +499,10 @@ export async function processAiCalendarOps(): Promise<{ changed: boolean }> {
       changed = true;
     } else if (action === '删除' || action === '刪除') {
       const found = findCalendarEventByTitleAndDate(target, month, day);
-      if (!found) { logger.warn('AI日历操作: 未找到目标事件', op); continue; }
+      if (!found) {
+        logger.warn('AI日历操作: 未找到目标事件', op);
+        continue;
+      }
       await deleteCalendarEvent(found.id);
       changed = true;
     } else {

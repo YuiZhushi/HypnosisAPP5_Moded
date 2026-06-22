@@ -33,7 +33,7 @@ export function parseEjsBranches(sectionRaw: string): BehaviorBranch[] {
 
   const closeMatches = Array.from(sectionRaw.matchAll(closeTagRe));
   const finalClose = closeMatches.length > 0 ? closeMatches[closeMatches.length - 1] : null;
-  const chainEnd = finalClose ? finalClose.index ?? sectionRaw.length : sectionRaw.length;
+  const chainEnd = finalClose ? (finalClose.index ?? sectionRaw.length) : sectionRaw.length;
 
   const openMatches = Array.from(sectionRaw.matchAll(openTagRe));
   if (openMatches.length === 0) return [];
@@ -49,9 +49,7 @@ export function parseEjsBranches(sectionRaw: string): BehaviorBranch[] {
     const kind = normalizeBranchKind(kindRaw);
     const parsedCond = parseBranchCondition(conditionRaw);
     const contentStart = openStart + openTagRaw.length;
-    const contentEnd = i + 1 < openMatches.length
-      ? (openMatches[i + 1].index ?? chainEnd)
-      : chainEnd;
+    const contentEnd = i + 1 < openMatches.length ? (openMatches[i + 1].index ?? chainEnd) : chainEnd;
 
     const yamlRaw = sectionRaw.slice(contentStart, contentEnd).trim();
     const branchId = deriveBranchId(kind, conditionRaw, i);
@@ -60,15 +58,29 @@ export function parseEjsBranches(sectionRaw: string): BehaviorBranch[] {
     try {
       const parsed = YAML.parse(yamlRaw);
       branches.push({
-        branchId, label, kind,
-        operator: parsedCond.operator, threshold: parsedCond.threshold, subjectExpr: parsedCond.subjectExpr,
-        conditionRaw, openTagRaw, yamlRaw, nodes: yamlToTree(parsed),
+        branchId,
+        label,
+        kind,
+        operator: parsedCond.operator,
+        threshold: parsedCond.threshold,
+        subjectExpr: parsedCond.subjectExpr,
+        conditionRaw,
+        openTagRaw,
+        yamlRaw,
+        nodes: yamlToTree(parsed),
       });
     } catch (err) {
       branches.push({
-        branchId, label, kind,
-        operator: parsedCond.operator, threshold: parsedCond.threshold, subjectExpr: parsedCond.subjectExpr,
-        conditionRaw, openTagRaw, yamlRaw, nodes: null,
+        branchId,
+        label,
+        kind,
+        operator: parsedCond.operator,
+        threshold: parsedCond.threshold,
+        subjectExpr: parsedCond.subjectExpr,
+        conditionRaw,
+        openTagRaw,
+        yamlRaw,
+        nodes: null,
         parseError: err instanceof Error ? err.message : 'YAML parse error',
       });
     }
@@ -124,7 +136,10 @@ export function validateBehaviorBranches(
   if (ordered.length === 0) return { ok: false, message: `分區「${sectionId}」至少需要 1 條分支` };
   if (ordered[0].kind !== 'if') return { ok: false, message: `分區「${sectionId}」第一條分支必須是 if` };
 
-  const elseIndexes = ordered.map((b, idx) => ({ b, idx })).filter(({ b }) => b.kind === 'else').map(({ idx }) => idx);
+  const elseIndexes = ordered
+    .map((b, idx) => ({ b, idx }))
+    .filter(({ b }) => b.kind === 'else')
+    .map(({ idx }) => idx);
   if (elseIndexes.length > 1) return { ok: false, message: `分區「${sectionId}」只能有一條 else 分支` };
   if (elseIndexes.length === 1 && elseIndexes[0] !== ordered.length - 1) {
     return { ok: false, message: `分區「${sectionId}」的 else 分支必須在最後` };
@@ -154,14 +169,18 @@ export function sortBehaviorBranches(branches: BehaviorBranch[]): BehaviorBranch
   const nonElse = decorated
     .filter(x => x.b.kind !== 'else')
     .sort((x, y) => {
-      const a = x.b, b = y.b;
+      const a = x.b,
+        b = y.b;
       const aValid = !!a.operator && typeof a.threshold === 'number' && Number.isFinite(a.threshold);
       const bValid = !!b.operator && typeof b.threshold === 'number' && Number.isFinite(b.threshold);
       if (!aValid && !bValid) return x.index - y.index;
       if (!aValid) return 1;
       if (!bValid) return -1;
 
-      const aOp = a.operator!, bOp = b.operator!, aTh = a.threshold!, bTh = b.threshold!;
+      const aOp = a.operator!,
+        bOp = b.operator!,
+        aTh = a.threshold!,
+        bTh = b.threshold!;
 
       const group = (op: string): number => {
         if (op === '==') return 0;
@@ -201,9 +220,7 @@ export function sortBehaviorBranches(branches: BehaviorBranch[]): BehaviorBranch
     kind: (idx === 0 ? 'if' : 'else_if') as BehaviorBranch['kind'],
   }));
 
-  return elseBranch
-    ? [...normalizedNonElse, { ...elseBranch, kind: 'else' as const }]
-    : normalizedNonElse;
+  return elseBranch ? [...normalizedNonElse, { ...elseBranch, kind: 'else' as const }] : normalizedNonElse;
 }
 
 // ====== 內部輔助 ======

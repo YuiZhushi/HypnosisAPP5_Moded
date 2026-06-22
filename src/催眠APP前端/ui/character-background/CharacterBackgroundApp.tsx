@@ -1,7 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CharacterMockApi } from '../mock/character-mock-api';
 import { CharacterBackgroundData, PromptTemplate, EJSnode } from '../mock/character-mock-data';
-import { Users, Edit3, Settings as SettingsIcon, UserPlus, ChevronLeft, TerminalSquare, Save, Code, LayoutList, Plus, Trash2, X } from 'lucide-react';
+import {
+  Users,
+  Edit3,
+  Settings as SettingsIcon,
+  UserPlus,
+  ChevronLeft,
+  TerminalSquare,
+  Save,
+  Code,
+  LayoutList,
+  Plus,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { TreeEditor } from './TreeEditor';
 
 // ==========================================
@@ -10,100 +23,213 @@ import { TreeEditor } from './TreeEditor';
 const INITIAL_CHARACTER_TEMPLATE = (newName: string): CharacterBackgroundData => ({
   basic: {
     [newName]: {
-      title: "新角色",
-      gender: "女",
+      title: '新角色',
+      gender: '女',
       age: 18,
       identity: {
-        public: "公開身份",
-        hidden: "隱藏身份"
+        public: '公開身份',
+        hidden: '隱藏身份',
       },
       social_connection: {
-        "人物": "關係"
+        人物: '關係',
       },
       personality: {
         core: {
-          "人格特質": "特質描述"
+          人格特質: '特質描述',
         },
         conditional: {
-          "特定條件下的態度": "態度描述"
+          特定條件下的態度: '態度描述',
         },
         hidden: {
-          "隱藏的特質，本人自己都不太清楚": "特質描述"
-        }
-      },
-      habit: [
-        "習慣"
-      ],
-      hidden_behavior: [
-        "私下的習慣"
-      ],
-      appearance: {
-        height: "160cm",
-        weight: "48kg",
-        measurement: "B80 W58 H82",
-        style: "外觀風格",
-        overview: "長相與外貌總覽",
-        attire: {
-          school: "制服穿著方式",
-          casual: "便服裝束"
+          '隱藏的特質，本人自己都不太清楚': '特質描述',
         },
-        feature: [
-          "外觀特點"
-        ]
+      },
+      habit: ['習慣'],
+      hidden_behavior: ['私下的習慣'],
+      appearance: {
+        height: '160cm',
+        weight: '48kg',
+        measurement: 'B80 W58 H82',
+        style: '外觀風格',
+        overview: '長相與外貌總覽',
+        attire: {
+          school: '制服穿著方式',
+          casual: '便服裝束',
+        },
+        feature: ['外觀特點'],
       },
       sexual_preference: {
-        masturbation_frequency: "自慰頻率",
-        orgasm_response: "高潮時的反應",
+        masturbation_frequency: '自慰頻率',
+        orgasm_response: '高潮時的反應',
         sensitive_spot: {
-          "位置": "敏感的表現"
+          位置: '敏感的表現',
         },
         hidden_fetish: {
-          "隱藏的癖好": "表現"
+          隱藏的癖好: '表現',
         },
-        special_trait: [
-          "性愛特點"
-        ]
+        special_trait: ['性愛特點'],
       },
-      weakness: [
-        "弱點"
-      ]
-    }
+      weakness: ['弱點'],
+    },
   },
   behavior: {
     arousal: [
-      { logic: { operator: '<', value: 20 }, contant: { 发情状态: { 表现: ["表现描述"] } } },
-      { logic: { operator: '<', value: 40 }, contant: { 发情状态: { 表现: ["表现描述"] } } },
-      { logic: { operator: '<', value: 60 }, contant: { 发情状态: { 表现: ["表现描述"], 生理反应: ["生理反应描述"] } } },
-      { logic: { operator: '<', value: 80 }, contant: { 发情状态: { 表现: ["表现描述"], 生理反应: ["生理反应描述"], 理智残存: "理智残存描述" } } },
-      { logic: { operator: '<', value: 95 }, contant: { 发情状态: { 表现: ["表现描述"], 生理反应: ["生理反应描述"], 理智残存: "理智残存描述", 渴望程度: "渴望程度描述" } } },
-      { logic: { operator: 'else' }, contant: { 发情状态: { 表现: ["表现描述"], 生理反应: ["生理反应描述"], 出格行为: ["出格行为描述"] } } }
+      { logic: { operator: '<', value: 20 }, contant: { 发情状态: { 表现: ['表现描述'] } } },
+      { logic: { operator: '<', value: 40 }, contant: { 发情状态: { 表现: ['表现描述'] } } },
+      {
+        logic: { operator: '<', value: 60 },
+        contant: { 发情状态: { 表现: ['表现描述'], 生理反应: ['生理反应描述'] } },
+      },
+      {
+        logic: { operator: '<', value: 80 },
+        contant: { 发情状态: { 表现: ['表现描述'], 生理反应: ['生理反应描述'], 理智残存: '理智残存描述' } },
+      },
+      {
+        logic: { operator: '<', value: 95 },
+        contant: {
+          发情状态: {
+            表现: ['表现描述'],
+            生理反应: ['生理反应描述'],
+            理智残存: '理智残存描述',
+            渴望程度: '渴望程度描述',
+          },
+        },
+      },
+      {
+        logic: { operator: 'else' },
+        contant: { 发情状态: { 表现: ['表现描述'], 生理反应: ['生理反应描述'], 出格行为: ['出格行为描述'] } },
+      },
     ],
     alert: [
-      { logic: { operator: '<', value: 20 }, contant: { 对user的态度: { 状态: "状态描述", 行为指导: ["行为指导描述"] } } },
-      { logic: { operator: '<', value: 40 }, contant: { 对user的态度: { 状态: "状态描述", 行为指导: ["行为指导描述"] } } },
-      { logic: { operator: '<', value: 60 }, contant: { 对user的态度: { 状态: "状态描述", 行为指导: ["行为指导描述"], 敌意表现: ["敌意表现描述"] } } },
-      { logic: { operator: '<', value: 80 }, contant: { 对user的态度: { 状态: "状态描述", 行为指导: ["行为指导描述"], 敌意表现: ["敌意表现描述"], 接触禁忌: ["接触禁忌描述"] } } },
-      { logic: { operator: '<', value: 100 }, contant: { 对user的态度: { 状态: "状态描述", 行为指导: ["行为指导描述"], 敌意表现: ["敌意表现描述"], 接触禁忌: ["接触禁忌描述"], 敵意行為: ["行為描述"] } } },
-      { logic: { operator: 'else' }, contant: { 对user的态度: { 状态: "状态描述", 行为指导: ["行为指导描述"], 敌意表现: ["敌意表现描述"], 接触禁忌: ["接触禁忌描述"], 敵意行為: ["行為描述"] } } }
+      {
+        logic: { operator: '<', value: 20 },
+        contant: { 对user的态度: { 状态: '状态描述', 行为指导: ['行为指导描述'] } },
+      },
+      {
+        logic: { operator: '<', value: 40 },
+        contant: { 对user的态度: { 状态: '状态描述', 行为指导: ['行为指导描述'] } },
+      },
+      {
+        logic: { operator: '<', value: 60 },
+        contant: { 对user的态度: { 状态: '状态描述', 行为指导: ['行为指导描述'], 敌意表现: ['敌意表现描述'] } },
+      },
+      {
+        logic: { operator: '<', value: 80 },
+        contant: {
+          对user的态度: {
+            状态: '状态描述',
+            行为指导: ['行为指导描述'],
+            敌意表现: ['敌意表现描述'],
+            接触禁忌: ['接触禁忌描述'],
+          },
+        },
+      },
+      {
+        logic: { operator: '<', value: 100 },
+        contant: {
+          对user的态度: {
+            状态: '状态描述',
+            行为指导: ['行为指导描述'],
+            敌意表现: ['敌意表现描述'],
+            接触禁忌: ['接触禁忌描述'],
+            敵意行為: ['行為描述'],
+          },
+        },
+      },
+      {
+        logic: { operator: 'else' },
+        contant: {
+          对user的态度: {
+            状态: '状态描述',
+            行为指导: ['行为指导描述'],
+            敌意表现: ['敌意表现描述'],
+            接触禁忌: ['接触禁忌描述'],
+            敵意行為: ['行為描述'],
+          },
+        },
+      },
     ],
     affection: [
-      { logic: { operator: '<', value: 20 }, contant: { 好感表现: { 状态: "状态描述", 行为指导: ["行为指导描述"] } } },
-      { logic: { operator: '<', value: 40 }, contant: { 好感表现: { 状态: "状态描述", 行为指导: ["行为指导描述"], 变化倾向: ["变化倾向描述"] } } },
-      { logic: { operator: '<', value: 60 }, contant: { 好感表现: { 状态: "状态描述", 行为指导: ["行为指导描述"], 变化倾向: ["变化倾向描述"] } } },
-      { logic: { operator: '<', value: 80 }, contant: { 好感表现: { 状态: "状态描述", 行为指导: ["行为指导描述"], 特殊互动: ["特殊互动描述"], 心理依赖: "心理依赖描述" } } },
-      { logic: { operator: 'else' }, contant: { 好感表现: { 状态: "状态描述", 行为指导: ["行为指导描述"], 特殊互动: ["特殊互动描述"], 心理依赖: "心理依赖描述", 允许越界: ["允许越界描述"] } } }
+      { logic: { operator: '<', value: 20 }, contant: { 好感表现: { 状态: '状态描述', 行为指导: ['行为指导描述'] } } },
+      {
+        logic: { operator: '<', value: 40 },
+        contant: { 好感表现: { 状态: '状态描述', 行为指导: ['行为指导描述'], 变化倾向: ['变化倾向描述'] } },
+      },
+      {
+        logic: { operator: '<', value: 60 },
+        contant: { 好感表现: { 状态: '状态描述', 行为指导: ['行为指导描述'], 变化倾向: ['变化倾向描述'] } },
+      },
+      {
+        logic: { operator: '<', value: 80 },
+        contant: {
+          好感表现: {
+            状态: '状态描述',
+            行为指导: ['行为指导描述'],
+            特殊互动: ['特殊互动描述'],
+            心理依赖: '心理依赖描述',
+          },
+        },
+      },
+      {
+        logic: { operator: 'else' },
+        contant: {
+          好感表现: {
+            状态: '状态描述',
+            行为指导: ['行为指导描述'],
+            特殊互动: ['特殊互动描述'],
+            心理依赖: '心理依赖描述',
+            允许越界: ['允许越界描述'],
+          },
+        },
+      },
     ],
     obedience: [
-      { logic: { operator: '<', value: 20 }, contant: { 服从表现: { 状态: "状态描述", 行为指导: ["行为指导描述"] } } },
-      { logic: { operator: '<', value: 40 }, contant: { 服从表现: { 状态: "状态描述", 行为指导: ["行为指导描述"], 变化倾向: ["变化倾向描述"] } } },
-      { logic: { operator: '<', value: 60 }, contant: { 服从表现: { 状态: "状态描述", 行为指导: ["行为指导描述"], 变化倾向: ["变化倾向描述"] } } },
-      { logic: { operator: '<', value: 80 }, contant: { 服从表现: { 状态: "状态描述", 行为指导: ["行为指导描述"], 变化倾向: ["变化倾向描述"], 忠诚表现: ["忠诚表现描述"], 羞耻承受极限: ["羞耻承受极限描述"] } } },
-      { logic: { operator: 'else' }, contant: { 服从表现: { 状态: "状态描述", 行为指导: ["行为指导描述"], 忠诚表现: ["忠诚表现描述"], 自我认知: "自我认知描述" } } }
+      { logic: { operator: '<', value: 20 }, contant: { 服从表现: { 状态: '状态描述', 行为指导: ['行为指导描述'] } } },
+      {
+        logic: { operator: '<', value: 40 },
+        contant: { 服从表现: { 状态: '状态描述', 行为指导: ['行为指导描述'], 变化倾向: ['变化倾向描述'] } },
+      },
+      {
+        logic: { operator: '<', value: 60 },
+        contant: { 服从表现: { 状态: '状态描述', 行为指导: ['行为指导描述'], 变化倾向: ['变化倾向描述'] } },
+      },
+      {
+        logic: { operator: '<', value: 80 },
+        contant: {
+          服从表现: {
+            状态: '状态描述',
+            行为指导: ['行为指导描述'],
+            变化倾向: ['变化倾向描述'],
+            忠诚表现: ['忠诚表现描述'],
+            羞耻承受极限: ['羞耻承受极限描述'],
+          },
+        },
+      },
+      {
+        logic: { operator: 'else' },
+        contant: {
+          服从表现: {
+            状态: '状态描述',
+            行为指导: ['行为指导描述'],
+            忠诚表现: ['忠诚表现描述'],
+            自我认知: '自我认知描述',
+          },
+        },
+      },
     ],
     global: [
-      { logic: { operator: 'else' }, contant: { rules: ["行为指导优先于作为背景的`角色关键信息`和`角色详情`", "好感度和服从度行为可以混合", "角色的好感與服從度要優先於警戒度, 只要好感度或服從度大於警戒度, 就不會觸發警戒"] } }
-    ]
-  }
+      {
+        logic: { operator: 'else' },
+        contant: {
+          rules: [
+            '行为指导优先于作为背景的`角色关键信息`和`角色详情`',
+            '好感度和服从度行为可以混合',
+            '角色的好感與服從度要優先於警戒度, 只要好感度或服從度大於警戒度, 就不會觸發警戒',
+          ],
+        },
+      },
+    ],
+  },
 });
 
 // ==========================================
@@ -156,7 +282,7 @@ const CreateCharacterModal: React.FC<CreateCharacterModalProps> = ({ isOpen, onC
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 font-sans">
       {/* 遮罩背景 */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      
+
       {/* Modal 主體 */}
       <div className="relative w-full max-w-sm bg-[#120e24]/95 border border-purple-500/30 rounded-2xl p-6 shadow-[0_0_25px_rgba(168,85,247,0.15)] animate-in fade-in zoom-in-95 duration-200 flex flex-col gap-4 text-left">
         <div className="flex justify-between items-center pb-2 border-b border-purple-500/10">
@@ -165,7 +291,7 @@ const CreateCharacterModal: React.FC<CreateCharacterModalProps> = ({ isOpen, onC
             <X size={18} />
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs text-gray-400 font-medium">角色名稱</label>
@@ -226,7 +352,7 @@ const CustomDialogModal: React.FC<CustomDialogModalProps> = ({
   placeholder,
   defaultValue = '',
   onClose,
-  onConfirm
+  onConfirm,
 }) => {
   const [inputVal, setInputVal] = useState(defaultValue);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -251,7 +377,7 @@ const CustomDialogModal: React.FC<CustomDialogModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 font-sans">
       {/* 遮罩背景 */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      
+
       {/* Modal 主體 */}
       <div className="relative w-full max-w-sm bg-[#120e24]/95 border border-purple-500/30 rounded-2xl p-6 shadow-[0_0_25px_rgba(168,85,247,0.15)] animate-in fade-in zoom-in-95 duration-200 flex flex-col gap-4 text-left">
         <div className="flex justify-between items-center pb-2 border-b border-purple-500/10">
@@ -260,7 +386,7 @@ const CustomDialogModal: React.FC<CustomDialogModalProps> = ({
             <X size={18} />
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <p className="text-sm text-gray-300 whitespace-pre-wrap">{message}</p>
@@ -304,7 +430,10 @@ export type AppTab = 'list' | 'editor' | 'settings';
 // ==========================================
 // 子組件: 底部導覽列
 // ==========================================
-const MainNavigation: React.FC<{ activeTab: AppTab; onChangeTab: (tab: AppTab) => void }> = ({ activeTab, onChangeTab }) => {
+const MainNavigation: React.FC<{ activeTab: AppTab; onChangeTab: (tab: AppTab) => void }> = ({
+  activeTab,
+  onChangeTab,
+}) => {
   const tabs: { id: AppTab; label: string; icon: React.ReactNode }[] = [
     { id: 'list', label: '角色列表', icon: <Users size={20} /> },
     { id: 'editor', label: '編輯區', icon: <Edit3 size={20} /> },
@@ -325,9 +454,7 @@ const MainNavigation: React.FC<{ activeTab: AppTab; onChangeTab: (tab: AppTab) =
                 : 'text-gray-400 hover:text-purple-200'
             }`}
           >
-            <div className={`mb-1 transition-transform duration-300 ${isActive ? 'scale-110' : ''}`}>
-              {tab.icon}
-            </div>
+            <div className={`mb-1 transition-transform duration-300 ${isActive ? 'scale-110' : ''}`}>{tab.icon}</div>
             <span className="text-[10px] sm:text-xs font-medium">{tab.label}</span>
           </button>
         );
@@ -339,15 +466,17 @@ const MainNavigation: React.FC<{ activeTab: AppTab; onChangeTab: (tab: AppTab) =
 // ==========================================
 // 子組件: 角色列表視圖
 // ==========================================
-const CharacterListView: React.FC<{ characters: CharacterBackgroundData[]; onSelectCharacter: (name: string) => void; onCreateCharacter: () => void }> = ({ characters, onSelectCharacter, onCreateCharacter }) => {
+const CharacterListView: React.FC<{
+  characters: CharacterBackgroundData[];
+  onSelectCharacter: (name: string) => void;
+  onCreateCharacter: () => void;
+}> = ({ characters, onSelectCharacter, onCreateCharacter }) => {
   return (
     <div className="flex flex-col h-full p-4">
       {/* 頂部操作區 */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center">
-          <h2 className="text-lg font-semibold text-purple-200">
-            選擇角色
-          </h2>
+          <h2 className="text-lg font-semibold text-purple-200">選擇角色</h2>
         </div>
         <button
           onClick={onCreateCharacter}
@@ -383,11 +512,7 @@ const CharacterListView: React.FC<{ characters: CharacterBackgroundData[]; onSel
             </button>
           );
         })}
-        {characters.length === 0 && (
-          <div className="text-center text-gray-500 mt-10">
-            尚無角色資料
-          </div>
-        )}
+        {characters.length === 0 && <div className="text-center text-gray-500 mt-10">尚無角色資料</div>}
       </div>
     </div>
   );
@@ -396,7 +521,11 @@ const CharacterListView: React.FC<{ characters: CharacterBackgroundData[]; onSel
 // ==========================================
 // 子組件: Yaml 編輯器
 // ==========================================
-const YamlEditor: React.FC<{ character: CharacterBackgroundData; mode: 'parsed' | 'raw'; onChange: (newData: any) => void }> = ({ character, mode, onChange }) => {
+const YamlEditor: React.FC<{
+  character: CharacterBackgroundData;
+  mode: 'parsed' | 'raw';
+  onChange: (newData: any) => void;
+}> = ({ character, mode, onChange }) => {
   const name = Object.keys(character.basic)[0];
   const basicData = character.basic[name] || {};
 
@@ -440,7 +569,11 @@ const CATEGORIES = [
   { key: 'global', label: '全局行為', subject: '全局' },
 ] as const;
 
-const EjsEditor: React.FC<{ character: CharacterBackgroundData; mode: 'parsed' | 'raw'; onChange: (newBehavior: any) => void }> = ({ character, mode, onChange }) => {
+const EjsEditor: React.FC<{
+  character: CharacterBackgroundData;
+  mode: 'parsed' | 'raw';
+  onChange: (newBehavior: any) => void;
+}> = ({ character, mode, onChange }) => {
   if (mode === 'raw') {
     // 原始碼編輯區
     return (
@@ -503,7 +636,7 @@ const EjsEditor: React.FC<{ character: CharacterBackgroundData; mode: 'parsed' |
 
       // 將最大數值分支改為 else
       maxNumericBranch.logic = {
-        operator: 'else' as const
+        operator: 'else' as const,
       };
 
       // 重新指定劃分
@@ -519,8 +652,8 @@ const EjsEditor: React.FC<{ character: CharacterBackgroundData; mode: 'parsed' |
       ...b,
       logic: {
         ...b.logic,
-        operator: '<' as const
-      }
+        operator: '<' as const,
+      },
     }));
 
     const result = [...normalizedNumeric];
@@ -529,8 +662,8 @@ const EjsEditor: React.FC<{ character: CharacterBackgroundData; mode: 'parsed' |
         ...elseBranch,
         logic: {
           ...elseBranch.logic,
-          operator: 'else' as const
-        }
+          operator: 'else' as const,
+        },
       });
     }
     return result;
@@ -561,7 +694,7 @@ const EjsEditor: React.FC<{ character: CharacterBackgroundData; mode: 'parsed' |
 
     const newBehavior = {
       ...behavior,
-      [activeCategory]: sorted
+      [activeCategory]: sorted,
     };
     onChange(newBehavior);
     setActiveBranchIndex(nextIndex);
@@ -572,9 +705,7 @@ const EjsEditor: React.FC<{ character: CharacterBackgroundData; mode: 'parsed' |
   const stageNum = activeBranchIndex + 1;
   const totalStages = branches.length;
   const subjectName = CATEGORIES.find(cat => cat.key === activeCategory)?.subject || '';
-  const conditionText = isElse
-    ? `其他情況 (else)`
-    : `當 ${subjectName} 小於 ${activeBranch?.logic?.value ?? 0} 時`;
+  const conditionText = isElse ? `其他情況 (else)` : `當 ${subjectName} 小於 ${activeBranch?.logic?.value ?? 0} 時`;
 
   const headingText = isElse
     ? `最後階段 / 共 ${totalStages} 階段：${conditionText}`
@@ -598,9 +729,11 @@ const EjsEditor: React.FC<{ character: CharacterBackgroundData; mode: 'parsed' |
               }`}
             >
               <span>{cat.label}</span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                isActive ? 'bg-purple-500/30 text-purple-200' : 'bg-white/5 text-gray-500'
-              }`}>
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                  isActive ? 'bg-purple-500/30 text-purple-200' : 'bg-white/5 text-gray-500'
+                }`}
+              >
                 {count}
               </span>
             </button>
@@ -639,7 +772,7 @@ const EjsEditor: React.FC<{ character: CharacterBackgroundData; mode: 'parsed' |
               message: '請輸入新分支的上限臨界值 (數字，例如 30)：',
               defaultValue: '',
               placeholder: '例如 30',
-              onConfirm: (input) => {
+              onConfirm: input => {
                 if (input === undefined || input === null) return;
                 const trimmed = input.trim();
                 if (!trimmed) return;
@@ -649,7 +782,7 @@ const EjsEditor: React.FC<{ character: CharacterBackgroundData; mode: 'parsed' |
                     type: 'alert',
                     title: '錯誤',
                     message: '請輸入有效的數字！',
-                    onConfirm: () => setDialog(null)
+                    onConfirm: () => setDialog(null),
                   });
                   return;
                 }
@@ -658,20 +791,20 @@ const EjsEditor: React.FC<{ character: CharacterBackgroundData; mode: 'parsed' |
                     type: 'alert',
                     title: '錯誤',
                     message: '該數值分支已存在！',
-                    onConfirm: () => setDialog(null)
+                    onConfirm: () => setDialog(null),
                   });
                   return;
                 }
                 const newBranch: EJSnode = {
                   logic: { operator: '<', value: val },
-                  contant: {}
+                  contant: {},
                 };
                 const sorted = sortAndNormalizeBranches([...branches, newBranch]);
                 const nextIdx = sorted.findIndex(b => b.logic.operator !== 'else' && b.logic.value === val);
                 onChange({ ...behavior, [activeCategory]: sorted });
                 if (nextIdx !== -1) setActiveBranchIndex(nextIdx);
                 setDialog(null);
-              }
+              },
             });
           }}
           className="px-2.5 py-1 rounded-lg text-xs font-medium text-purple-300 hover:text-purple-200 hover:bg-purple-500/10 border border-dashed border-purple-500/30 transition-colors flex items-center gap-1 ml-auto"
@@ -686,7 +819,7 @@ const EjsEditor: React.FC<{ character: CharacterBackgroundData; mode: 'parsed' |
             onClick={() => {
               const newBranch: EJSnode = {
                 logic: { operator: 'else' },
-                contant: {}
+                contant: {},
               };
               const sorted = sortAndNormalizeBranches([...branches, newBranch]);
               onChange({ ...behavior, [activeCategory]: sorted });
@@ -709,7 +842,7 @@ const EjsEditor: React.FC<{ character: CharacterBackgroundData; mode: 'parsed' |
               onClick={() => {
                 const newBranch: EJSnode = {
                   logic: { operator: 'else' },
-                  contant: {}
+                  contant: {},
                 };
                 onChange({ ...behavior, [activeCategory]: [newBranch] });
                 setActiveBranchIndex(0);
@@ -733,13 +866,11 @@ const EjsEditor: React.FC<{ character: CharacterBackgroundData; mode: 'parsed' |
             <div className="flex items-center gap-3">
               {/* 數值直接編輯輸入框 */}
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">
-                  {isElse ? '轉為數值分支：' : '修改數值：'}
-                </span>
+                <span className="text-xs text-gray-400">{isElse ? '轉為數值分支：' : '修改數值：'}</span>
                 <input
                   type="number"
-                  placeholder={isElse ? "輸入數值..." : ""}
-                  value={isElse ? "" : (activeBranch.logic.value ?? '')}
+                  placeholder={isElse ? '輸入數值...' : ''}
+                  value={isElse ? '' : (activeBranch.logic.value ?? '')}
                   onChange={e => {
                     const valStr = e.target.value;
                     if (valStr === '') {
@@ -751,25 +882,35 @@ const EjsEditor: React.FC<{ character: CharacterBackgroundData; mode: 'parsed' |
                             logic: {
                               ...b.logic,
                               operator: isOriginalElse ? ('else' as const) : ('<' as const),
-                              value: undefined
-                            }
+                              value: undefined,
+                            },
                           };
                         }
                         return b;
                       });
-                      handleUpdateBranches(updatedList, undefined, isOriginalElse ? 'else' : undefined, activeBranchIndex);
+                      handleUpdateBranches(
+                        updatedList,
+                        undefined,
+                        isOriginalElse ? 'else' : undefined,
+                        activeBranchIndex,
+                      );
                       return;
                     }
                     const nextVal = Number(valStr);
                     if (Number.isNaN(nextVal)) return;
 
                     // 檢查是否存在重複的數值分支
-                    if (branches.some((b, idx) => idx !== activeBranchIndex && b.logic.operator !== 'else' && b.logic.value === nextVal)) {
+                    if (
+                      branches.some(
+                        (b, idx) =>
+                          idx !== activeBranchIndex && b.logic.operator !== 'else' && b.logic.value === nextVal,
+                      )
+                    ) {
                       setDialog({
                         type: 'alert',
                         title: '錯誤',
                         message: '該數值分支已存在！',
-                        onConfirm: () => setDialog(null)
+                        onConfirm: () => setDialog(null),
                       });
                       return;
                     }
@@ -780,8 +921,8 @@ const EjsEditor: React.FC<{ character: CharacterBackgroundData; mode: 'parsed' |
                           ...b,
                           logic: {
                             operator: '<' as const,
-                            value: nextVal
-                          }
+                            value: nextVal,
+                          },
                         };
                       }
                       return b;
@@ -797,8 +938,8 @@ const EjsEditor: React.FC<{ character: CharacterBackgroundData; mode: 'parsed' |
                             ...b,
                             logic: {
                               operator: 'else' as const,
-                              value: undefined
-                            }
+                              value: undefined,
+                            },
                           };
                         }
                         return b;
@@ -825,8 +966,8 @@ const EjsEditor: React.FC<{ character: CharacterBackgroundData; mode: 'parsed' |
                             logic: {
                               ...b.logic,
                               operator: '<' as const,
-                              value: finalVal
-                            }
+                              value: finalVal,
+                            },
                           };
                         }
                         return b;
@@ -850,11 +991,11 @@ const EjsEditor: React.FC<{ character: CharacterBackgroundData; mode: 'parsed' |
                       const sorted = sortAndNormalizeBranches(updatedList);
                       onChange({
                         ...behavior,
-                        [activeCategory]: sorted
+                        [activeCategory]: sorted,
                       });
                       setActiveBranchIndex(Math.max(0, activeBranchIndex - 1));
                       setDialog(null);
-                    }
+                    },
                   });
                 }}
                 className="flex items-center gap-1 px-2.5 py-1 text-xs text-red-400 hover:text-white bg-red-900/20 hover:bg-red-900/50 border border-red-500/30 rounded-lg transition-all"
@@ -893,7 +1034,7 @@ const EjsEditor: React.FC<{ character: CharacterBackgroundData; mode: 'parsed' |
             if (dialog.onCancel) dialog.onCancel();
             setDialog(null);
           }}
-          onConfirm={(val) => {
+          onConfirm={val => {
             dialog.onConfirm(val);
           }}
         />
@@ -908,7 +1049,11 @@ const EjsEditor: React.FC<{ character: CharacterBackgroundData; mode: 'parsed' |
 type EditorTab = 'yaml' | 'ejs';
 type EditorMode = 'parsed' | 'raw';
 
-const EditorView: React.FC<{ character: CharacterBackgroundData | null; onSave: (char: CharacterBackgroundData) => Promise<void>; onBack: () => void }> = ({ character, onSave, onBack }) => {
+const EditorView: React.FC<{
+  character: CharacterBackgroundData | null;
+  onSave: (char: CharacterBackgroundData) => Promise<void>;
+  onBack: () => void;
+}> = ({ character, onSave, onBack }) => {
   const [activeTab, setActiveTab] = useState<EditorTab>('yaml');
   const [mode, setMode] = useState<EditorMode>('parsed');
   const [isSaving, setIsSaving] = useState(false);
@@ -971,7 +1116,9 @@ const EditorView: React.FC<{ character: CharacterBackgroundData | null; onSave: 
             <button
               onClick={() => setActiveTab('yaml')}
               className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                activeTab === 'yaml' ? 'bg-purple-500/40 text-white shadow-[0_0_8px_rgba(168,85,247,0.3)]' : 'text-gray-400 hover:text-gray-200'
+                activeTab === 'yaml'
+                  ? 'bg-purple-500/40 text-white shadow-[0_0_8px_rgba(168,85,247,0.3)]'
+                  : 'text-gray-400 hover:text-gray-200'
               }`}
             >
               基本人設
@@ -979,7 +1126,9 @@ const EditorView: React.FC<{ character: CharacterBackgroundData | null; onSave: 
             <button
               onClick={() => setActiveTab('ejs')}
               className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                activeTab === 'ejs' ? 'bg-purple-500/40 text-white shadow-[0_0_8px_rgba(168,85,247,0.3)]' : 'text-gray-400 hover:text-gray-200'
+                activeTab === 'ejs'
+                  ? 'bg-purple-500/40 text-white shadow-[0_0_8px_rgba(168,85,247,0.3)]'
+                  : 'text-gray-400 hover:text-gray-200'
               }`}
             >
               行為邏輯
@@ -987,7 +1136,7 @@ const EditorView: React.FC<{ character: CharacterBackgroundData | null; onSave: 
           </div>
 
           <button
-            onClick={() => setMode(m => m === 'parsed' ? 'raw' : 'parsed')}
+            onClick={() => setMode(m => (m === 'parsed' ? 'raw' : 'parsed'))}
             className="flex items-center px-2 py-1 text-xs bg-[#1a153a] border border-purple-500/30 text-purple-300 rounded hover:bg-purple-500/20 transition-colors"
             title="切換編輯模式"
           >
@@ -1071,9 +1220,7 @@ const SettingsView: React.FC = () => {
                   {prompt.content}
                 </p>
                 <div className="mt-3 flex justify-end">
-                  <button className="text-xs text-purple-400 hover:text-purple-200 transition-colors">
-                    編輯
-                  </button>
+                  <button className="text-xs text-purple-400 hover:text-purple-200 transition-colors">編輯</button>
                 </div>
               </div>
             ))}
@@ -1118,7 +1265,7 @@ export const CharacterBackgroundApp: React.FC<{ onBack?: () => void }> = ({ onBa
     try {
       const saved = await CharacterMockApi.saveCharacter(updatedChar);
       const name = Object.keys(saved.basic)[0];
-      setCharacters(prev => prev.map(c => Object.keys(c.basic)[0] === name ? saved : c));
+      setCharacters(prev => prev.map(c => (Object.keys(c.basic)[0] === name ? saved : c)));
     } catch (e) {
       console.error('Failed to save character', e);
     }
@@ -1175,9 +1322,7 @@ export const CharacterBackgroundApp: React.FC<{ onBack?: () => void }> = ({ onBa
                 onBack={() => setActiveTab('list')}
               />
             )}
-            {activeTab === 'settings' && (
-              <SettingsView />
-            )}
+            {activeTab === 'settings' && <SettingsView />}
           </>
         )}
       </div>

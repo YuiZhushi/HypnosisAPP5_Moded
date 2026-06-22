@@ -107,7 +107,7 @@ export function loadState(): MChanStateV1 {
                   floorNo: Number.isFinite(f.floorNo) ? Number(f.floorNo) : 1,
                   content: typeof f.content === 'string' ? f.content : '',
                   createdAtMs: Number.isFinite(f.createdAtMs) ? Number(f.createdAtMs) : safeNowMs(),
-                  source: (f.source === 'ai' || f.source === 'user' || f.source === 'local') ? f.source : 'local',
+                  source: f.source === 'ai' || f.source === 'user' || f.source === 'local' ? f.source : 'local',
                   originKey: typeof f.originKey === 'string' ? f.originKey : undefined,
                   originFloorTagNo: Number.isFinite(f.originFloorTagNo) ? Number(f.originFloorTagNo) : undefined,
                 }))
@@ -208,10 +208,7 @@ export function parseTaggedBlocks(text: string): ParsedPostBlock[] {
   if (!normalized) return [];
 
   const boardsPattern = BOARD_NAMES.map(escapeRegexLiteral).join('|');
-  const outerRe = new RegExp(
-    `<(?<tag>(?:${boardsPattern})帖子\\d+)>(?<inner>[\\s\\S]*?)<\\/\\k<tag>>`,
-    'gu',
-  );
+  const outerRe = new RegExp(`<(?<tag>(?:${boardsPattern})帖子\\d+)>(?<inner>[\\s\\S]*?)<\\/\\k<tag>>`, 'gu');
 
   const blocks: ParsedPostBlock[] = [];
   for (const m of normalized.matchAll(outerRe)) {
@@ -269,7 +266,10 @@ export function applyParsedBlocks(
     if (!existed) createdPosts += 1;
 
     b.floors.forEach((f, fIdx) => {
-      const originKey = originMessageId !== undefined ? `msg:${originMessageId}:post:${b.board}:${b.postNo}:floor:${bIdx}:${fIdx}` : undefined;
+      const originKey =
+        originMessageId !== undefined
+          ? `msg:${originMessageId}:post:${b.board}:${b.postNo}:floor:${bIdx}:${fIdx}`
+          : undefined;
       if (originKey && post.floors.some(x => x.originKey === originKey)) {
         return;
       }
@@ -337,7 +337,10 @@ function escapeForTagContent(text: string): string {
   return text.replace(/[<>]/g, m => (m === '<' ? '＜' : '＞'));
 }
 
-function buildTaggedContextBlock(post: PostContextForPrompt, opts?: { maxFloors?: number }): { block: string; truncated: boolean } {
+function buildTaggedContextBlock(
+  post: PostContextForPrompt,
+  opts?: { maxFloors?: number },
+): { block: string; truncated: boolean } {
   const maxFloors = Math.max(1, opts?.maxFloors ?? 30);
   const floors = post.floors;
   const truncated = floors.length > maxFloors;
@@ -445,7 +448,10 @@ export async function sendPromptToTavern(prompt: string): Promise<void> {
   await triggerSlash('/trigger');
 }
 
-export type Preset = Record<BoardName, Array<Omit<Post, 'floors' | 'createdAtMs' | 'updatedAtMs'> & { floors?: string[] }>>;
+export type Preset = Record<
+  BoardName,
+  Array<Omit<Post, 'floors' | 'createdAtMs' | 'updatedAtMs'> & { floors?: string[] }>
+>;
 
 export const DEFAULT_PRESET: Preset = {
   公告区: [

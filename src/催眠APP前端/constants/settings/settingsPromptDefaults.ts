@@ -54,7 +54,14 @@ export const DEFAULT_SETTINGS_PROMPT_CONFIG: SettingsPromptTuningConfig = {
     { key: 'target_name', value: '白鳥百合子', enabled: true, source: 'user', resolverType: 'static', scope: 'app' },
     { key: 'scene', value: '放學後教室', enabled: true, source: 'user', resolverType: 'static', scope: 'app' },
     { key: 'tone', value: '冷靜、簡潔', enabled: true, source: 'user', resolverType: 'static', scope: 'app' },
-    { key: 'user_goal', value: '描述目標目前的心理變化。', enabled: true, source: 'user', resolverType: 'static', scope: 'app' },
+    {
+      key: 'user_goal',
+      value: '描述目標目前的心理變化。',
+      enabled: true,
+      source: 'user',
+      resolverType: 'static',
+      scope: 'app',
+    },
   ],
 };
 

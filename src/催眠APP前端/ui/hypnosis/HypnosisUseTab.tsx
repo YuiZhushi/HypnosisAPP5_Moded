@@ -1,10 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { RuntimeData, HypnosisDef } from '../mock/mockModels';
 import { MockApi } from '../mock/mockApi';
-import {
-  List, Play,
-  X, AlertTriangle, Bookmark, Check
-} from 'lucide-react';
+import { List, Play, X, AlertTriangle, Bookmark, Check } from 'lucide-react';
 
 // ==========================================
 // 施加方式選項
@@ -38,7 +35,7 @@ const APPLY_METHOD_REQUIRED_EQUIPMENT: Record<string, string[]> = {
 function getMissingEquipment(
   method: string,
   ownedEquipments: Record<string, { enabled: boolean }>,
-  equipmentDefs: Record<string, { name: string }>
+  equipmentDefs: Record<string, { name: string }>,
 ): string[] {
   const required = APPLY_METHOD_REQUIRED_EQUIPMENT[method] || [];
   return required
@@ -81,7 +78,9 @@ export const HypnosisUseTab: React.FC<{
     } else {
       scrollParent.style.overflow = '';
     }
-    return () => { scrollParent.style.overflow = ''; };
+    return () => {
+      scrollParent.style.overflow = '';
+    };
   }, [showConfirm, showSavedCombos, showAddComboConfirm]);
 
   // 按 VIP 等級分組催眠列表 (只顯示 enabled=true 即「可見」的項目)
@@ -149,7 +148,7 @@ export const HypnosisUseTab: React.FC<{
         applyMethod: state.applyMethod || '直接輸入-圖像',
         target: targets.join(', '),
         duration: def.isPermanent ? 'permanent' : def.isOneTime ? 'onetime' : state.duration,
-        note: state.note
+        note: state.note,
       };
     });
     console.log('[HypnoOS] 啟動催眠，選中項目:', launchData, '總消耗:', totalMcCost);
@@ -217,14 +216,12 @@ export const HypnosisUseTab: React.FC<{
               state={state}
               charNames={Object.keys(data.chars)}
               onToggle={() => toggleItem(id, def)}
-              onUpdate={(patch) => updateState(id, patch)}
+              onUpdate={patch => updateState(id, patch)}
             />
           );
         })}
-        {!(hypnosisByTier[activeVipTab]?.length) && (
-          <div className="text-center py-8 text-gray-600 text-sm">
-            此等級下沒有擁有的催眠
-          </div>
+        {!hypnosisByTier[activeVipTab]?.length && (
+          <div className="text-center py-8 text-gray-600 text-sm">此等級下沒有擁有的催眠</div>
         )}
       </div>
 
@@ -261,7 +258,7 @@ export const HypnosisUseTab: React.FC<{
           data={data}
           onClose={() => setShowSavedCombos(false)}
           onAddComboClick={() => setShowAddComboConfirm(true)}
-          onLoadCombo={(comboId) => {
+          onLoadCombo={comboId => {
             console.log('[HypnoOS] 載入組合:', comboId);
             const combo = data.combos[comboId];
             if (combo) {
@@ -321,7 +318,7 @@ export const HypnosisUseTab: React.FC<{
                 applyMethod: state.applyMethod || '直接輸入-圖像',
                 target: targets.join(', '),
                 duration: def.isPermanent ? 'permanent' : def.isOneTime ? 'onetime' : state.duration,
-                note: state.note
+                note: state.note,
               };
             });
             console.log('[HypnoOS] 新增催眠組合:', { name, description, includedHypnosis });
@@ -330,7 +327,7 @@ export const HypnosisUseTab: React.FC<{
             await MockApi.saveNewCombo(comboId, {
               name,
               description,
-              includedHypnosis
+              includedHypnosis,
             });
 
             if (reload) reload();
@@ -355,16 +352,14 @@ const HypnosisItemCard: React.FC<{
   onToggle: () => void;
   onUpdate: (patch: Partial<HypnosisItemState>) => void;
 }> = ({ def, state, charNames, onToggle, onUpdate }) => {
-  const costLabel = def.isOneTime
-    ? `總計: ${def.energyCost} MC`
-    : `消耗: ${def.energyCost} MC / 分鐘`;
+  const costLabel = def.isOneTime ? `總計: ${def.energyCost} MC` : `消耗: ${def.energyCost} MC / 分鐘`;
 
   return (
-    <div className={`rounded-xl border transition-colors ${
-      state.enabled
-        ? 'bg-[#1a1035] border-purple-500/40'
-        : 'bg-[#13102a] border-purple-900/25'
-    }`}>
+    <div
+      className={`rounded-xl border transition-colors ${
+        state.enabled ? 'bg-[#1a1035] border-purple-500/40' : 'bg-[#13102a] border-purple-900/25'
+      }`}
+    >
       {/* 頂部行: 名稱 + 消耗 + 開關 */}
       <div className="flex items-center gap-2.5 md:gap-3 px-2.5 md:px-3.5 py-2 md:py-3">
         <div className="flex-1 min-w-0">
@@ -372,7 +367,9 @@ const HypnosisItemCard: React.FC<{
           <div className="text-[9px] md:text-[10px] text-gray-500 mt-0.5">
             {costLabel}
             {state.enabled && !def.isOneTime && !def.isPermanent && (
-              <span className="ml-2 text-amber-400 font-semibold">總計: {def.energyCost * (typeof state.duration === 'number' ? state.duration : 10)} MC</span>
+              <span className="ml-2 text-amber-400 font-semibold">
+                總計: {def.energyCost * (typeof state.duration === 'number' ? state.duration : 10)} MC
+              </span>
             )}
           </div>
         </div>
@@ -383,9 +380,11 @@ const HypnosisItemCard: React.FC<{
             state.enabled ? 'bg-purple-500' : 'bg-gray-700'
           }`}
         >
-          <div className={`absolute top-[2px] w-4 h-4 md:w-5 md:h-5 rounded-full bg-white shadow transition-transform ${
-            state.enabled ? 'translate-x-[22px] md:translate-x-[22px]' : 'translate-x-0.5'
-          }`} />
+          <div
+            className={`absolute top-[2px] w-4 h-4 md:w-5 md:h-5 rounded-full bg-white shadow transition-transform ${
+              state.enabled ? 'translate-x-[22px] md:translate-x-[22px]' : 'translate-x-0.5'
+            }`}
+          />
         </button>
       </div>
 
@@ -406,13 +405,15 @@ const HypnosisItemCard: React.FC<{
               <div className="flex items-center">
                 <button
                   disabled={def.isPermanent || def.isOneTime}
-                  onClick={() => onUpdate({ duration: Math.max(1, (typeof state.duration === 'number' ? state.duration : 10) - 1) })}
+                  onClick={() =>
+                    onUpdate({ duration: Math.max(1, (typeof state.duration === 'number' ? state.duration : 10) - 1) })
+                  }
                   className="w-7 md:w-8 h-[26px] md:h-[32px] bg-[#0c0a1e] border border-r-0 border-purple-900/30 rounded-l-lg text-gray-400 hover:text-white hover:bg-purple-900/40 disabled:opacity-50 flex items-center justify-center transition-colors shrink-0"
                 >
                   -
                 </button>
                 <input
-                  type={def.isPermanent || def.isOneTime ? "text" : "number"}
+                  type={def.isPermanent || def.isOneTime ? 'text' : 'number'}
                   min={1}
                   value={def.isPermanent ? '永久' : def.isOneTime ? '一次性' : state.duration}
                   disabled={def.isPermanent || def.isOneTime}
@@ -439,7 +440,9 @@ const HypnosisItemCard: React.FC<{
               >
                 <option value="">請選擇</option>
                 {APPLY_METHODS.map(m => (
-                  <option key={m} value={m}>{m}</option>
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
                 ))}
               </select>
             </div>
@@ -455,9 +458,7 @@ const HypnosisItemCard: React.FC<{
                   <button
                     key={t}
                     onClick={() => {
-                      const next = selected
-                        ? state.targets.filter(x => x !== t)
-                        : [...state.targets, t];
+                      const next = selected ? state.targets.filter(x => x !== t) : [...state.targets, t];
                       onUpdate({ targets: next });
                     }}
                     className={`px-2 md:px-2.5 py-0.5 md:py-1 rounded-full text-[9px] md:text-[10px] font-medium transition-colors border ${
@@ -528,13 +529,14 @@ const SavedCombosModal: React.FC<{
 
         {/* 組合列表 */}
         {ownedCombos.length === 0 ? (
-          <div className="text-center py-6 md:py-8 text-gray-500 text-xs md:text-sm">
-            尚未收藏任何催眠組合
-          </div>
+          <div className="text-center py-6 md:py-8 text-gray-500 text-xs md:text-sm">尚未收藏任何催眠組合</div>
         ) : (
           <div className="flex flex-col gap-2 md:gap-3">
             {ownedCombos.map(([id, combo]) => (
-              <div key={id} className="bg-[#13102a] rounded-xl border border-purple-900/25 px-2.5 md:px-3.5 py-2 md:py-3">
+              <div
+                key={id}
+                className="bg-[#13102a] rounded-xl border border-purple-900/25 px-2.5 md:px-3.5 py-2 md:py-3"
+              >
                 <div className="flex items-start justify-between gap-2 mb-1.5 md:mb-2">
                   <div>
                     <div className="font-semibold text-xs md:text-sm text-white mb-0.5">{combo.name}</div>
@@ -556,7 +558,10 @@ const SavedCombosModal: React.FC<{
                       const def = data.hypnosis[hypId];
                       if (!def) return null;
                       return (
-                        <span key={hypId} className="px-1.5 md:px-2 py-0.5 rounded-md bg-[#0c0a1e] border border-purple-900/30 text-[9px] md:text-[10px] text-gray-300">
+                        <span
+                          key={hypId}
+                          className="px-1.5 md:px-2 py-0.5 rounded-md bg-[#0c0a1e] border border-purple-900/30 text-[9px] md:text-[10px] text-gray-300"
+                        >
                           {def.name}
                         </span>
                       );
@@ -614,7 +619,9 @@ const AddComboConfirmModal: React.FC<{
         <div className="flex flex-col gap-3 md:gap-4">
           {/* 名稱輸入 */}
           <div>
-            <label className="text-[9px] md:text-[10px] text-gray-500 mb-1 block">組合名稱 <span className="text-red-400">*</span></label>
+            <label className="text-[9px] md:text-[10px] text-gray-500 mb-1 block">
+              組合名稱 <span className="text-red-400">*</span>
+            </label>
             <input
               type="text"
               value={name}
@@ -638,7 +645,9 @@ const AddComboConfirmModal: React.FC<{
 
           {/* 包含項目列表 */}
           <div>
-            <label className="text-[9px] md:text-[10px] text-gray-500 mb-1 block">包含項目 ({enabledItems.length})</label>
+            <label className="text-[9px] md:text-[10px] text-gray-500 mb-1 block">
+              包含項目 ({enabledItems.length})
+            </label>
             {enabledItems.length === 0 ? (
               <div className="text-center py-3 md:py-4 text-xs md:text-sm bg-[#13102a] rounded-xl border border-red-500/40 text-red-400">
                 請先在列表中選擇要加入組合的催眠項目
@@ -647,9 +656,16 @@ const AddComboConfirmModal: React.FC<{
               <div className="flex flex-col gap-1.5 md:gap-2">
                 {enabledItems.map(({ id, def, state }) => {
                   const targets = [...state.targets, state.customTarget].filter(Boolean);
-                  const durationLabel = def.isPermanent ? '永久性' : def.isOneTime ? '一次性' : `${state.duration} 分鐘`;
+                  const durationLabel = def.isPermanent
+                    ? '永久性'
+                    : def.isOneTime
+                      ? '一次性'
+                      : `${state.duration} 分鐘`;
                   return (
-                    <div key={id} className="bg-[#13102a] rounded-xl border border-purple-900/25 px-2.5 md:px-3 py-1.5 md:py-2">
+                    <div
+                      key={id}
+                      className="bg-[#13102a] rounded-xl border border-purple-900/25 px-2.5 md:px-3 py-1.5 md:py-2"
+                    >
                       <div className="text-xs md:text-sm text-white font-semibold flex items-center gap-1.5 md:gap-2 mb-1 md:mb-1.5">
                         <Check size={14} className="text-purple-400" />
                         {def.name}
@@ -744,12 +760,17 @@ const ConfirmModal: React.FC<{
             {itemChecks.map(({ id, def, state, method, missing, hasTarget, targets, cost }) => {
               const hasIssue = missing.length > 0 || !hasTarget;
               return (
-                <div key={id} className={`bg-[#13102a] rounded-xl border px-2.5 md:px-3.5 py-2 md:py-3 ${
-                  hasIssue ? 'border-red-500/40' : 'border-purple-900/25'
-                }`}>
+                <div
+                  key={id}
+                  className={`bg-[#13102a] rounded-xl border px-2.5 md:px-3.5 py-2 md:py-3 ${
+                    hasIssue ? 'border-red-500/40' : 'border-purple-900/25'
+                  }`}
+                >
                   <div className="font-semibold text-xs md:text-sm text-white mb-1 md:mb-1.5">{def.name}</div>
                   <div className="grid grid-cols-2 gap-x-3 md:gap-x-4 gap-y-0.5 text-[10px] md:text-[11px] text-gray-400">
-                    <span>持續時間: {def.isPermanent ? '永久性' : def.isOneTime ? '一次性' : `${state.duration} 分鐘`}</span>
+                    <span>
+                      持續時間: {def.isPermanent ? '永久性' : def.isOneTime ? '一次性' : `${state.duration} 分鐘`}
+                    </span>
                     <span>施加方式: {method}</span>
                     <span className={!hasTarget ? 'text-red-400' : ''}>
                       施加對象: {hasTarget ? targets.join(', ') : '⚠ 未設定'}
@@ -763,7 +784,9 @@ const ConfirmModal: React.FC<{
                       <span>缺少設備: {missing.join(', ')}</span>
                     </div>
                   )}
-                  <div className="text-amber-400 text-[10px] md:text-[11px] font-semibold mt-1 md:mt-1.5">預計消耗: {cost} MC</div>
+                  <div className="text-amber-400 text-[10px] md:text-[11px] font-semibold mt-1 md:mt-1.5">
+                    預計消耗: {cost} MC
+                  </div>
                 </div>
               );
             })}

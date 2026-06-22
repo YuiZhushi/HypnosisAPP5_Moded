@@ -1,10 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { RuntimeData, HypnosisDef } from '../mock/mockModels';
 import { MockApi } from '../mock/mockApi';
-import {
-  List, Bookmark, ShoppingCart, Hammer, Check, X,
-  AlertTriangle, Crown
-} from 'lucide-react';
+import { List, Bookmark, ShoppingCart, Hammer, Check, X, AlertTriangle, Crown } from 'lucide-react';
 
 type ManageSubTab = 'owned' | 'combos' | 'shop' | 'craft';
 
@@ -54,18 +51,10 @@ export const HypnosisManageTab: React.FC<{
       {/* 內容區塊 */}
       {/* ============================================ */}
       <div className="flex-1 overflow-y-auto px-3 md:px-4 pb-20 md:pb-24 flex flex-col gap-3 md:gap-4 no-scrollbar">
-        {activeSubTab === 'owned' && (
-          <OwnedHypnosisSection data={data} reload={reload} />
-        )}
-        {activeSubTab === 'combos' && (
-          <SavedCombosSection data={data} reload={reload} />
-        )}
-        {activeSubTab === 'shop' && (
-          <HypnosisShopSection data={data} reload={reload} />
-        )}
-        {activeSubTab === 'craft' && (
-          <HypnosisCraftSection data={data} reload={reload} />
-        )}
+        {activeSubTab === 'owned' && <OwnedHypnosisSection data={data} reload={reload} />}
+        {activeSubTab === 'combos' && <SavedCombosSection data={data} reload={reload} />}
+        {activeSubTab === 'shop' && <HypnosisShopSection data={data} reload={reload} />}
+        {activeSubTab === 'craft' && <HypnosisCraftSection data={data} reload={reload} />}
       </div>
     </div>
   );
@@ -149,18 +138,20 @@ const OwnedHypnosisSection: React.FC<{
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`text-[9px] md:text-[10px] font-medium px-1.5 md:px-2 py-0.5 rounded-md ${
-                enabled ? 'bg-emerald-900/30 text-emerald-400 border border-emerald-500/30' : 'bg-gray-800 text-gray-400 border border-gray-600/30'
-              }`}>
+              <span
+                className={`text-[9px] md:text-[10px] font-medium px-1.5 md:px-2 py-0.5 rounded-md ${
+                  enabled
+                    ? 'bg-emerald-900/30 text-emerald-400 border border-emerald-500/30'
+                    : 'bg-gray-800 text-gray-400 border border-gray-600/30'
+                }`}
+              >
                 {enabled ? '顯示中' : '已隱藏'}
               </span>
             </div>
           </div>
         ))}
-        {!(ownedByTier[activeVipTab]?.length) && (
-          <div className="text-center py-8 text-gray-600 text-sm">
-            此等級下沒有擁有的催眠
-          </div>
+        {!ownedByTier[activeVipTab]?.length && (
+          <div className="text-center py-8 text-gray-600 text-sm">此等級下沒有擁有的催眠</div>
         )}
       </div>
 
@@ -173,7 +164,7 @@ const OwnedHypnosisSection: React.FC<{
           reload={reload}
           initialEnabled={data.user.ownedHypnosis[selectedHypnosis.id]?.enabled || false}
           onClose={() => setSelectedHypnosis(null)}
-          onToggleVisibility={async (enabled) => {
+          onToggleVisibility={async enabled => {
             await MockApi.updateUserOwnedHypnosis(selectedHypnosis.id, enabled);
             reload();
           }}
@@ -263,11 +254,15 @@ const OwnedHypnosisDetailModal: React.FC<{
           <div className="grid grid-cols-2 gap-2.5 md:gap-3">
             <div>
               <div className="text-[9px] md:text-[10px] text-gray-500 mb-0.5">類型</div>
-              <div className="text-[11px] md:text-xs text-white">{def.isPermanent ? '永久性' : def.isOneTime ? '一次性' : '持續性'}</div>
+              <div className="text-[11px] md:text-xs text-white">
+                {def.isPermanent ? '永久性' : def.isOneTime ? '一次性' : '持續性'}
+              </div>
             </div>
             <div>
               <div className="text-[9px] md:text-[10px] text-gray-500 mb-0.5">消耗</div>
-              <div className="text-[11px] md:text-xs text-amber-400 font-semibold">{def.energyCost} MC {def.isOneTime || def.isPermanent ? '(單次)' : '(每分鐘)'}</div>
+              <div className="text-[11px] md:text-xs text-amber-400 font-semibold">
+                {def.energyCost} MC {def.isOneTime || def.isPermanent ? '(單次)' : '(每分鐘)'}
+              </div>
             </div>
             <div>
               <div className="text-[9px] md:text-[10px] text-gray-500 mb-0.5">自製催眠</div>
@@ -290,9 +285,11 @@ const OwnedHypnosisDetailModal: React.FC<{
                 enabled ? 'bg-purple-500' : 'bg-gray-700'
               }`}
             >
-              <div className={`absolute top-[2px] w-4 h-4 md:w-5 md:h-5 rounded-full bg-white shadow transition-transform ${
-                enabled ? 'translate-x-[22px]' : 'translate-x-0.5'
-              }`} />
+              <div
+                className={`absolute top-[2px] w-4 h-4 md:w-5 md:h-5 rounded-full bg-white shadow transition-transform ${
+                  enabled ? 'translate-x-[22px]' : 'translate-x-0.5'
+                }`}
+              />
             </button>
           </div>
         </div>
@@ -373,9 +370,7 @@ const SavedCombosSection: React.FC<{
   return (
     <div className="flex flex-col gap-3">
       {ownedCombos.length === 0 ? (
-        <div className="text-center py-8 text-gray-500 text-sm">
-          尚未收藏任何催眠組合
-        </div>
+        <div className="text-center py-8 text-gray-500 text-sm">尚未收藏任何催眠組合</div>
       ) : (
         <div className="flex flex-col gap-2">
           {ownedCombos.map(([id, combo]) => (
@@ -385,19 +380,22 @@ const SavedCombosSection: React.FC<{
               className="bg-[#13102a] rounded-xl border border-purple-900/25 px-3.5 py-3 cursor-pointer hover:border-purple-500/40 transition-colors"
             >
               <div className="font-semibold text-sm text-white mb-0.5">{combo.name}</div>
-              <div className="text-[11px] text-gray-400 line-clamp-2 leading-relaxed mb-2">
-                {combo.description}
-              </div>
+              <div className="text-[11px] text-gray-400 line-clamp-2 leading-relaxed mb-2">{combo.description}</div>
               <div className="flex flex-wrap gap-1.5">
-                {Object.keys(combo.includedHypnosis).slice(0, 5).map(hypId => {
-                  const def = data.hypnosis[hypId];
-                  if (!def) return null;
-                  return (
-                    <span key={hypId} className="px-2 py-0.5 rounded-md bg-[#0c0a1e] border border-purple-900/30 text-[10px] text-gray-300">
-                      {def.name}
-                    </span>
-                  );
-                })}
+                {Object.keys(combo.includedHypnosis)
+                  .slice(0, 5)
+                  .map(hypId => {
+                    const def = data.hypnosis[hypId];
+                    if (!def) return null;
+                    return (
+                      <span
+                        key={hypId}
+                        className="px-2 py-0.5 rounded-md bg-[#0c0a1e] border border-purple-900/30 text-[10px] text-gray-300"
+                      >
+                        {def.name}
+                      </span>
+                    );
+                  })}
                 {Object.keys(combo.includedHypnosis).length > 5 && (
                   <span className="px-2 py-0.5 rounded-md bg-[#0c0a1e] border border-purple-900/30 text-[10px] text-gray-500">
                     +{Object.keys(combo.includedHypnosis).length - 5}
@@ -415,7 +413,7 @@ const SavedCombosSection: React.FC<{
           combo={data.combos[selectedComboId]}
           data={data}
           onClose={() => setSelectedComboId(null)}
-          onUpdate={async (newCombo) => {
+          onUpdate={async newCombo => {
             await MockApi.updateCombo(selectedComboId, newCombo);
             reload();
           }}
@@ -560,14 +558,19 @@ const SavedComboDetailModal: React.FC<{
           </div>
         </div>
 
-        <div className="text-[13px] md:text-sm font-bold text-white mb-1.5 md:mb-2">包含的催眠項目 ({Object.keys(localCombo.includedHypnosis).length})</div>
+        <div className="text-[13px] md:text-sm font-bold text-white mb-1.5 md:mb-2">
+          包含的催眠項目 ({Object.keys(localCombo.includedHypnosis).length})
+        </div>
         <div className="flex flex-col gap-1.5 md:gap-2">
           {Object.entries(localCombo.includedHypnosis).map(([hypId, config]: [string, any]) => {
             const def = data.hypnosis[hypId];
             if (!def) return null;
 
             return (
-              <div key={hypId} className="bg-[#13102a] rounded-xl border border-purple-900/25 px-2.5 md:px-3 py-2.5 md:py-3">
+              <div
+                key={hypId}
+                className="bg-[#13102a] rounded-xl border border-purple-900/25 px-2.5 md:px-3 py-2.5 md:py-3"
+              >
                 <div className="flex items-start justify-between gap-2 mb-1.5 md:mb-2">
                   <div className="font-semibold text-[13px] md:text-sm text-white flex items-center gap-1 md:gap-1.5">
                     <Check size={14} className="text-purple-400" />
@@ -590,7 +593,9 @@ const SavedComboDetailModal: React.FC<{
                     >
                       <option value="">請選擇</option>
                       {APPLY_METHODS.map(m => (
-                        <option key={m} value={m}>{m}</option>
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -609,22 +614,34 @@ const SavedComboDetailModal: React.FC<{
                     <div className="flex items-center">
                       <button
                         disabled={def.isPermanent || def.isOneTime}
-                        onClick={() => handleUpdateItemConfig(hypId, 'duration', Math.max(1, (typeof config.duration === 'number' ? config.duration : 10) - 1))}
+                        onClick={() =>
+                          handleUpdateItemConfig(
+                            hypId,
+                            'duration',
+                            Math.max(1, (typeof config.duration === 'number' ? config.duration : 10) - 1),
+                          )
+                        }
                         className="w-5 md:w-6 h-[20px] md:h-[24px] bg-[#0c0a1e] border border-r-0 border-purple-900/30 rounded-l text-gray-400 hover:text-white hover:bg-purple-900/40 disabled:opacity-50 flex items-center justify-center transition-colors shrink-0 text-xs"
                       >
                         -
                       </button>
                       <input
-                        type={def.isPermanent || def.isOneTime ? "text" : "number"}
+                        type={def.isPermanent || def.isOneTime ? 'text' : 'number'}
                         min={1}
-                        value={def.isPermanent ? '永久' : def.isOneTime ? '一次性' : (config.duration || 10)}
+                        value={def.isPermanent ? '永久' : def.isOneTime ? '一次性' : config.duration || 10}
                         disabled={def.isPermanent || def.isOneTime}
                         onChange={e => handleUpdateItemConfig(hypId, 'duration', parseInt(e.target.value) || 10)}
                         className="flex-1 min-w-0 text-center bg-[#0c0a1e] border-y border-purple-900/30 h-[20px] md:h-[24px] text-[10px] md:text-[11px] text-white outline-none focus:border-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed px-0"
                       />
                       <button
                         disabled={def.isPermanent || def.isOneTime}
-                        onClick={() => handleUpdateItemConfig(hypId, 'duration', (typeof config.duration === 'number' ? config.duration : 10) + 1)}
+                        onClick={() =>
+                          handleUpdateItemConfig(
+                            hypId,
+                            'duration',
+                            (typeof config.duration === 'number' ? config.duration : 10) + 1,
+                          )
+                        }
                         className="w-5 md:w-6 h-[20px] md:h-[24px] bg-[#0c0a1e] border border-l-0 border-purple-900/30 rounded-r text-gray-400 hover:text-white hover:bg-purple-900/40 disabled:opacity-50 flex items-center justify-center transition-colors shrink-0 text-xs"
                       >
                         +
@@ -673,9 +690,7 @@ const SavedComboDetailModal: React.FC<{
               <AlertTriangle size={20} />
               未儲存的變更
             </div>
-            <div className="text-[13px] md:text-sm text-gray-300">
-              您有尚未儲存的變更，確定要放棄這些變更並關閉嗎？
-            </div>
+            <div className="text-[13px] md:text-sm text-gray-300">您有尚未儲存的變更，確定要放棄這些變更並關閉嗎？</div>
             <div className="flex gap-2 md:gap-3 mt-1.5 md:mt-2">
               <button
                 onClick={() => setShowCloseConfirm(false)}
@@ -732,7 +747,8 @@ const SavedComboDetailModal: React.FC<{
               刪除組合警告
             </div>
             <div className="text-[13px] md:text-sm text-gray-300">
-              這是組合中的最後一個催眠項目，移除後將會<span className="text-red-400 font-bold">刪除整個組合</span>。確定要繼續嗎？
+              這是組合中的最後一個催眠項目，移除後將會<span className="text-red-400 font-bold">刪除整個組合</span>
+              。確定要繼續嗎？
             </div>
             <div className="flex gap-2 md:gap-3 mt-1.5 md:mt-2">
               <button
@@ -838,34 +854,46 @@ const HypnosisShopSection: React.FC<{
               key={id}
               onClick={() => !isLocked && setSelectedHypnosis({ id, def })}
               className={`bg-[#13102a] rounded-xl border px-3.5 py-3 flex items-center justify-between transition-colors ${
-                isLocked ? 'border-gray-800 opacity-50 cursor-not-allowed pointer-events-none' : 'border-purple-900/25 cursor-pointer hover:border-purple-500/40'
+                isLocked
+                  ? 'border-gray-800 opacity-50 cursor-not-allowed pointer-events-none'
+                  : 'border-purple-900/25 cursor-pointer hover:border-purple-500/40'
               }`}
             >
               <div className="flex-1 min-w-0 pr-4">
                 <div className="font-semibold text-sm text-white mb-0.5">{def.name}</div>
-                <div className="text-[11px] text-gray-400 line-clamp-1">
-                  {def.description}
-                </div>
+                <div className="text-[11px] text-gray-400 line-clamp-1">{def.description}</div>
               </div>
               <div className="flex flex-col items-end gap-1 shrink-0">
                 {def.cost.pts !== undefined && (
-                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md border ${
-                    canAffordPts ? 'bg-purple-900/30 text-purple-400 border-purple-500/30' : 'bg-red-900/30 text-red-400 border-red-500/30'
-                  }`}>
+                  <span
+                    className={`text-[10px] font-medium px-2 py-0.5 rounded-md border ${
+                      canAffordPts
+                        ? 'bg-purple-900/30 text-purple-400 border-purple-500/30'
+                        : 'bg-red-900/30 text-red-400 border-red-500/30'
+                    }`}
+                  >
                     {def.cost.pts} PTS
                   </span>
                 )}
                 {def.cost.money !== undefined && (
-                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md border ${
-                    canAffordMoney ? 'bg-yellow-900/30 text-yellow-400 border-yellow-500/30' : 'bg-red-900/30 text-red-400 border-red-500/30'
-                  }`}>
+                  <span
+                    className={`text-[10px] font-medium px-2 py-0.5 rounded-md border ${
+                      canAffordMoney
+                        ? 'bg-yellow-900/30 text-yellow-400 border-yellow-500/30'
+                        : 'bg-red-900/30 text-red-400 border-red-500/30'
+                    }`}
+                  >
                     ¥{def.cost.money.toLocaleString()}
                   </span>
                 )}
                 {def.cost.mc !== undefined && (
-                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md border ${
-                    canAffordMc ? 'bg-cyan-900/30 text-cyan-400 border-cyan-500/30' : 'bg-red-900/30 text-red-400 border-red-500/30'
-                  }`}>
+                  <span
+                    className={`text-[10px] font-medium px-2 py-0.5 rounded-md border ${
+                      canAffordMc
+                        ? 'bg-cyan-900/30 text-cyan-400 border-cyan-500/30'
+                        : 'bg-red-900/30 text-red-400 border-red-500/30'
+                    }`}
+                  >
                     {def.cost.mc} MC
                   </span>
                 )}
@@ -873,10 +901,8 @@ const HypnosisShopSection: React.FC<{
             </div>
           );
         })}
-        {!(shopByTier[activeVipTab]?.length) && (
-          <div className="text-center py-8 text-gray-600 text-sm">
-            此等級下沒有可購買的催眠
-          </div>
+        {!shopByTier[activeVipTab]?.length && (
+          <div className="text-center py-8 text-gray-600 text-sm">此等級下沒有可購買的催眠</div>
         )}
       </div>
 
@@ -982,11 +1008,15 @@ const HypnosisShopDetailModal: React.FC<{
           <div className="grid grid-cols-2 gap-2.5 md:gap-3">
             <div>
               <div className="text-[9px] md:text-[10px] text-gray-500 mb-0.5">類型</div>
-              <div className="text-[11px] md:text-xs text-white">{def.isPermanent ? '永久性' : def.isOneTime ? '一次性' : '持續性'}</div>
+              <div className="text-[11px] md:text-xs text-white">
+                {def.isPermanent ? '永久性' : def.isOneTime ? '一次性' : '持續性'}
+              </div>
             </div>
             <div>
               <div className="text-[9px] md:text-[10px] text-gray-500 mb-0.5">消耗</div>
-              <div className="text-[11px] md:text-xs text-amber-400 font-semibold">{def.energyCost} MC {def.isOneTime || def.isPermanent ? '(單次)' : '(每分鐘)'}</div>
+              <div className="text-[11px] md:text-xs text-amber-400 font-semibold">
+                {def.energyCost} MC {def.isOneTime || def.isPermanent ? '(單次)' : '(每分鐘)'}
+              </div>
             </div>
             <div>
               <div className="text-[9px] md:text-[10px] text-gray-500 mb-0.5">需求 VIP</div>
@@ -998,23 +1028,35 @@ const HypnosisShopDetailModal: React.FC<{
             <div className="text-[9px] md:text-[10px] text-gray-500 mb-1.5 md:mb-2">購買花費</div>
             <div className="flex flex-wrap gap-1.5 md:gap-2">
               {def.cost.pts !== undefined && (
-                <div className={`text-[11px] md:text-xs font-semibold px-2 md:px-2.5 py-1 md:py-1.5 rounded-lg border ${
-                  canAffordPts ? 'bg-purple-900/30 text-purple-400 border-purple-500/30' : 'bg-red-900/30 text-red-400 border-red-500/30'
-                }`}>
+                <div
+                  className={`text-[11px] md:text-xs font-semibold px-2 md:px-2.5 py-1 md:py-1.5 rounded-lg border ${
+                    canAffordPts
+                      ? 'bg-purple-900/30 text-purple-400 border-purple-500/30'
+                      : 'bg-red-900/30 text-red-400 border-red-500/30'
+                  }`}
+                >
                   {def.cost.pts} PTS
                 </div>
               )}
               {def.cost.money !== undefined && (
-                <div className={`text-[11px] md:text-xs font-semibold px-2 md:px-2.5 py-1 md:py-1.5 rounded-lg border ${
-                  canAffordMoney ? 'bg-yellow-900/30 text-yellow-400 border-yellow-500/30' : 'bg-red-900/30 text-red-400 border-red-500/30'
-                }`}>
+                <div
+                  className={`text-[11px] md:text-xs font-semibold px-2 md:px-2.5 py-1 md:py-1.5 rounded-lg border ${
+                    canAffordMoney
+                      ? 'bg-yellow-900/30 text-yellow-400 border-yellow-500/30'
+                      : 'bg-red-900/30 text-red-400 border-red-500/30'
+                  }`}
+                >
                   ¥{def.cost.money.toLocaleString()}
                 </div>
               )}
               {def.cost.mc !== undefined && (
-                <div className={`text-[11px] md:text-xs font-semibold px-2 md:px-2.5 py-1 md:py-1.5 rounded-lg border ${
-                  canAffordMc ? 'bg-cyan-900/30 text-cyan-400 border-cyan-500/30' : 'bg-red-900/30 text-red-400 border-red-500/30'
-                }`}>
+                <div
+                  className={`text-[11px] md:text-xs font-semibold px-2 md:px-2.5 py-1 md:py-1.5 rounded-lg border ${
+                    canAffordMc
+                      ? 'bg-cyan-900/30 text-cyan-400 border-cyan-500/30'
+                      : 'bg-red-900/30 text-red-400 border-red-500/30'
+                  }`}
+                >
                   {def.cost.mc} MC
                 </div>
               )}
@@ -1118,17 +1160,38 @@ const calculateCosts = (
   mcCost: number,
   isPermanent: boolean,
   isOneTime: boolean,
-  selectedCostTypes: string[]
+  selectedCostTypes: string[],
 ) => {
   // 步驟 A: 定義各 VIP 等級的標準 MC 消耗區間
   const EXPECTED_MC_RANGES = {
-    normal: [ [1,5], [1,5], [5,12], [25,30], [40,60], [90,150] ],
-    onetime: [ [1,10], [1,12], [10,30], [50,150], [240,360], [400,540] ],
-    permanent: [ [900,1500], [900,1500], [900,1500], [900,1500], [900,1500], [900,1500] ]
+    normal: [
+      [1, 5],
+      [1, 5],
+      [5, 12],
+      [25, 30],
+      [40, 60],
+      [90, 150],
+    ],
+    onetime: [
+      [1, 10],
+      [1, 12],
+      [10, 30],
+      [50, 150],
+      [240, 360],
+      [400, 540],
+    ],
+    permanent: [
+      [900, 1500],
+      [900, 1500],
+      [900, 1500],
+      [900, 1500],
+      [900, 1500],
+      [900, 1500],
+    ],
   };
 
   // 步驟 B: 計算綜合乘數
-  const typeKey: 'permanent' | 'onetime' | 'normal' = isPermanent ? 'permanent' : (isOneTime ? 'onetime' : 'normal');
+  const typeKey: 'permanent' | 'onetime' | 'normal' = isPermanent ? 'permanent' : isOneTime ? 'onetime' : 'normal';
   const [minExpected, maxExpected] = EXPECTED_MC_RANGES[typeKey][tier];
 
   // 等級懲罰(自製)
@@ -1183,7 +1246,7 @@ const calculateCosts = (
     [3, 3, 3],
     [4, 9, 8],
     [5, 48, 20],
-    [6, 120, 48]
+    [6, 120, 48],
   ];
   const VIP_CONV_RATIOS = [
     [1, 0.7, 0.3],
@@ -1191,7 +1254,7 @@ const calculateCosts = (
     [1, 1, 1],
     [0.44, 1, 0.88],
     [0.1, 1, 0.41],
-    [0.05, 1, 0.4]
+    [0.05, 1, 0.4],
   ];
 
   const [a, b, c] = VIP_RATIOS[tier];
@@ -1205,9 +1268,9 @@ const calculateCosts = (
   const sumDEF = d + e + f;
 
   let newA, newB, newC;
-  const defaultTypes = tier === 0 ? ['money'] : (tier === 1 ? ['mc', 'pts'] : ['money', 'mc', 'pts']);
-  const isSameAsDefault = selectedCostTypes.length === defaultTypes.length &&
-                          selectedCostTypes.every(t => defaultTypes.includes(t));
+  const defaultTypes = tier === 0 ? ['money'] : tier === 1 ? ['mc', 'pts'] : ['money', 'mc', 'pts'];
+  const isSameAsDefault =
+    selectedCostTypes.length === defaultTypes.length && selectedCostTypes.every(t => defaultTypes.includes(t));
 
   if (isSameAsDefault) {
     newA = a;
@@ -1224,7 +1287,7 @@ const calculateCosts = (
   const unfloatedCost = {
     money: newA * BASE_UNITS[0],
     mc: newB * BASE_UNITS[1],
-    pts: newC * BASE_UNITS[2]
+    pts: newC * BASE_UNITS[2],
   };
 
   // 步驟 E: 計算最終預估成本
@@ -1232,7 +1295,7 @@ const calculateCosts = (
   const purchaseCost = {
     money: Math.round(unfloatedCost.money * finalPurchaseMultiplier),
     mc: Math.round(unfloatedCost.mc * finalPurchaseMultiplier),
-    pts: Math.round(unfloatedCost.pts * finalPurchaseMultiplier)
+    pts: Math.round(unfloatedCost.pts * finalPurchaseMultiplier),
   };
 
   const baseCraftMultiplier = 0.5;
@@ -1240,7 +1303,7 @@ const calculateCosts = (
   const craftCost = {
     money: Math.round(unfloatedCost.money * finalCraftMultiplier),
     mc: Math.round(unfloatedCost.mc * finalCraftMultiplier),
-    pts: Math.round(unfloatedCost.pts * finalCraftMultiplier)
+    pts: Math.round(unfloatedCost.pts * finalCraftMultiplier),
   };
 
   return {
@@ -1252,8 +1315,8 @@ const calculateCosts = (
       duration: durationMultiplier,
       total: totalMultiplier,
       purchase: purchaseRatio,
-      craft: craftRatio
-    }
+      craft: craftRatio,
+    },
   };
 };
 
@@ -1299,11 +1362,32 @@ const HypnosisCraftSection: React.FC<{
 
     // 2. 自動帶入預設 MC 消耗 (中位數)
     const EXPECTED_MC_RANGES = {
-      normal: [ [1,5], [1,5], [5,12], [25,30], [40,60], [90,150] ],
-      onetime: [ [1,10], [1,12], [10,30], [50,150], [240,360], [400,540] ],
-      permanent: [ [900,1500], [900,1500], [900,1500], [900,1500], [900,1500], [900,1500] ]
+      normal: [
+        [1, 5],
+        [1, 5],
+        [5, 12],
+        [25, 30],
+        [40, 60],
+        [90, 150],
+      ],
+      onetime: [
+        [1, 10],
+        [1, 12],
+        [10, 30],
+        [50, 150],
+        [240, 360],
+        [400, 540],
+      ],
+      permanent: [
+        [900, 1500],
+        [900, 1500],
+        [900, 1500],
+        [900, 1500],
+        [900, 1500],
+        [900, 1500],
+      ],
     };
-    const typeKey = newPermanent ? 'permanent' : (newOneTime ? 'onetime' : 'normal');
+    const typeKey = newPermanent ? 'permanent' : newOneTime ? 'onetime' : 'normal';
     const [minExp, maxExp] = EXPECTED_MC_RANGES[typeKey][newTier];
     setEnergyCost(Math.round((minExp + maxExp) / 2));
   };
@@ -1323,9 +1407,7 @@ const HypnosisCraftSection: React.FC<{
   };
 
   const handleCostTypeToggle = (type: string) => {
-    setCostTypes(prev =>
-      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
-    );
+    setCostTypes(prev => (prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]));
   };
 
   // 實時計算成本
@@ -1333,9 +1415,10 @@ const HypnosisCraftSection: React.FC<{
     return calculateCosts(tier, energyCost, isPermanent, isOneTime, costTypes);
   }, [tier, energyCost, isPermanent, isOneTime, costTypes]);
 
-  const canAffordCraft = data.user.money >= (craftCost.money || 0) &&
-                         data.user.mcEnergy >= (craftCost.mc || 0) &&
-                         data.user.mcPoints >= (craftCost.pts || 0);
+  const canAffordCraft =
+    data.user.money >= (craftCost.money || 0) &&
+    data.user.mcEnergy >= (craftCost.mc || 0) &&
+    data.user.mcPoints >= (craftCost.pts || 0);
 
   const canCraft = name.trim().length > 0 && description.trim().length > 0 && costTypes.length > 0 && canAffordCraft;
 
@@ -1344,7 +1427,9 @@ const HypnosisCraftSection: React.FC<{
       <div className="bg-[#13102a] rounded-xl border border-purple-900/25 p-3 md:p-4 flex flex-col gap-3 md:gap-4">
         {/* 名稱 */}
         <div>
-          <label className="text-[9px] md:text-[10px] text-gray-500 mb-1 block">催眠名稱 <span className="text-red-400">*</span></label>
+          <label className="text-[9px] md:text-[10px] text-gray-500 mb-1 block">
+            催眠名稱 <span className="text-red-400">*</span>
+          </label>
           <input
             type="text"
             value={name}
@@ -1356,7 +1441,9 @@ const HypnosisCraftSection: React.FC<{
 
         {/* 描述 */}
         <div>
-          <label className="text-[9px] md:text-[10px] text-gray-500 mb-1 block">催眠效果描述 <span className="text-red-400">*</span></label>
+          <label className="text-[9px] md:text-[10px] text-gray-500 mb-1 block">
+            催眠效果描述 <span className="text-red-400">*</span>
+          </label>
           <textarea
             value={description}
             onChange={e => setDescription(e.target.value)}
@@ -1421,7 +1508,9 @@ const HypnosisCraftSection: React.FC<{
             <button
               onClick={() => handlePermanentChange(!isPermanent)}
               className={`w-full py-1.5 md:py-2 rounded-lg text-[11px] md:text-xs font-semibold transition-colors border ${
-                isPermanent ? 'bg-purple-600 text-white border-purple-500' : 'bg-[#0c0a1e] text-gray-400 border-purple-900/30'
+                isPermanent
+                  ? 'bg-purple-600 text-white border-purple-500'
+                  : 'bg-[#0c0a1e] text-gray-400 border-purple-900/30'
               }`}
             >
               {isPermanent ? '是' : '否'}
@@ -1433,7 +1522,9 @@ const HypnosisCraftSection: React.FC<{
               onClick={() => handleOneTimeChange(!isOneTime)}
               disabled={isPermanent}
               className={`w-full py-1.5 md:py-2 rounded-lg text-[11px] md:text-xs font-semibold transition-colors border ${
-                isOneTime ? 'bg-purple-600 text-white border-purple-500' : 'bg-[#0c0a1e] text-gray-400 border-purple-900/30'
+                isOneTime
+                  ? 'bg-purple-600 text-white border-purple-500'
+                  : 'bg-[#0c0a1e] text-gray-400 border-purple-900/30'
               } ${isPermanent ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {isOneTime ? '是' : '否'}
@@ -1443,12 +1534,16 @@ const HypnosisCraftSection: React.FC<{
 
         {/* 購買所需花費類型 */}
         <div>
-          <label className="text-[9px] md:text-[10px] text-gray-500 mb-1.5 md:mb-2 block">購買所需花費類型 (可多選) <span className="text-red-400">*</span></label>
+          <label className="text-[9px] md:text-[10px] text-gray-500 mb-1.5 md:mb-2 block">
+            購買所需花費類型 (可多選) <span className="text-red-400">*</span>
+          </label>
           <div className="flex gap-1.5 md:gap-2">
             <button
               onClick={() => handleCostTypeToggle('money')}
               className={`flex-1 py-1 md:py-1.5 rounded-lg text-[11px] md:text-xs font-semibold transition-colors border ${
-                costTypes.includes('money') ? 'bg-yellow-900/30 text-yellow-400 border-yellow-500/30' : 'bg-[#0c0a1e] text-gray-500 border-purple-900/30'
+                costTypes.includes('money')
+                  ? 'bg-yellow-900/30 text-yellow-400 border-yellow-500/30'
+                  : 'bg-[#0c0a1e] text-gray-500 border-purple-900/30'
               }`}
             >
               金錢
@@ -1456,7 +1551,9 @@ const HypnosisCraftSection: React.FC<{
             <button
               onClick={() => handleCostTypeToggle('pts')}
               className={`flex-1 py-1 md:py-1.5 rounded-lg text-[11px] md:text-xs font-semibold transition-colors border ${
-                costTypes.includes('pts') ? 'bg-purple-900/30 text-purple-400 border-purple-500/30' : 'bg-[#0c0a1e] text-gray-500 border-purple-900/30'
+                costTypes.includes('pts')
+                  ? 'bg-purple-900/30 text-purple-400 border-purple-500/30'
+                  : 'bg-[#0c0a1e] text-gray-500 border-purple-900/30'
               }`}
             >
               PTS
@@ -1464,7 +1561,9 @@ const HypnosisCraftSection: React.FC<{
             <button
               onClick={() => handleCostTypeToggle('mc')}
               className={`flex-1 py-1 md:py-1.5 rounded-lg text-[11px] md:text-xs font-semibold transition-colors border ${
-                costTypes.includes('mc') ? 'bg-cyan-900/30 text-cyan-400 border-cyan-500/30' : 'bg-[#0c0a1e] text-gray-500 border-purple-900/30'
+                costTypes.includes('mc')
+                  ? 'bg-cyan-900/30 text-cyan-400 border-cyan-500/30'
+                  : 'bg-[#0c0a1e] text-gray-500 border-purple-900/30'
               }`}
             >
               MC 能量
@@ -1490,30 +1589,55 @@ const HypnosisCraftSection: React.FC<{
             <div className="text-[9px] md:text-[10px] text-gray-500 mb-1">預估製作成本</div>
             <div className="flex flex-col gap-1 mb-1.5 md:mb-2">
               {craftCost.money !== undefined && craftCost.money > 0 && (
-                <div className={`text-[11px] md:text-xs font-semibold ${data.user.money >= craftCost.money ? 'text-yellow-400' : 'text-red-400'}`}>
+                <div
+                  className={`text-[11px] md:text-xs font-semibold ${data.user.money >= craftCost.money ? 'text-yellow-400' : 'text-red-400'}`}
+                >
                   ¥{craftCost.money.toLocaleString()}
                 </div>
               )}
               {craftCost.mc !== undefined && craftCost.mc > 0 && (
-                <div className={`text-[11px] md:text-xs font-semibold ${data.user.mcEnergy >= craftCost.mc ? 'text-cyan-400' : 'text-red-400'}`}>
+                <div
+                  className={`text-[11px] md:text-xs font-semibold ${data.user.mcEnergy >= craftCost.mc ? 'text-cyan-400' : 'text-red-400'}`}
+                >
                   {craftCost.mc.toLocaleString()} MC
                 </div>
               )}
               {craftCost.pts !== undefined && craftCost.pts > 0 && (
-                <div className={`text-[11px] md:text-xs font-semibold ${data.user.mcPoints >= craftCost.pts ? 'text-purple-400' : 'text-red-400'}`}>
+                <div
+                  className={`text-[11px] md:text-xs font-semibold ${data.user.mcPoints >= craftCost.pts ? 'text-purple-400' : 'text-red-400'}`}
+                >
                   {craftCost.pts.toLocaleString()} PTS
                 </div>
               )}
-              {(!craftCost.money && !craftCost.mc && !craftCost.pts) && (
+              {!craftCost.money && !craftCost.mc && !craftCost.pts && (
                 <div className="text-[11px] md:text-xs text-emerald-400 font-semibold">免費</div>
               )}
             </div>
             <div className="mt-auto border-t border-purple-900/20 pt-1.5 md:pt-2 grid grid-cols-2 gap-x-1.5 md:gap-x-2 gap-y-0.5 md:gap-y-1">
-              <div className="text-[8px] md:text-[9px] text-gray-500 flex justify-between">消耗: <span className={multipliers.usage > 1 ? 'text-red-400' : 'text-emerald-400'}>x{multipliers.usage.toFixed(2)}</span></div>
-              <div className="text-[8px] md:text-[9px] text-gray-500 flex justify-between">越級: <span className={multipliers.tier > 1 ? 'text-red-400' : 'text-gray-400'}>x{multipliers.tier.toFixed(1)}</span></div>
-              <div className="text-[8px] md:text-[9px] text-gray-500 flex justify-between">類型: <span className="text-gray-400">x{multipliers.duration.toFixed(1)}</span></div>
-              <div className="text-[8px] md:text-[9px] text-gray-500 flex justify-between">種類: <span className={multipliers.craft > 1 ? 'text-red-400' : 'text-emerald-400'}>x{multipliers.craft.toFixed(1)}</span></div>
-              <div className="col-span-2 text-[8px] md:text-[9px] font-semibold text-gray-400 flex justify-between pt-0.5 md:pt-1">總浮動: <span className="text-purple-400">x{multipliers.total.toFixed(2)}</span></div>
+              <div className="text-[8px] md:text-[9px] text-gray-500 flex justify-between">
+                消耗:{' '}
+                <span className={multipliers.usage > 1 ? 'text-red-400' : 'text-emerald-400'}>
+                  x{multipliers.usage.toFixed(2)}
+                </span>
+              </div>
+              <div className="text-[8px] md:text-[9px] text-gray-500 flex justify-between">
+                越級:{' '}
+                <span className={multipliers.tier > 1 ? 'text-red-400' : 'text-gray-400'}>
+                  x{multipliers.tier.toFixed(1)}
+                </span>
+              </div>
+              <div className="text-[8px] md:text-[9px] text-gray-500 flex justify-between">
+                類型: <span className="text-gray-400">x{multipliers.duration.toFixed(1)}</span>
+              </div>
+              <div className="text-[8px] md:text-[9px] text-gray-500 flex justify-between">
+                種類:{' '}
+                <span className={multipliers.craft > 1 ? 'text-red-400' : 'text-emerald-400'}>
+                  x{multipliers.craft.toFixed(1)}
+                </span>
+              </div>
+              <div className="col-span-2 text-[8px] md:text-[9px] font-semibold text-gray-400 flex justify-between pt-0.5 md:pt-1">
+                總浮動: <span className="text-purple-400">x{multipliers.total.toFixed(2)}</span>
+              </div>
             </div>
             {!canAffordCraft && (
               <div className="text-[9px] md:text-[10px] text-red-400 mt-1.5 md:mt-2 flex items-center gap-1">
@@ -1541,12 +1665,17 @@ const HypnosisCraftSection: React.FC<{
                   {purchaseCost.pts.toLocaleString()} PTS
                 </div>
               )}
-              {(!purchaseCost.money && !purchaseCost.mc && !purchaseCost.pts) && (
+              {!purchaseCost.money && !purchaseCost.mc && !purchaseCost.pts && (
                 <div className="text-[11px] md:text-xs text-emerald-400 font-semibold">免費</div>
               )}
             </div>
             <div className="mt-auto border-t border-purple-900/20 pt-1.5 md:pt-2 flex flex-col gap-1">
-              <div className="text-[8px] md:text-[9px] text-gray-500 flex justify-between">種類影響: <span className={multipliers.purchase > 1 ? 'text-red-400' : 'text-emerald-400'}>x{multipliers.purchase.toFixed(1)}</span></div>
+              <div className="text-[8px] md:text-[9px] text-gray-500 flex justify-between">
+                種類影響:{' '}
+                <span className={multipliers.purchase > 1 ? 'text-red-400' : 'text-emerald-400'}>
+                  x{multipliers.purchase.toFixed(1)}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -1581,15 +1710,21 @@ const HypnosisCraftSection: React.FC<{
                   <div className="text-[9px] md:text-[10px] text-gray-500 mb-1">預估製作成本</div>
                   <div className="flex flex-col gap-1">
                     {craftCost.money !== undefined && craftCost.money > 0 && (
-                      <div className="text-[11px] md:text-xs text-yellow-400 font-semibold">¥{craftCost.money.toLocaleString()}</div>
+                      <div className="text-[11px] md:text-xs text-yellow-400 font-semibold">
+                        ¥{craftCost.money.toLocaleString()}
+                      </div>
                     )}
                     {craftCost.mc !== undefined && craftCost.mc > 0 && (
-                      <div className="text-[11px] md:text-xs text-cyan-400 font-semibold">{craftCost.mc.toLocaleString()} MC</div>
+                      <div className="text-[11px] md:text-xs text-cyan-400 font-semibold">
+                        {craftCost.mc.toLocaleString()} MC
+                      </div>
                     )}
                     {craftCost.pts !== undefined && craftCost.pts > 0 && (
-                      <div className="text-[11px] md:text-xs text-purple-400 font-semibold">{craftCost.pts.toLocaleString()} PTS</div>
+                      <div className="text-[11px] md:text-xs text-purple-400 font-semibold">
+                        {craftCost.pts.toLocaleString()} PTS
+                      </div>
                     )}
-                    {(!craftCost.money && !craftCost.mc && !craftCost.pts) && (
+                    {!craftCost.money && !craftCost.mc && !craftCost.pts && (
                       <div className="text-[11px] md:text-xs text-emerald-400 font-semibold">免費</div>
                     )}
                   </div>
@@ -1599,15 +1734,21 @@ const HypnosisCraftSection: React.FC<{
                   <div className="text-[9px] md:text-[10px] text-gray-500 mb-1">未來購買成本</div>
                   <div className="flex flex-col gap-1">
                     {purchaseCost.money !== undefined && purchaseCost.money > 0 && (
-                      <div className="text-[11px] md:text-xs text-yellow-400 font-semibold">¥{purchaseCost.money.toLocaleString()}</div>
+                      <div className="text-[11px] md:text-xs text-yellow-400 font-semibold">
+                        ¥{purchaseCost.money.toLocaleString()}
+                      </div>
                     )}
                     {purchaseCost.mc !== undefined && purchaseCost.mc > 0 && (
-                      <div className="text-[11px] md:text-xs text-cyan-400 font-semibold">{purchaseCost.mc.toLocaleString()} MC</div>
+                      <div className="text-[11px] md:text-xs text-cyan-400 font-semibold">
+                        {purchaseCost.mc.toLocaleString()} MC
+                      </div>
                     )}
                     {purchaseCost.pts !== undefined && purchaseCost.pts > 0 && (
-                      <div className="text-[11px] md:text-xs text-purple-400 font-semibold">{purchaseCost.pts.toLocaleString()} PTS</div>
+                      <div className="text-[11px] md:text-xs text-purple-400 font-semibold">
+                        {purchaseCost.pts.toLocaleString()} PTS
+                      </div>
                     )}
-                    {(!purchaseCost.money && !purchaseCost.mc && !purchaseCost.pts) && (
+                    {!purchaseCost.money && !purchaseCost.mc && !purchaseCost.pts && (
                       <div className="text-[11px] md:text-xs text-emerald-400 font-semibold">免費</div>
                     )}
                   </div>
@@ -1631,13 +1772,13 @@ const HypnosisCraftSection: React.FC<{
                       cost: {
                         money: purchaseCost.money && purchaseCost.money > 0 ? purchaseCost.money : undefined,
                         pts: purchaseCost.pts && purchaseCost.pts > 0 ? purchaseCost.pts : undefined,
-                        mc: purchaseCost.mc && purchaseCost.mc > 0 ? purchaseCost.mc : undefined
+                        mc: purchaseCost.mc && purchaseCost.mc > 0 ? purchaseCost.mc : undefined,
                       },
                       isCustom: true,
                       isPermanent,
                       isOneTime,
                       energyCost,
-                      defaultNote: note || undefined
+                      defaultNote: note || undefined,
                     };
 
                     // 扣除資源

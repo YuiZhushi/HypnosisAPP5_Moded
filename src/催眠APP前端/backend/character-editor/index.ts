@@ -52,11 +52,7 @@ export {
 } from './behaviorBranchHelper';
 
 // 世界書條目
-export {
-  checkAndEnsureEntry,
-  checkAndEnsurePlotEntry,
-  type WbCheckResult,
-} from './worldBookEntryManager';
+export { checkAndEnsureEntry, checkAndEnsurePlotEntry, type WbCheckResult } from './worldBookEntryManager';
 
 // AI 填寫流程
 export { parseAiResponse } from './aiPatchParser';
@@ -64,7 +60,12 @@ export { buildDiffProposals } from './astDiffEngine';
 export { applyApprovedProposals, summarizeApplyResult } from './astMergeEngine';
 
 // 提示詞構造（角色編輯器獨立管理，不依賴 Settings APP）
-export { buildEditorPipelineParams, getEditorModules, getDefaultEditorModules, saveEditorModules } from './editorPromptBuilder';
+export {
+  buildEditorPipelineParams,
+  getEditorModules,
+  getDefaultEditorModules,
+  saveEditorModules,
+} from './editorPromptBuilder';
 
 // ====== 類型 ======
 
@@ -83,20 +84,32 @@ const PLOT_ENTRY_RE = /^\[mvu_plot\](.+?)(?:人设|人設)$/;
 function buildXmlBlockRegex(charName: string): { dataRe: RegExp; behaviorRe: RegExp } {
   const escaped = charName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return {
-    dataRe: new RegExp(`<${escaped}(?:人设|人設)>[\\s\\S]*?\`\`\`yaml\\n([\\s\\S]*?)\`\`\`[\\s\\S]*?<\\/${escaped}(?:人设|人設)>`, 'm'),
-    behaviorRe: new RegExp(`<${escaped}(?:行为指导|行為指導)>[\\s\\S]*?\`\`\`yaml\\n([\\s\\S]*?)\`\`\`[\\s\\S]*?<\\/${escaped}(?:行为指导|行為指導)>`, 'm'),
+    dataRe: new RegExp(
+      `<${escaped}(?:人设|人設)>[\\s\\S]*?\`\`\`yaml\\n([\\s\\S]*?)\`\`\`[\\s\\S]*?<\\/${escaped}(?:人设|人設)>`,
+      'm',
+    ),
+    behaviorRe: new RegExp(
+      `<${escaped}(?:行为指导|行為指導)>[\\s\\S]*?\`\`\`yaml\\n([\\s\\S]*?)\`\`\`[\\s\\S]*?<\\/${escaped}(?:行为指导|行為指導)>`,
+      'm',
+    ),
   };
 }
 
 // ====== 行為區段解析 ======
 
 const BEHAVIOR_SECTION_MAP: Record<string, string> = {
-  '发情状态指导': 'arousal', '發情狀態指導': 'arousal',
-  '警戒度指导': 'alert', '警戒度指導': 'alert',
-  '好感度指导': 'affection', '好感度指導': 'affection',
-  '服从度指导': 'obedience', '服從度指導': 'obedience',
-  '全局行为规则': 'global', '全局行為規則': 'global',
-  '当前状态': '_status', '當前狀態': '_status',
+  发情状态指导: 'arousal',
+  發情狀態指導: 'arousal',
+  警戒度指导: 'alert',
+  警戒度指導: 'alert',
+  好感度指导: 'affection',
+  好感度指導: 'affection',
+  服从度指导: 'obedience',
+  服從度指導: 'obedience',
+  全局行为规则: 'global',
+  全局行為規則: 'global',
+  当前状态: '_status',
+  當前狀態: '_status',
 };
 
 function parseBehaviorSection(
@@ -107,7 +120,8 @@ function parseBehaviorSection(
 ): void {
   const headingRe = /^###\s+(.+)$/gm;
   const blocks: { title: string; content: string }[] = [];
-  let lastIndex = 0, lastTitle = '';
+  let lastIndex = 0,
+    lastTitle = '';
   let match: RegExpExecArray | null;
 
   while ((match = headingRe.exec(rawText)) !== null) {
@@ -143,7 +157,10 @@ function parseBehaviorSection(
   }
 }
 
-function ensureDefaultGlobalSection(sectionData: Record<string, EditorNode[]>, rawFallbacks: Record<string, string>): void {
+function ensureDefaultGlobalSection(
+  sectionData: Record<string, EditorNode[]>,
+  rawFallbacks: Record<string, string>,
+): void {
   if (rawFallbacks.global) return;
   if ((sectionData.global ?? []).length > 0) return;
   sectionData.global = buildDefaultGlobalRulesNodes();
@@ -338,11 +355,13 @@ export async function saveCharacter(
     }
 
     let updated = false;
-    await WBRepo.updateEntries(wbName, worldbook => worldbook.map(entry => {
-      if (String(entry?.uid) !== String(entryUid)) return entry;
-      updated = true;
-      return { ...entry, content: fullContent };
-    }));
+    await WBRepo.updateEntries(wbName, worldbook =>
+      worldbook.map(entry => {
+        if (String(entry?.uid) !== String(entryUid)) return entry;
+        updated = true;
+        return { ...entry, content: fullContent };
+      }),
+    );
 
     if (!updated) throw new Error(`目標條目不存在: uid=${entryUid}`);
 

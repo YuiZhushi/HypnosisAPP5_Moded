@@ -12,16 +12,41 @@
  * 所有函式透過 shared 層讀寫數據，不直接呼叫全域 API。
  */
 
-import type { HypnosisFeature, UserResources, SubscriptionState, CustomHypnosisDef, AccessContext, SessionStartPayload } from '../../constants/interfaces';
+import type {
+  HypnosisFeature,
+  UserResources,
+  SubscriptionState,
+  CustomHypnosisDef,
+  AccessContext,
+  SessionStartPayload,
+} from '../../constants/interfaces';
 import type { SubscriptionTier } from '../../constants/types';
 import type { PersistedStore } from '../../constants/schemas/storeSchema';
 import { FEATURES, PERSISTENT_FEATURE_IDS } from '../../constants/hypnosis/features';
-import { SUBSCRIPTION_PRICES, SUBSCRIPTION_WEEK_MINUTES, SUBSCRIPTION_TIER_TRIAL_LABEL } from '../../constants/hypnosis/subscription';
+import {
+  SUBSCRIPTION_PRICES,
+  SUBSCRIPTION_WEEK_MINUTES,
+  SUBSCRIPTION_TIER_TRIAL_LABEL,
+} from '../../constants/hypnosis/subscription';
 import { PURCHASE_PRICE_BY_TIER } from '../../constants/hypnosis/subscription';
 import { CUSTOM_HYPNOSIS_TIER_BASE } from '../../constants/hypnosis/customHypnosis';
-import { isSubscriptionActive, getBodyStatsUnlocked, canUseFeature as canUseFeatureBySubscription } from '../../shared/access/accessControl';
-import { normalizeChatVariables, readStoreSnapshot, updateStoreWith, CHAT_OPTION } from '../../shared/store/storeGateway';
-import { getUserData, updateResources, getSystemClock, setSubscriptionTierLabel } from '../../shared/store/resourceSync';
+import {
+  isSubscriptionActive,
+  getBodyStatsUnlocked,
+  canUseFeature as canUseFeatureBySubscription,
+} from '../../shared/access/accessControl';
+import {
+  normalizeChatVariables,
+  readStoreSnapshot,
+  updateStoreWith,
+  CHAT_OPTION,
+} from '../../shared/store/storeGateway';
+import {
+  getUserData,
+  updateResources,
+  getSystemClock,
+  setSubscriptionTierLabel,
+} from '../../shared/store/resourceSync';
 import { logger } from '../../../催眠APP共用/debug/loggerService';
 
 // ====== 內部工具 ======
@@ -130,9 +155,7 @@ export async function purchaseFeature(id: string): Promise<{ ok: boolean; messag
   const user = await getUserData();
   if (user.mcPoints < price) return { ok: false, message: `MC点不足：需要 ${price} PT` };
 
-  await updateStoreWith(
-    store => ({ ...store, purchases: { ...store.purchases, [id]: true } }),
-  );
+  await updateStoreWith(store => ({ ...store, purchases: { ...store.purchases, [id]: true } }));
   const nextUser = await updateResources({
     mcPoints: user.mcPoints - price,
     totalConsumedMc: user.totalConsumedMc + price,
@@ -171,9 +194,10 @@ export function getSubscription(): SubscriptionState | null {
 
 /** 設定自動續訂 */
 export async function setSubscriptionAutoRenew(autoRenew: boolean): Promise<void> {
-  await updateStoreWith(
-    store => ({ ...store, subscription: store.subscription ? { ...store.subscription, autoRenew } : store.subscription }),
-  );
+  await updateStoreWith(store => ({
+    ...store,
+    subscription: store.subscription ? { ...store.subscription, autoRenew } : store.subscription,
+  }));
 }
 
 /** 清除訂閱 */
@@ -202,9 +226,8 @@ export async function subscribeOrRenew(params: {
   const storeBefore = readStoreSnapshot();
   const prev = storeBefore.subscription as SubscriptionState | undefined;
   const prevActive = Boolean(prev) && prev!.endVirtualMinutes > nowVirtualMinutes;
-  const base = extendFromExistingIfActive && prevActive
-    ? Math.max(nowVirtualMinutes, prev!.endVirtualMinutes)
-    : nowVirtualMinutes;
+  const base =
+    extendFromExistingIfActive && prevActive ? Math.max(nowVirtualMinutes, prev!.endVirtualMinutes) : nowVirtualMinutes;
 
   const nextSub: SubscriptionState = {
     tier,
@@ -223,7 +246,9 @@ export async function subscribeOrRenew(params: {
 }
 
 /** 自動續訂檢查（每次讀取時鐘時調用） */
-export async function maybeAutoRenewSubscription(nowVirtualMinutes: number | null): Promise<{ renewed: boolean; message?: string }> {
+export async function maybeAutoRenewSubscription(
+  nowVirtualMinutes: number | null,
+): Promise<{ renewed: boolean; message?: string }> {
   if (nowVirtualMinutes === null) return { renewed: false };
   const store = readStoreSnapshot();
   const sub = store.subscription as SubscriptionState | undefined;
@@ -240,16 +265,24 @@ export async function maybeAutoRenewSubscription(nowVirtualMinutes: number | nul
 export function getSessionEnd(): { endVirtualMinutes: number | null; endAtMs: number | null } {
   const store = readStoreSnapshot();
   return {
-    endVirtualMinutes: typeof store.sessionEndVirtualMinutes === 'number' && Number.isFinite(store.sessionEndVirtualMinutes) ? store.sessionEndVirtualMinutes : null,
-    endAtMs: typeof store.sessionEndAtMs === 'number' && Number.isFinite(store.sessionEndAtMs) ? store.sessionEndAtMs : null,
+    endVirtualMinutes:
+      typeof store.sessionEndVirtualMinutes === 'number' && Number.isFinite(store.sessionEndVirtualMinutes)
+        ? store.sessionEndVirtualMinutes
+        : null,
+    endAtMs:
+      typeof store.sessionEndAtMs === 'number' && Number.isFinite(store.sessionEndAtMs) ? store.sessionEndAtMs : null,
   };
 }
 
 /** 設定工作階段結束時間 */
-export async function setSessionEnd(payload: { endVirtualMinutes: number | null; endAtMs: number | null }): Promise<void> {
+export async function setSessionEnd(payload: {
+  endVirtualMinutes: number | null;
+  endAtMs: number | null;
+}): Promise<void> {
   await updateStoreWith(store => {
     const next: PersistedStore = { ...store };
-    if (payload.endVirtualMinutes === null || !Number.isFinite(payload.endVirtualMinutes)) delete next.sessionEndVirtualMinutes;
+    if (payload.endVirtualMinutes === null || !Number.isFinite(payload.endVirtualMinutes))
+      delete next.sessionEndVirtualMinutes;
     else next.sessionEndVirtualMinutes = payload.endVirtualMinutes;
     if (payload.endAtMs === null || !Number.isFinite(payload.endAtMs)) delete next.sessionEndAtMs;
     else next.sessionEndAtMs = payload.endAtMs;
@@ -265,9 +298,7 @@ export async function clearSessionEnd(): Promise<void> {
 /** 開始催眠工作階段 */
 export async function startSession(payload: SessionStartPayload): Promise<boolean> {
   logger.info('催眠工作阶段已开始', payload);
-  await updateStoreWith(
-    store => ({ ...store, hasUsedHypnosis: true }),
-  );
+  await updateStoreWith(store => ({ ...store, hasUsedHypnosis: true }));
   return true;
 }
 
@@ -295,9 +326,7 @@ export async function addCustomHypnosis(
   const id = `custom_hyp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const entry: CustomHypnosisDef = { ...def, id, createdAt: Date.now(), researchCost: cost };
 
-  await updateStoreWith(
-    s => ({ ...s, customHypnosis: { ...s.customHypnosis, [id]: entry } }),
-  );
+  await updateStoreWith(s => ({ ...s, customHypnosis: { ...s.customHypnosis, [id]: entry } }));
   await updateResources({ money: user.money - cost });
   return { ok: true, id };
 }
@@ -338,9 +367,7 @@ export async function getUnlocks(): Promise<{ debugEnabled: boolean; bodyStatsUn
   const subscriptionActive = isSubscriptionActive(accessContext);
   let vip1StatsUnlocked = Boolean(store.purchases?.vip1_stats);
   if (!vip1StatsUnlocked && subscriptionActive) {
-    await updateStoreWith(
-      (s: PersistedStore) => ({ ...s, purchases: { ...s.purchases, vip1_stats: true } }),
-    );
+    await updateStoreWith((s: PersistedStore) => ({ ...s, purchases: { ...s.purchases, vip1_stats: true } }));
     vip1StatsUnlocked = true;
   }
   return { debugEnabled, bodyStatsUnlocked: getBodyStatsUnlocked({ debugEnabled, vip1StatsUnlocked }) };
@@ -353,9 +380,7 @@ export function getDebugEnabled(): boolean {
 
 /** 設定調試開關 */
 export async function setDebugEnabled(enabled: boolean): Promise<void> {
-  await updateStoreWith(
-    store => ({ ...store, debugEnabled: enabled }),
-  );
+  await updateStoreWith(store => ({ ...store, debugEnabled: enabled }));
 }
 
 // 提示詞構造（催眠 APP 獨立管理）

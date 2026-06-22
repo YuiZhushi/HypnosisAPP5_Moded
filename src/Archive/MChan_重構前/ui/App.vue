@@ -190,10 +190,7 @@ import {
   type Post,
 } from '../core/mchan';
 
-type ViewState =
-  | { mode: 'board' }
-  | { mode: 'newThread' }
-  | { mode: 'thread'; board: BoardName; postNo: number };
+type ViewState = { mode: 'board' } | { mode: 'newThread' } | { mode: 'thread'; board: BoardName; postNo: number };
 
 const selectedBoard = ref<BoardName>('综合讨论区');
 const view = ref<ViewState>({ mode: 'board' });
@@ -459,7 +456,7 @@ onMounted(() => {
   align-items: baseline;
   gap: 10px;
   padding-bottom: 8px;
-  border-bottom: 1px solid rgba(230, 215, 255, 0.10);
+  border-bottom: 1px solid rgba(230, 215, 255, 0.1);
 }
 
 .bbs__brand {
@@ -474,7 +471,7 @@ onMounted(() => {
 }
 
 .bbs__tagline {
-  color: rgba(244, 238, 255, 0.60);
+  color: rgba(244, 238, 255, 0.6);
 }
 
 .bbs__sep {
@@ -500,7 +497,7 @@ onMounted(() => {
   padding: 0;
   background: transparent;
   cursor: pointer;
-  color: rgba(244, 238, 255, 0.70);
+  color: rgba(244, 238, 255, 0.7);
   font-family: var(--mchan-font-mono);
   font-size: 12px;
   text-decoration: underline;
@@ -514,7 +511,7 @@ onMounted(() => {
 }
 
 .bbs__navItem {
-  border: 1px solid rgba(230, 215, 255, 0.10);
+  border: 1px solid rgba(230, 215, 255, 0.1);
   background: rgba(0, 0, 0, 0.14);
   color: rgba(244, 238, 255, 0.75);
   font-family: var(--mchan-font-mono);
@@ -535,7 +532,7 @@ onMounted(() => {
 }
 
 .bbs__tools {
-  border: 1px solid rgba(230, 215, 255, 0.10);
+  border: 1px solid rgba(230, 215, 255, 0.1);
   border-radius: 8px;
   padding: 8px;
   margin: 2px 0 10px;
@@ -566,7 +563,7 @@ onMounted(() => {
 }
 
 .bbs__crumb {
-  color: rgba(244, 238, 255, 0.70);
+  color: rgba(244, 238, 255, 0.7);
   font-family: var(--mchan-font-mono);
   font-size: 12px;
   overflow: hidden;
@@ -587,12 +584,12 @@ onMounted(() => {
   grid-template-columns: 64px 1fr 48px 120px;
   gap: 8px;
   padding: 6px 8px;
-  border-top: 1px solid rgba(230, 215, 255, 0.10);
-  border-bottom: 1px solid rgba(230, 215, 255, 0.10);
+  border-top: 1px solid rgba(230, 215, 255, 0.1);
+  border-bottom: 1px solid rgba(230, 215, 255, 0.1);
   background: rgba(0, 0, 0, 0.16);
   font-family: var(--mchan-font-mono);
   font-size: 12px;
-  color: rgba(244, 238, 255, 0.70);
+  color: rgba(244, 238, 255, 0.7);
 }
 
 .bbs__rowItem {
@@ -618,7 +615,7 @@ onMounted(() => {
 .bbs__colUpd {
   font-family: var(--mchan-font-mono);
   font-size: 12px;
-  color: rgba(244, 238, 255, 0.70);
+  color: rgba(244, 238, 255, 0.7);
 }
 
 .bbs__colSubj {
@@ -642,12 +639,12 @@ onMounted(() => {
 
 .bbs__empty {
   padding: 12px 8px;
-  color: rgba(244, 238, 255, 0.60);
+  color: rgba(244, 238, 255, 0.6);
   border-bottom: 1px solid rgba(230, 215, 255, 0.08);
 }
 
 .bbs__op {
-  border: 1px solid rgba(230, 215, 255, 0.10);
+  border: 1px solid rgba(230, 215, 255, 0.1);
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.16);
   padding: 10px;
@@ -698,7 +695,7 @@ onMounted(() => {
 }
 
 .bbs__replyNo {
-  color: rgba(182, 108, 255, 0.90);
+  color: rgba(182, 108, 255, 0.9);
 }
 
 .bbs__replyMeta {
@@ -706,7 +703,7 @@ onMounted(() => {
 }
 
 .bbs__replyBtn {
-  border: 1px solid rgba(230, 215, 255, 0.10);
+  border: 1px solid rgba(230, 215, 255, 0.1);
   border-radius: 6px;
   background: rgba(0, 0, 0, 0.16);
   color: rgba(244, 238, 255, 0.72);
@@ -731,7 +728,7 @@ onMounted(() => {
 
 .bbs__composer {
   margin-top: 12px;
-  border: 1px solid rgba(230, 215, 255, 0.10);
+  border: 1px solid rgba(230, 215, 255, 0.1);
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.16);
   padding: 10px;
@@ -760,7 +757,7 @@ onMounted(() => {
   border: 1px solid rgba(230, 215, 255, 0.14);
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.16);
-  color: rgba(244, 238, 255, 0.90);
+  color: rgba(244, 238, 255, 0.9);
   padding: 8px;
   font-family: var(--mchan-font-ui);
   font-size: 13px;
@@ -790,24 +787,24 @@ onMounted(() => {
 
 .bbs__btn--primary {
   border-color: rgba(182, 108, 255, 0.45);
-  background: rgba(182, 108, 255, 0.10);
+  background: rgba(182, 108, 255, 0.1);
 }
 
 .bbs__btn--danger {
-  border-color: rgba(255, 91, 200, 0.40);
+  border-color: rgba(255, 91, 200, 0.4);
   background: rgba(255, 91, 200, 0.08);
 }
 
 .bbs__hint {
   margin-top: 8px;
   font-size: 12px;
-  color: rgba(244, 238, 255, 0.60);
+  color: rgba(244, 238, 255, 0.6);
 }
 
 .bbs__footer {
   margin-top: 10px;
   padding-top: 8px;
-  border-top: 1px solid rgba(230, 215, 255, 0.10);
+  border-top: 1px solid rgba(230, 215, 255, 0.1);
   font-size: 11px;
   color: rgba(244, 238, 255, 0.55);
 }
@@ -823,4 +820,4 @@ onMounted(() => {
   }
 }
 </style>
-  const lastFloorNo = getNextFloorNo(p) - 1;
+const lastFloorNo = getNextFloorNo(p) - 1;

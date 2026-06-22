@@ -9,34 +9,36 @@ const HypnosisDetail = z.object({
   结束时间: z.string().prefault(''),
 });
 
-const CharacterStats = z.object({
-  警戒度: z.coerce
-    .number()
-    .prefault(0)
-    .transform(v => Math.max(0, v)),
-  好感度: z.coerce
-    .number()
-    .prefault(0)
-    .transform(v => Math.max(0, v)),
-  服从度: z.coerce
-    .number()
-    .prefault(0)
-    .transform(v => Math.max(0, v)),
-  性欲: z.coerce.number().prefault(0),
-  快感值: z.coerce.number().prefault(0),
-  阴蒂敏感度: z.coerce.number().prefault(0),
-  小穴敏感度: z.coerce.number().prefault(0),
-  菊穴敏感度: z.coerce.number().prefault(0),
-  尿道敏感度: z.coerce.number().prefault(0),
-  乳头敏感度: z.coerce.number().prefault(0),
-  临时催眠效果: z.record(z.string().describe('催眠名'), HypnosisDetail).prefault({}),
-  永久催眠效果: z.record(z.string().describe('催眠名'), HypnosisDetail).prefault({}),
-  阴蒂高潮次数: z.coerce.number().prefault(0),
-  小穴高潮次数: z.coerce.number().prefault(0),
-  菊穴高潮次数: z.coerce.number().prefault(0),
-  尿道高潮次数: z.coerce.number().prefault(0),
-  乳头高潮次数: z.coerce.number().prefault(0),
-}).catchall(z.any());
+const CharacterStats = z
+  .object({
+    警戒度: z.coerce
+      .number()
+      .prefault(0)
+      .transform(v => Math.max(0, v)),
+    好感度: z.coerce
+      .number()
+      .prefault(0)
+      .transform(v => Math.max(0, v)),
+    服从度: z.coerce
+      .number()
+      .prefault(0)
+      .transform(v => Math.max(0, v)),
+    性欲: z.coerce.number().prefault(0),
+    快感值: z.coerce.number().prefault(0),
+    阴蒂敏感度: z.coerce.number().prefault(0),
+    小穴敏感度: z.coerce.number().prefault(0),
+    菊穴敏感度: z.coerce.number().prefault(0),
+    尿道敏感度: z.coerce.number().prefault(0),
+    乳头敏感度: z.coerce.number().prefault(0),
+    临时催眠效果: z.record(z.string().describe('催眠名'), HypnosisDetail).prefault({}),
+    永久催眠效果: z.record(z.string().describe('催眠名'), HypnosisDetail).prefault({}),
+    阴蒂高潮次数: z.coerce.number().prefault(0),
+    小穴高潮次数: z.coerce.number().prefault(0),
+    菊穴高潮次数: z.coerce.number().prefault(0),
+    尿道高潮次数: z.coerce.number().prefault(0),
+    乳头高潮次数: z.coerce.number().prefault(0),
+  })
+  .catchall(z.any());
 
 export const Schema = z.object({
   本轮APP操作: z.union([z.string(), z.record(z.string(), z.any()), z.array(z.any())]).prefault('无'),
