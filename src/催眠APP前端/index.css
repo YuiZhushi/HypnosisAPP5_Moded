@@ -1,4 +1,56 @@
 @import 'tailwindcss';
+@plugin "@tailwindcss/container-queries";
+
+@theme {
+  /* Fluid Spacing (Padding, Margin, Gap, Width, Height) */
+  --spacing-0_5: clamp(1px, 0.47cqw, 2px);
+  --spacing-1: clamp(2px, 0.95cqw, 4px);
+  --spacing-1_5: clamp(4px, 1.42cqw, 6px);
+  --spacing-2: clamp(6px, 1.9cqw, 8px);
+  --spacing-2_5: clamp(8px, 2.38cqw, 10px);
+  --spacing-3: clamp(9px, 2.85cqw, 12px);
+  --spacing-3_5: clamp(10px, 3.33cqw, 14px);
+  --spacing-4: clamp(12px, 3.81cqw, 16px);
+  --spacing-5: clamp(16px, 4.76cqw, 20px);
+  --spacing-6: clamp(18px, 5.71cqw, 24px);
+  --spacing-7: clamp(22px, 6.66cqw, 28px);
+  --spacing-8: clamp(24px, 7.61cqw, 32px);
+  --spacing-9: clamp(28px, 8.57cqw, 36px);
+  --spacing-10: clamp(32px, 9.52cqw, 40px);
+  --spacing-11: clamp(36px, 10.47cqw, 44px);
+  --spacing-12: clamp(40px, 11.42cqw, 48px);
+  --spacing-14: clamp(46px, 13.33cqw, 56px);
+  --spacing-16: clamp(52px, 15.23cqw, 64px);
+  --spacing-20: clamp(64px, 19.04cqw, 80px);
+  --spacing-24: clamp(76px, 22.85cqw, 96px);
+
+  /* Fluid Text Sizes */
+  --text-xs: clamp(10px, 2.85cqw, 12px);
+  --text-sm: clamp(12px, 3.33cqw, 14px);
+  --text-base: clamp(14px, 3.81cqw, 16px);
+  --text-lg: clamp(16px, 4.28cqw, 18px);
+  --text-xl: clamp(18px, 4.76cqw, 20px);
+  --text-2xl: clamp(20px, 5.71cqw, 24px);
+  --text-3xl: clamp(24px, 7.14cqw, 30px);
+  --text-4xl: clamp(28px, 8.57cqw, 36px);
+  --text-5xl: clamp(36px, 11.42cqw, 48px);
+  --text-6xl: clamp(48px, 14.28cqw, 60px);
+
+  /* Fluid Border Radius */
+  --radius-sm: clamp(2px, 0.47cqw, 2px);
+  --radius-md: clamp(4px, 0.95cqw, 6px);
+  --radius-lg: clamp(6px, 1.9cqw, 8px);
+  --radius-xl: clamp(8px, 2.85cqw, 12px);
+  --radius-2xl: clamp(12px, 3.81cqw, 16px);
+  --radius-3xl: clamp(18px, 5.71cqw, 24px);
+
+  /* Custom Container Breakpoints to trigger md/sm based on bezel width instead of viewport */
+  --breakpoint-sm: 360px;
+  --breakpoint-md: 400px;
+}
+
+@custom-variant sm (@container (min-width: 360px));
+@custom-variant md (@container (min-width: 400px));
 
 html,
 body {
@@ -73,3 +125,81 @@ select.hypno-select option {
   color: #e2e0f0;
   padding: 0.4rem 0.6rem;
 }
+
+/* Custom Hypno Scrollbar with a soft glow and gradient */
+.hypno-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.hypno-scrollbar::-webkit-scrollbar-track {
+  background: rgba(30, 27, 46, 0.3);
+  border-radius: 10px;
+}
+.hypno-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #a78bfa 0%, #7c3aed 100%);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.hypno-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #c4b5fd 0%, #8b5cf6 100%);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+}
+/* Firefox Support */
+.hypno-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #7c3aed rgba(30, 27, 46, 0.3);
+}
+
+/* Hide number input spinners globally */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* ====== HypnoOS 地圖定位系統專用 CSS 類 ====== */
+
+.bg-radial-dot {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1.2px);
+}
+
+.bg-radial-glow {
+  background: radial-gradient(circle at center, rgba(16, 185, 129, 0.18) 0%, transparent 75%);
+}
+
+@keyframes map-slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0.5;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: map-slide-up 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes map-slide-left {
+  from {
+    transform: translateX(100%);
+    opacity: 0.5;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-left {
+  animation: map-slide-left 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+

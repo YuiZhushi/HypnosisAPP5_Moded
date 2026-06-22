@@ -1,14 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StatusBar } from './components/OS/StatusBar';
-import { HypnosisApp, HypnoLogoSVG } from './components/HypnosisApp';
-import { AchievementApp } from './components/AchievementApp';
-import { BodyStatsApp, CalendarApp, HelpApp, WipApp } from './components/CommonApps';
-import { SettingsApp } from './components/SettingsApp';
-import { CharacterEditorApp } from './components/CharacterEditor/CharacterEditorApp';
-import { DataService } from './services/dataService';
-import { waitForMvuReady } from './services/mvuBridge';
-import { UserResources, AppMode } from './types';
-import { Activity, Calendar, HelpCircle, Trophy, Globe, Settings, PenSquare } from 'lucide-react';
+import { StatusBar } from './ui/shared/StatusBar';
+import { HypnosisApp, HypnoLogoSVG } from './ui/hypnosis/HypnosisApp';
+import { AchievementApp } from './ui/achievement/AchievementApp';
+import { BodyStatsApp } from './ui/body-stats/BodyStatsApp';
+import CalendarApp from './ui/calendar/CalendarApp';
+import { HelpApp } from './ui/help/HelpApp';
+import { WipApp } from './ui/shared/PageLayout';
+import { SettingsApp } from './ui/settings/SettingsApp';
+import { CharacterBackgroundApp } from './ui/character-background/CharacterBackgroundApp';
+import { MapApp } from './ui/map/MapApp';
+import { waitForMvuReady } from './shared/mvu/mvuBridge';
+import { UserResources } from './constants/interfaces';
+import { AppMode } from './constants/types';
+import { Activity, Calendar, HelpCircle, Trophy, Globe, Settings, PenSquare, Compass } from 'lucide-react';
+
+import { logger } from '../催眠APP共用/debug/loggerService';
+import { getUserData, updateResources, getSystemClock } from './shared/store/resourceSync';
+import { getUnlocks } from './backend/hypnosis';
+import { processCalendarBridgeEventsOnLoad } from './backend/calendar';
 
 const FALLBACK_USER_DATA: UserResources = {
   mcEnergy: 25,
@@ -55,12 +64,12 @@ const App = () => {
     const load = async () => {
       attempt += 1;
       try {
-        await DataService.processCalendarBridgeEventsOnLoad();
-        const data = await withTimeout(DataService.getUserData(), 4000, 'DataService.getUserData');
+        await processCalendarBridgeEventsOnLoad();
+        const data = await withTimeout(getUserData(), 4000, 'getUserData');
         if (stopped) return;
         setUserData(data);
       } catch (err) {
-        console.warn('[HypnoOS] 初始化用户数据失败，将重试', err);
+        logger.warn('初始化用户数据失败，将重试', err);
         if (stopped) return;
         if (attempt >= 10) {
           setUserData(FALLBACK_USER_DATA);
@@ -87,10 +96,10 @@ const App = () => {
 
   const refreshUnlocks = async () => {
     try {
-      const unlocks = await DataService.getUnlocks();
+      const unlocks = await getUnlocks();
       setBodyStatsUnlocked(unlocks.bodyStatsUnlocked);
     } catch (err) {
-      console.warn('[HypnoOS] 读取解锁状态失败', err);
+      logger.warn('读取解锁状态失败', err);
       setBodyStatsUnlocked(false);
     }
   };
@@ -103,10 +112,10 @@ const App = () => {
     if (userRefreshInFlightRef.current) return;
     userRefreshInFlightRef.current = true;
     try {
-      const data = await withTimeout(DataService.getUserData(), 4000, 'DataService.getUserData');
+      const data = await withTimeout(getUserData(), 4000, 'getUserData');
       setUserData(data);
     } catch (err) {
-      console.warn('[HypnoOS] 刷新用户数据失败', err);
+      logger.warn('刷新用户数据失败', err);
     } finally {
       userRefreshInFlightRef.current = false;
     }
@@ -121,13 +130,13 @@ const App = () => {
 
     const refreshHomeHeader = async () => {
       try {
-        const [clock, unlocks] = await Promise.all([DataService.getSystemClock(), DataService.getUnlocks()]);
+        const [clock, unlocks] = await Promise.all([getSystemClock(), getUnlocks()]);
         if (stopped) return;
         setSystemTimeText(clock.timeText);
         setSystemDateText(clock.dateText);
         setBodyStatsUnlocked(unlocks.bodyStatsUnlocked);
       } catch (err) {
-        console.warn('[HypnoOS] 刷新主页信息失败', err);
+        logger.warn('刷新主页信息失败', err);
       }
     };
 
@@ -147,10 +156,12 @@ const App = () => {
         if (!ready) return;
         if (stopped) return;
         stops = [
+          // @ts-ignore
           eventOn(Mvu.events.VARIABLE_INITIALIZED, () => {
             requestRefresh();
             void refreshUserData();
           }),
+          // @ts-ignore
           eventOn(Mvu.events.VARIABLE_UPDATE_ENDED, requestRefresh),
         ];
       } catch {
@@ -167,7 +178,7 @@ const App = () => {
 
   const updateUser = (data: UserResources) => {
     setUserData(data);
-    void DataService.updateResources(data);
+    void updateResources(data);
   };
 
   // --- Router ---
@@ -177,7 +188,7 @@ const App = () => {
 
     switch (currentApp) {
       case AppMode.HYPNOSIS:
-        return <HypnosisApp userData={userData} onUpdateUser={updateUser} onExit={() => setCurrentApp(AppMode.HOME)} />;
+        return <HypnosisApp onBack={() => setCurrentApp(AppMode.HOME)} />;
       case AppMode.BODY_STATS:
         if (!bodyStatsUnlocked)
           return (
@@ -201,7 +212,9 @@ const App = () => {
       case AppMode.SETTINGS:
         return <SettingsApp onBack={() => setCurrentApp(AppMode.HOME)} />;
       case AppMode.CHARACTER_EDITOR:
-        return <CharacterEditorApp onBack={() => setCurrentApp(AppMode.HOME)} />;
+        return <CharacterBackgroundApp onBack={() => setCurrentApp(AppMode.HOME)} />;
+      case AppMode.MAP:
+        return <MapApp onBack={() => setCurrentApp(AppMode.HOME)} />;
       case AppMode.WIP:
         return <WipApp name="Unknown App" onBack={() => setCurrentApp(AppMode.HOME)} />;
       case AppMode.HOME:
@@ -219,9 +232,11 @@ const App = () => {
   };
 
   return (
-    <div className="w-full flex items-center justify-center p-2">
+    <div className="w-full flex items-center justify-center p-2 sm:p-4">
       {/* Phone Bezel */}
-      <div className="relative w-full max-w-[420px] aspect-[9/19.5] bg-black rounded-[3rem] border-[8px] border-gray-800 overflow-hidden shadow-2xl ring-2 ring-black/20">
+      <div
+        className="@container relative w-full max-w-[420px] aspect-9/19.5 bg-black rounded-[clamp(2rem,11.4cqw,3rem)] border-[clamp(4px,1.9cqw,8px)] border-gray-800 overflow-hidden shadow-2xl ring-2 ring-black/20"
+      >
         {/* Dynamic Notch/Status Bar Area - Only visible on Home */}
         {currentApp === AppMode.HOME && (
           <div className="absolute top-0 w-full z-50 pointer-events-none">
@@ -234,7 +249,7 @@ const App = () => {
 
         {/* Home Indicator (iOS style) - Always visible except in immersive hypnosis */}
         {/* You might want to hide this in apps too if full immersion is desired, but standard is usually visible */}
-        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1/3 h-1 bg-white/20 rounded-full z-50 pointer-events-none mb-2"></div>
+        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1/3 h-1 bg-white/20 rounded-full z-50 pointer-events-none mb-1"></div>
       </div>
     </div>
   );
@@ -265,13 +280,16 @@ const HomeScreen = ({
     try {
       const messageId = (() => {
         try {
+          // @ts-ignore
           return getCurrentMessageId();
         } catch {
+          // @ts-ignore
           const latest = getChatMessages(-1)[0];
           return latest?.message_id ?? 0;
         }
       })();
 
+      // @ts-ignore
       const chatMessage = getChatMessages(messageId)[0];
       if (!chatMessage) throw new Error(`missing chat message: ${messageId}`);
 
@@ -284,11 +302,12 @@ const HomeScreen = ({
       const base = chatMessage.message.replace(/\s+$/, '');
       const nextMessage = `${base}${base ? '\n' : ''}${marker}`;
 
+      // @ts-ignore
       await setChatMessages([{ message_id: messageId, message: nextMessage }], { refresh: 'affected' });
       setNotice('已插入');
       window.setTimeout(() => setNotice(null), 1500);
     } catch (err) {
-      console.warn('[HypnoOS] 插入匿名版标签失败', err);
+      logger.warn('插入匿名版标签失败', err);
       setNotice('插入失败');
       window.setTimeout(() => setNotice(null), 1500);
     }
@@ -349,6 +368,14 @@ const HomeScreen = ({
       disabled: false,
     },
     {
+      id: 'map',
+      name: '地圖定位',
+      icon: Compass,
+      color: 'bg-gradient-to-br from-teal-600 to-emerald-600',
+      mode: AppMode.MAP,
+      disabled: false,
+    },
+    {
       id: 'settings',
       name: '設置',
       icon: Settings,
@@ -373,19 +400,19 @@ const HomeScreen = ({
     : apps;
 
   return (
-    <div className="relative h-full w-full bg-gradient-to-b from-slate-900 via-purple-950 to-black flex flex-col pt-12 pb-24 animate-fade-in">
+    <div className="relative h-full w-full bg-linear-to-b from-slate-900 via-purple-950 to-black flex flex-col pt-12 pb-24 animate-fade-in">
       {/* Date Widget */}
       <div className="px-6 mb-8 text-white/90 drop-shadow-md">
-        <div className="text-6xl font-thin tracking-tighter">{displayTime}</div>
-        <div className="text-lg font-medium">{displayDate}</div>
+        <div className="text-5xl sm:text-6xl font-thin tracking-tighter">{displayTime}</div>
+        <div className="text-base sm:text-lg font-medium">{displayDate}</div>
       </div>
 
       {/* App Grid */}
-      <div className="flex-1 px-5 grid grid-cols-4 gap-y-6 gap-x-4 content-start">
+      <div className="flex-1 px-3 sm:px-5 grid grid-cols-4 gap-y-4 sm:gap-y-6 gap-x-2 sm:gap-x-4 content-start">
         {visibleApps.map(app => (
           <div
             key={app.id}
-            className={`flex flex-col items-center gap-1.5 group ${app.disabled ? 'opacity-50 grayscale cursor-not-allowed' : 'cursor-pointer'}`}
+            className={`flex flex-col items-center gap-1 sm:gap-1.5 group ${app.disabled ? 'opacity-50 grayscale cursor-not-allowed' : 'cursor-pointer'}`}
             onClick={() => {
               if (app.disabled) return;
               if (typeof app.action === 'function') {
@@ -397,19 +424,19 @@ const HomeScreen = ({
           >
             <div
               className={`
-              w-14 h-14 rounded-2xl ${app.color} flex items-center justify-center shadow-lg 
+              w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl ${app.color} flex items-center justify-center shadow-lg
               ${!app.disabled && 'group-active:scale-90 transition-transform duration-200'}
               relative
             `}
             >
-              <app.icon size={28} className={app.id === 'calendar' ? 'text-black' : 'text-white'} />
+              <app.icon className={`w-6 h-6 sm:w-7 sm:h-7 ${app.id === 'calendar' ? 'text-black' : 'text-white'}`} />
               {app.disabled && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-2xl">
                   <span className="text-[8px] font-bold text-white bg-red-600 px-1 rounded">WIP</span>
                 </div>
               )}
             </div>
-            <span className="text-[10px] text-white font-medium tracking-wide drop-shadow-md">{app.name}</span>
+            <span className="text-[9px] sm:text-[10px] text-white font-medium tracking-wide drop-shadow-md">{app.name}</span>
           </div>
         ))}
       </div>

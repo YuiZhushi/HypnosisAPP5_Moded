@@ -1,13 +1,23 @@
-# 酒馆助手前端界面或脚本编写
+---
+trigger: always_on
+---
 
-@.agents/rules/项目基本概念.md
-@.agents/rules/项目说明.md
-@.agents/rules/mcp.md
-@.agents/rules/酒馆变量.md
-@.agents/rules/前端界面.md
-@.agents/rules/脚本.md
-@.agents/rules/mvu变量框架.md
-@.agents/rules/mvu角色卡.md
-@.agents/rules/frontend-design.md
-@.agents/rules/MVU交互參考.md
-@.agents/rules/新APP開發規劃.md
+# Antigravity 助手設定
+
+技能儲存在 `.agents/skills/*`
+規則儲存在 `.agents/rules/*`
+
+回復使用繁體中文。
+進行對話時也使用繁體中文。
+
+使用pnpm build:dev來編譯。
+
+善用`implementation plan`實作計畫工具
+在計劃中對有疑問或使用者沒有清楚說明的部分，請直接註釋並提出問題。
+在實作計畫中的檢查部分，列出一個功能清單作為檢查單，等實作都完成後會按照這個清單依序檢查各功能，防止有遺漏或幻覺。
+實做計劃可能會修改多次，確保用戶明確發出`開始實作`的指令或由計畫工具產生`Proceeded with`的關鍵字，再開始進行實作。
+有`Commented on: ${計劃名稱}`表示有對計劃提出一些意見，此時不能開始實作，而是要先依據註釋內容修改計畫。
+
+避免使用瀏覽器自帶的彈窗，容易打斷其他流程。
+
+不要隨意使用git checkout遷出開發分支

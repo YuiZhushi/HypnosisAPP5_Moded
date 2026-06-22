@@ -1,9 +1,10 @@
-import './index.css';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { logger } from '../催眠APP共用/debug/loggerService';
 import App from './App';
-import { MvuBridge, waitForMvuReady } from './services/mvuBridge';
-import { installConsoleBridge, logRuntime } from '../util/logger';
+import './index.css';
+import * as MvuBridge from './shared/mvu/mvuBridge';
+import { waitForMvuReady } from './shared/mvu/mvuBridge';
 
 let root: ReactDOM.Root | undefined;
 
@@ -27,9 +28,7 @@ function unmount() {
 
 $(() => {
   void (async () => {
-    // 初始化統一分級 logger（硬編碼等級由 logger.ts 管理）
-    installConsoleBridge({ source: 'HypnoFront' });
-    logRuntime('前端入口初始化', [], { source: 'HypnoFront', key: true });
+    logger.info('前端入口初始化?');
 
     try {
       await waitForMvuReady({ timeoutMs: 5000, pollMs: 150 });

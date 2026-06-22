@@ -52,9 +52,23 @@ function glob_script_files() {
   const results: string[] = [];
 
   fs.globSync(`{示例,src}/**/index.{ts,tsx,js,jsx}`)
-    .filter(
-      file => process.env.CI !== 'true' || !fs.readFileSync(path.join(import.meta.dirname, file)).includes('@no-ci'),
-    )
+    .filter(file => {
+      if (process.env.CI === 'true' && fs.readFileSync(path.join(import.meta.dirname, file)).includes('@no-ci')) {
+        return false;
+      }
+
+      const normalized = file.replace(/\\/g, '/');
+      const exclude_dirs = [
+        'src/角色卡示例',
+        'src/界面示例',
+        'src/脚本示例',
+        '示例/角色卡示例',
+        '示例/界面示例',
+        '示例/脚本示例',
+        'src/Archive',
+      ];
+      return !exclude_dirs.some(dir => normalized.startsWith(`${dir}/`) || normalized === dir);
+    })
     .forEach(file => {
       const file_dirname = path.dirname(file);
       for (const [index, result] of results.entries()) {
@@ -70,6 +84,10 @@ function glob_script_files() {
       }
       results.push(file);
     });
+
+  if (fs.existsSync('src/催眠APP變量結構/schema.ts')) {
+    results.push('src/催眠APP變量結構/schema.ts'.replace(/\\/g, '/'));
+  }
 
   return results;
 }

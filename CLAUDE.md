@@ -1,9 +1,24 @@
 # 酒馆助手前端界面或脚本编写
 
-@.cursor/rules/项目基本概念.mdc
-@.cursor/rules/mcp.mdc
-@.cursor/rules/酒馆变量.mdc
-@.cursor/rules/前端界面.mdc
-@.cursor/rules/脚本.mdc
-@.cursor/rules/mvu变量框架.mdc
-@.cursor/rules/mvu角色卡.mdc
+@.claude/rules/*.md為規則檔案，必須先讀取後再進行下一步操作。
+@.claude/skills/*.md為技能檔案，必須先讀取後再進行下一步操作。
+
+## 用戶的語言為繁體中文，所有計畫、回覆、筆記、文件皆為繁體中文
+
+### 工作流程與規劃 (Workflow & Planning)
+
+在進行結構變更或破壞性重構之前，務必使用 `TodoWrite` 產生並呈現執行計畫。
+
+計畫必須使用繁體中文。
+不同的任務用不同的計畫。
+變更範圍大的任務才需要計畫。
+處於計畫模式(Plan Mode)時，禁止以任何形式編輯除'計畫'檔之外的任何檔案。
+計畫模式只會在使用者手動同意後才會結束。
+不要使用 cat 來編輯檔案，這個工具只能檢視檔案內容。
+
+如果需要向用戶確認細節，禁用 `AskUserQuestion`。因為`AskUserQuestion`無法輸入建議與圖片，且會中斷對話流程，請直接在對話最後用繁體中文詢問。
+**在完成任務後，嚴禁使用`AskUserQuestion`問用戶有沒有其他要做的，而是提供在這次動作中做了甚麼(中文)**
+
+不要嘗試使用git add或git commit等指令，這要由使用者手動輸入。
+
+使用pnpm build:dev來編譯。
