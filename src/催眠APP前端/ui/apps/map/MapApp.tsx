@@ -4,12 +4,10 @@ import {
   Lock,
   MapPin,
   User,
-  RefreshCw,
   ZoomIn,
   ZoomOut,
   Save,
   Edit2,
-  AlertCircle,
   X,
   ArrowLeft,
   Navigation,
@@ -21,7 +19,6 @@ import {
   MockLocationNode as LocationNode,
   MockMapEdge as MapEdge,
   MockMapState as MapState,
-  MockZone as Zone,
 } from '../../../models';
 import {
   MAP_ZONES as ZONES,
@@ -338,6 +335,7 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
   };
 
   const checkEdgeOpen = (pathInfo: any, targetNodeId: string) => {
+    if (!pathInfo) return false;
     if (pathInfo.status === 'open') return true;
     if (pathInfo.status === 'temp_open') {
       const cond = pathInfo.tempConditon;
@@ -447,8 +445,10 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
       );
       if (edge) {
         const pathInfo = edge.StartNodeId === from ? edge.forwardPath : edge.ReversePath;
-        totalTime += pathInfo.cost.timeCostMinutes;
-        totalEnergy += pathInfo.cost.energyCost ?? 0;
+        if (pathInfo) {
+          totalTime += pathInfo.cost.timeCostMinutes;
+          totalEnergy += pathInfo.cost.energyCost ?? 0;
+        }
       }
     }
 
@@ -1009,7 +1009,7 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
                     {/* 正向線 */}
                     {showForward &&
                       (() => {
-                        const status = edge.forwardPath.status;
+                        const status = edge.forwardPath?.status;
                         const isLocked = status === 'locked';
                         const isTemp = status === 'temp_open';
                         const isFOpen = checkEdgeOpen(edge.forwardPath, edge.EndNodeId);
@@ -1081,7 +1081,7 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
                     {/* 反向線 */}
                     {showReverse &&
                       (() => {
-                        const status = edge.ReversePath.status;
+                        const status = edge.ReversePath?.status;
                         const isLocked = status === 'locked';
                         const isTemp = status === 'temp_open';
                         const isROpen = checkEdgeOpen(edge.ReversePath, edge.StartNodeId);
@@ -1301,7 +1301,7 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
 
             {/* 雷達掃描按鈕 */}
             <button
-              onClick={handleRadarScan}
+              onClick={() => handleRadarScan()}
               disabled={scanning}
               className={`p-3.5 rounded-full shadow-2xl flex items-center justify-center relative active:scale-90 transition-all ${scanning ? 'bg-emerald-950 border border-emerald-500/40 text-emerald-400' : 'bg-gradient-to-br from-emerald-500 to-teal-600 text-slate-950 hover:brightness-110'}`}
             >
@@ -1622,8 +1622,10 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
                         : [...prev.discoveredNodeIds, targetId];
 
                       // 同步寫回 Mock Database
-                      mockDatabase.mapState.currentLocationId = targetId;
-                      mockDatabase.mapState.discoveredNodeIds = nextDiscovered;
+                      if (mockDatabase.mapState) {
+                        mockDatabase.mapState.currentLocationId = targetId;
+                        mockDatabase.mapState.discoveredNodeIds = nextDiscovered;
+                      }
 
                       return {
                         ...prev,

@@ -71,7 +71,6 @@ export interface ComboDef {
 }
 
 // ====== 任務相關型別 ======
-export type QuestStatus = 'AVAILABLE' | 'ACTIVE' | 'COMPLETED' | 'CLAIMED';
 
 export interface ConditionOnProgram {
   target:
@@ -334,18 +333,4 @@ export interface UserResources {
 // ====== 其他輔助定義 (如 mvuBridge.ts 中的 options) ======
 export type WaitOptions = { timeoutMs?: number; pollMs?: number };
 
-// ====== 訂閱型別定義 ======
-export const SUBSCRIPTION_TIERS = ['VIP1', 'VIP2', 'VIP3', 'VIP4', 'VIP5'] as const;
-export type SubscriptionTier = (typeof SUBSCRIPTION_TIERS)[number];
 
-// ====== AI 與編輯器相關型別 ======
-export type NodeType = 'string' | 'list' | 'object';
-export type AiAppId = 'calendar' | 'custom_hypnosis' | 'hypnosis' | 'common' | 'settings';
-export type PromptTemplateScope = 'app' | 'context';
-export type PromptContextId = string;
-export type PromptContextKey = 'global_output' | 'full_fill' | `sec_${string}`;
-export type EditorPromptModuleType = 'fixed' | 'section_content' | 'section_format' | 'section_instruction';
-export type EditorSectionCategory = 'data' | 'behavior';
-export type AstDiffChangeType = 'add' | 'update' | 'empty_rejected' | 'type_conflict' | 'unchanged';
-export type ReviewDecision = 'accept' | 'reject';
-export type StreamMode = 'streaming' | 'fake_streaming' | 'non_streaming';

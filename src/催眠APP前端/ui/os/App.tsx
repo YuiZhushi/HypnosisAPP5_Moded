@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StatusBar } from '../../shared/components/StatusBar';
 import { HypnosisApp } from '../apps/hypnosis/HypnosisApp';
 import { AchievementApp } from '../apps/achievement/AchievementApp';
@@ -149,11 +149,6 @@ const App = () => {
     };
   }, [currentApp]);
 
-  const updateUser = (data: UserResources) => {
-    setUserData(data);
-    void MockApi.updateUserResource(data);
-  };
-
   // --- Router ---
   const renderCurrentApp = () => {
     if (!userData)
@@ -180,7 +175,7 @@ const App = () => {
         return <HelpApp onBack={() => setCurrentApp(AppMode.HOME)} />;
       case AppMode.ACHIEVEMENTS:
         return (
-          <AchievementApp userData={userData} onUpdateUser={updateUser} onBack={() => setCurrentApp(AppMode.HOME)} />
+          <AchievementApp onBack={() => setCurrentApp(AppMode.HOME)} />
         );
       case AppMode.SETTINGS:
         return <SettingsApp onBack={() => setCurrentApp(AppMode.HOME)} />;
