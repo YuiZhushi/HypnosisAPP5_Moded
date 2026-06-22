@@ -162,3 +162,44 @@ input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/* ====== HypnoOS 地圖定位系統專用 CSS 類 ====== */
+
+.bg-radial-dot {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1.2px);
+}
+
+.bg-radial-glow {
+  background: radial-gradient(circle at center, rgba(16, 185, 129, 0.18) 0%, transparent 75%);
+}
+
+@keyframes map-slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0.5;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: map-slide-up 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes map-slide-left {
+  from {
+    transform: translateX(100%);
+    opacity: 0.5;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-left {
+  animation: map-slide-left 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+

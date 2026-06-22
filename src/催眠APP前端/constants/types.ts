@@ -18,6 +18,7 @@ export enum AppMode {
   SETTINGS = 'SETTINGS',
   WIP = 'WIP',
   CHARACTER_EDITOR = 'CHARACTER_EDITOR',
+  MAP = 'MAP',
 }
 
 // ====== 催眠功能相關類型 ======

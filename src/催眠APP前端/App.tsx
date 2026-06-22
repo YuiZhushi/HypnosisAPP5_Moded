@@ -8,10 +8,11 @@ import { HelpApp } from './ui/help/HelpApp';
 import { WipApp } from './ui/shared/PageLayout';
 import { SettingsApp } from './ui/settings/SettingsApp';
 import { CharacterBackgroundApp } from './ui/character-background/CharacterBackgroundApp';
+import { MapApp } from './ui/map/MapApp';
 import { waitForMvuReady } from './shared/mvu/mvuBridge';
 import { UserResources } from './constants/interfaces';
 import { AppMode } from './constants/types';
-import { Activity, Calendar, HelpCircle, Trophy, Globe, Settings, PenSquare } from 'lucide-react';
+import { Activity, Calendar, HelpCircle, Trophy, Globe, Settings, PenSquare, Compass } from 'lucide-react';
 
 import { logger } from '../催眠APP共用/debug/loggerService';
 import { getUserData, updateResources, getSystemClock } from './shared/store/resourceSync';
@@ -212,6 +213,8 @@ const App = () => {
         return <SettingsApp onBack={() => setCurrentApp(AppMode.HOME)} />;
       case AppMode.CHARACTER_EDITOR:
         return <CharacterBackgroundApp onBack={() => setCurrentApp(AppMode.HOME)} />;
+      case AppMode.MAP:
+        return <MapApp onBack={() => setCurrentApp(AppMode.HOME)} />;
       case AppMode.WIP:
         return <WipApp name="Unknown App" onBack={() => setCurrentApp(AppMode.HOME)} />;
       case AppMode.HOME:
@@ -362,6 +365,14 @@ const HomeScreen = ({
       icon: PenSquare,
       color: 'bg-gradient-to-br from-pink-500 to-indigo-600',
       mode: AppMode.CHARACTER_EDITOR,
+      disabled: false,
+    },
+    {
+      id: 'map',
+      name: '地圖定位',
+      icon: Compass,
+      color: 'bg-gradient-to-br from-teal-600 to-emerald-600',
+      mode: AppMode.MAP,
       disabled: false,
     },
     {

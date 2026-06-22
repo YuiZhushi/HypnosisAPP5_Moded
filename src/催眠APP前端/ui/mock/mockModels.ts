@@ -55,31 +55,32 @@ export interface ComboDef {
 // ==========================================
 
 export interface ConditionOnProgram {
-  target: "money"
-  | "pts"
-  | "totalConsumedMc"
-  | "mcEnergy"
-  | "mcEnergyMax"
-  | "vipTier"
-  | "suspicion"
-  | "sensitivity"
-  | "clitSensitivity"
-  | "vaginaSensitivity"
-  | "anusSensitivity"
-  | "urethraSensitivity"
-  | "nippleSensitivity"
-  | "orgasm"
-  | "clitOrgasms"
-  | "vaginaOrgasms"
-  | "anusOrgasms"
-  | "urethraOrgasms"
-  | "nippleOrgasms"
-  | "alertness"
-  | "affection"
-  | "obedience"
-  | "lust"
-  | "arousal";
-  operator: "==" | "!=" | ">=" | "<=" | ">" | "<";
+  target:
+    | 'money'
+    | 'pts'
+    | 'totalConsumedMc'
+    | 'mcEnergy'
+    | 'mcEnergyMax'
+    | 'vipTier'
+    | 'suspicion'
+    | 'sensitivity'
+    | 'clitSensitivity'
+    | 'vaginaSensitivity'
+    | 'anusSensitivity'
+    | 'urethraSensitivity'
+    | 'nippleSensitivity'
+    | 'orgasm'
+    | 'clitOrgasms'
+    | 'vaginaOrgasms'
+    | 'anusOrgasms'
+    | 'urethraOrgasms'
+    | 'nippleOrgasms'
+    | 'alertness'
+    | 'affection'
+    | 'obedience'
+    | 'lust'
+    | 'arousal';
+  operator: '==' | '!=' | '>=' | '<=' | '>' | '<';
   value: number;
   charName?: string; // New field to support character-specific achievements
 }
@@ -93,20 +94,31 @@ export interface AchievementOrQuestDef {
     type: 'program' | 'ai'; // 類型：由程式判定 或 由AI判定
     condition: string | ConditionOnProgram[]; // 完成條件說明或變數條件
   };
-  reward: { // 至少有一種獎勵
+  reward: {
+    // 至少有一種獎勵
     money?: number;
     pts?: number;
     mcEnergyMax?: number;
     mcEnergy?: number;
     suspicion?: number;
-  }
+  };
 }
 
 // ==========================================
 // 日曆 APP 相關定義 (Calendar App Models)
 // ==========================================
 
-export type EventColor = 'red' | 'blue' | 'purple' | 'gray' | 'green' | 'yellow' | 'orange' | 'pink' | 'teal' | 'indigo';
+export type EventColor =
+  | 'red'
+  | 'blue'
+  | 'purple'
+  | 'gray'
+  | 'green'
+  | 'yellow'
+  | 'orange'
+  | 'pink'
+  | 'teal'
+  | 'indigo';
 
 export interface CalendarEvent {
   title: string;
@@ -179,6 +191,64 @@ export interface MockcharData {
   ownedBodyModifications: Record<string, any>;
 }
 
+// ==========================================
+// 地圖 APP 相關定義 (Map App Models)
+// ==========================================
+
+export interface MockNpcTrace {
+  name: string; // 角色名，用作 Runtime 查找 TestCharDataInput 的 Key (例如 '西园寺爱丽莎'、'月咏深雪')
+  status: string; // 該地點專屬的當前狀態情境描述 (例如 '正坐在書桌前用電腦')
+}
+
+export interface MockLocationNode {
+  id: string;
+  name: string;
+  zoneId: string;
+  description: string;
+  presentNpcs?: MockNpcTrace[];
+  hasQuest?: boolean;
+}
+
+export interface PathInfo {
+  status: 'open' | 'locked' | 'temp_open';
+  cost: {
+    timeCostMinutes: number;
+    energyCost?: number;
+    moneyCost?: number;
+  };
+  unlockCondition?: {
+    type: 'obedience' | 'item' | 'always_locked';
+    targetName?: string; // 角色名或物品名
+    value?: number; // 所需服從度數值
+    description: string; // 解鎖條件文字描述
+  };
+  tempConditon?: {
+    type: 'item' | 'time' | 'character';
+    targetName?: string; // 角色名或物品名
+    value?: number; // 所需數值
+    description: string; // 解鎖條件文字描述
+  };
+}
+
+export interface MockMapEdge {
+  id: string;
+  zoneId: string;
+  StartNodeId: string;
+  EndNodeId: string;
+  forwardPath?: PathInfo;
+  ReversePath?: PathInfo;
+}
+
+export interface MockZone {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface MockMapState {
+  currentLocationId: string;
+  discoveredNodeIds: string[];
+}
 
 // ==========================================
 // 狀態與使用者資料定義 (State & User Data Models)
@@ -214,7 +284,10 @@ export interface MockUserData {
 
   // 玩家擁有的成就與任務
   ownedAchievements: Record<string, MockAchievementState>; // 只有達成條件的成就就會出現在這裡
-  ownedQuests: Record<string, MockQuestState >; // 只有接取的任務才會出現在這裡
+  ownedQuests: Record<string, MockQuestState>; // 只有接取的任務才會出現在這裡
+
+  // 玩家的地圖狀態
+  mapState?: MockMapState;
 }
 
 // ==========================================

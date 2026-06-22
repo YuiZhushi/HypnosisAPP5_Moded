@@ -1,4 +1,12 @@
-import { HypnosisDef, EquipmentDef, AchievementOrQuestDef, CalendarEvent } from './mockModels';
+import {
+  HypnosisDef,
+  EquipmentDef,
+  AchievementOrQuestDef,
+  CalendarEvent,
+  MockZone,
+  MockLocationNode,
+  MockMapEdge
+} from './mockModels';
 
 // ==========================================
 // 日曆 APP 靜態字典 (Calendar App Dictionaries)
@@ -1602,3 +1610,552 @@ export const QUEST_DICTIONARY: Record<string, AchievementOrQuestDef> = {
     reward: { pts: 45 },
   },
 };
+
+// ==========================================
+// 地圖 APP 靜態字典 (Map App Dictionaries)
+// ==========================================
+
+export const MAP_ZONES: MockZone[] = [
+  { id: 'school_zone', name: '學校區域', description: '主角與女主角們就讀的私立高中，此時正值課後社團時間。' },
+  { id: 'home_zone', name: '主角家中', description: '主角居住的公寓，也是與姐姐一同生活的地方。' }
+];
+
+export const MAP_LOCATION_NODES: MockLocationNode[] = [
+  // 學校區域
+  {
+    id: 'school_gate',
+    name: '學校大門',
+    zoneId: 'school_zone',
+    description: '學校的主入口，此時校門半開，偶爾有放學的學生經過。右側是門衛室。'
+  },
+  {
+    id: 'school_courtyard',
+    name: '中庭噴水池',
+    zoneId: 'school_zone',
+    description: '寬敞的中庭，中央有著落葉漂浮的噴水池，花壇裡盛開著季節性的花卉。'
+  },
+  {
+    id: 'school_lobby',
+    name: '鞋櫃升降口',
+    zoneId: 'school_zone',
+    description: '本館大樓的入口處，排列著整齊的學生鞋櫃。夕陽從玻璃門灑進來。'
+  },
+  {
+    id: 'school_playground',
+    name: '學校操場',
+    zoneId: 'school_zone',
+    description: '開闊的塑膠跑道操場。夕陽斜照，空氣中餚漫著青草與泥土的氣味。',
+    hasQuest: true
+  },
+  {
+    id: 'school_classroom_2b',
+    name: '二年B班教室',
+    zoneId: 'school_zone',
+    description: '放學後的二年B班教室，夕陽將課桌椅拉出長長的光影。靠窗的位置十分安靜。',
+    presentNpcs: [
+      { name: '月咏深雪', status: '值日生，正在整理講台' }
+    ]
+  },
+  {
+    id: 'school_corridor_2f',
+    name: '二樓走廊',
+    zoneId: 'school_zone',
+    description: '教學樓二樓的長廊，連接著教室、實驗室與通往體育館的走廊。'
+  },
+  {
+    id: 'school_student_council',
+    name: '學生會室',
+    zoneId: 'school_zone',
+    description: '學生會的辦公室，陳設莊重整潔，有一張大會議桌與裝滿文件的檔案櫃。'
+  },
+  {
+    id: 'school_science_lab',
+    name: '理科實驗室',
+    zoneId: 'school_zone',
+    description: '擺滿燒杯與顯微鏡的物理化學實驗室，空氣中微有化學藥劑的氣味。'
+  },
+  {
+    id: 'school_gym',
+    name: '體育館',
+    zoneId: 'school_zone',
+    description: '巨大的室內體育館，地板打蠟得反光。此時社團活動剛結束，有種空曠的迴音。',
+    presentNpcs: [
+      { name: '犬冢夏美', status: '社團自主練習中，滿身汗水' }
+    ]
+  },
+  {
+    id: 'school_shower',
+    name: '更衣淋浴間',
+    zoneId: 'school_zone',
+    description: '體育館附設的淋浴間，此時傳來嘩啦啦的水聲與溫熱的蒸汽。',
+    presentNpcs: [
+      { name: '犬冢夏美', status: '正在淋浴，霧氣騰騰' }
+    ]
+  },
+  {
+    id: 'school_warehouse',
+    name: '體育器材倉庫',
+    zoneId: 'school_zone',
+    description: '體育館後方一處偏僻陰暗的木製倉庫，平時用來存放廢棄的跳箱 and 軟墊。幾乎無人踏足。'
+  },
+  {
+    id: 'school_rooftop',
+    name: '屋頂平台',
+    zoneId: 'school_zone',
+    description: '視野開闊的屋頂平台，風很大，可以俯瞰整個齋明學園。四周設有鐵網。'
+  },
+  {
+    id: 'school_greenhouse',
+    name: '園藝部溫室',
+    zoneId: 'school_zone',
+    description: '屋頂一角的玻璃溫室，種植著各種實驗用花草，陽光透過玻璃照得暖洋洋的。'
+  },
+  {
+    id: 'school_tennis_court',
+    name: '網球場',
+    zoneId: 'school_zone',
+    description: '開闊的網球場，綠色的塑膠地面上畫著白色的標線。課後社團時間會有網球部成員在此練習。'
+  },
+  {
+    id: 'school_kyudo_field',
+    name: '弓道場',
+    zoneId: 'school_zone',
+    description: '學校偏僻處的日式弓道場，鋪有乾淨的木地板。此時通常只有弓道部在特定深夜或清晨時段在此練習。'
+  },
+
+  // 主角家區域
+  {
+    id: 'home_living_room',
+    name: '客廳',
+    zoneId: 'home_zone',
+    description: '溫馨整潔的客廳，中央放著茶几與沙發，電視機此時處於關閉狀態。'
+  },
+  {
+    id: 'home_my_room',
+    name: '主角臥室',
+    zoneId: 'home_zone',
+    description: '主角自己的房間，有一張單人床、電腦桌與散落著輕小說的書架。這也是最安全的避難所。'
+  },
+  {
+    id: 'home_kitchen',
+    name: '廚房',
+    zoneId: 'home_zone',
+    description: '乾淨的廚房，抽油煙機乾乾淨淨，冰箱裡放滿了新鮮的食材。'
+  },
+  {
+    id: 'home_sister_room',
+    name: '姐姐臥室',
+    zoneId: 'home_zone',
+    description: '散發著淡淡櫻花香氣的溫馨房間。床頭放著精緻的玩偶，平時姐姐不允許主角輕易進入。',
+    presentNpcs: [
+      { name: '西园寺爱丽莎', status: '正坐在書桌前用電腦' }
+    ]
+  },
+  {
+    id: 'home_bathroom',
+    name: '浴室',
+    zoneId: 'home_zone',
+    description: '乾濕分離的浴室，浴缸裡正散發著熱氣，鏡子上蒙著一層薄薄的水霧。'
+  },
+  {
+    id: 'home_basement_corridor',
+    name: '地下室走道',
+    zoneId: 'home_zone',
+    description: '公寓地下室的昏暗通道，平時只有管理員偶爾會來檢查線路。'
+  },
+  {
+    id: 'home_basement_locked',
+    name: '地下室被鎖的房間',
+    zoneId: 'home_zone',
+    description: '落滿灰塵的神祕小房間，門鎖生鏽，不知道裡面存放著什麼舊物。'
+  }
+];
+
+export const MAP_MAP_EDGES: MockMapEdge[] = [
+  // ==========================================
+  // 學校區域連線
+  // ==========================================
+  {
+    id: 'edge_gate_playground',
+    zoneId: 'school_zone',
+    StartNodeId: 'school_gate',
+    EndNodeId: 'school_playground',
+    forwardPath: {
+      status: 'open',
+      cost: { timeCostMinutes: 5, energyCost: 1 },
+    },
+    ReversePath: {
+      status: 'open',
+      cost: { timeCostMinutes: 5, energyCost: 1 },
+    },
+  },
+  {
+    id: 'edge_gate_courtyard',
+    zoneId: 'school_zone',
+    StartNodeId: 'school_gate',
+    EndNodeId: 'school_courtyard',
+    forwardPath: {
+      status: 'open',
+      cost: { timeCostMinutes: 4, energyCost: 1 },
+    },
+    ReversePath: {
+      status: 'open',
+      cost: { timeCostMinutes: 4, energyCost: 1 },
+    },
+  },
+  {
+    id: 'edge_courtyard_lobby',
+    zoneId: 'school_zone',
+    StartNodeId: 'school_courtyard',
+    EndNodeId: 'school_lobby',
+    forwardPath: {
+      status: 'open',
+      cost: { timeCostMinutes: 2, energyCost: 1 },
+    },
+    ReversePath: {
+      status: 'open',
+      cost: { timeCostMinutes: 2, energyCost: 1 },
+    },
+  },
+  {
+    id: 'edge_lobby_classroom',
+    zoneId: 'school_zone',
+    StartNodeId: 'school_lobby',
+    EndNodeId: 'school_classroom_2b',
+    forwardPath: {
+      status: 'open',
+      cost: { timeCostMinutes: 3, energyCost: 1 },
+    },
+    ReversePath: {
+      status: 'open',
+      cost: { timeCostMinutes: 3, energyCost: 1 },
+    },
+  },
+  {
+    id: 'edge_classroom_corridor',
+    zoneId: 'school_zone',
+    StartNodeId: 'school_classroom_2b',
+    EndNodeId: 'school_corridor_2f',
+    forwardPath: {
+      status: 'open',
+      cost: { timeCostMinutes: 2, energyCost: 1 },
+    },
+    ReversePath: {
+      status: 'open',
+      cost: { timeCostMinutes: 2, energyCost: 1 },
+    },
+  },
+  {
+    id: 'edge_corridor_rooftop',
+    zoneId: 'school_zone',
+    StartNodeId: 'school_corridor_2f',
+    EndNodeId: 'school_rooftop',
+    forwardPath: {
+      status: 'open',
+      cost: { timeCostMinutes: 4, energyCost: 2 },
+    },
+    ReversePath: {
+      status: 'open',
+      cost: { timeCostMinutes: 4, energyCost: 2 },
+    },
+  },
+  {
+    id: 'edge_playground_gym',
+    zoneId: 'school_zone',
+    StartNodeId: 'school_playground',
+    EndNodeId: 'school_gym',
+    forwardPath: {
+      status: 'open',
+      cost: { timeCostMinutes: 3, energyCost: 1 },
+    },
+    ReversePath: {
+      status: 'open',
+      cost: { timeCostMinutes: 3, energyCost: 1 },
+    },
+  },
+
+  // 1. 阻擋通道 1: 學生會室 (Obedience 解鎖)
+  {
+    id: 'edge_corridor_student_council',
+    zoneId: 'school_zone',
+    StartNodeId: 'school_corridor_2f',
+    EndNodeId: 'school_student_council',
+    forwardPath: {
+      status: 'locked',
+      cost: { timeCostMinutes: 2, energyCost: 1 },
+      unlockCondition: {
+        type: 'obedience',
+        targetName: '月咏深雪',
+        value: 15,
+        description: '需要風紀委員月咏深雪的服從度達到 15 以上才能進入',
+      },
+    },
+    ReversePath: {
+      status: 'open',
+      cost: { timeCostMinutes: 2, energyCost: 1 },
+    },
+  },
+
+  // 2. 阻擋/隱藏通道 2: 體育器材倉庫 (Item 解鎖, 初始隱藏)
+  {
+    id: 'edge_gym_warehouse',
+    zoneId: 'school_zone',
+    StartNodeId: 'school_gym',
+    EndNodeId: 'school_warehouse',
+    forwardPath: {
+      status: 'locked',
+      cost: { timeCostMinutes: 3, energyCost: 1 },
+      unlockCondition: {
+        type: 'item',
+        targetName: '老舊鑰匙',
+        description: '需要持有體育館管理員的「老舊鑰匙」才能進入',
+      },
+    },
+    ReversePath: {
+      status: 'open',
+      cost: { timeCostMinutes: 3, energyCost: 1 },
+    },
+  },
+
+  // 3. 阻擋/隱藏通道 3: 園藝部溫室 (Item 解鎖, 初始隱藏)
+  {
+    id: 'edge_rooftop_greenhouse',
+    zoneId: 'school_zone',
+    StartNodeId: 'school_rooftop',
+    EndNodeId: 'school_greenhouse',
+    forwardPath: {
+      status: 'locked',
+      cost: { timeCostMinutes: 2, energyCost: 1 },
+      unlockCondition: {
+        type: 'item',
+        targetName: '學生會鑰匙',
+        description: '需要持有園藝部的「學生會鑰匙」才能打開溫室門',
+      },
+    },
+    ReversePath: {
+      status: 'open',
+      cost: { timeCostMinutes: 2, energyCost: 1 },
+    },
+  },
+
+  // 4. 臨時開放通道 1: 理科實驗室 (Item 臨時條件)
+  {
+    id: 'edge_corridor_science_lab',
+    zoneId: 'school_zone',
+    StartNodeId: 'school_corridor_2f',
+    EndNodeId: 'school_science_lab',
+    forwardPath: {
+      status: 'temp_open',
+      cost: { timeCostMinutes: 2, energyCost: 1 },
+      tempConditon: {
+        type: 'item',
+        targetName: '實驗室磁卡',
+        description: '需要持有理科老師的「實驗室磁卡」才能臨時通行',
+      },
+    },
+    ReversePath: {
+      status: 'open',
+      cost: { timeCostMinutes: 2, energyCost: 1 },
+    },
+  },
+
+  // 5. 臨時開放通道 2: 更衣淋浴間 (Character 臨時條件)
+  {
+    id: 'edge_gym_shower',
+    zoneId: 'school_zone',
+    StartNodeId: 'school_gym',
+    EndNodeId: 'school_shower',
+    forwardPath: {
+      status: 'temp_open',
+      cost: { timeCostMinutes: 1, energyCost: 0 },
+      tempConditon: {
+        type: 'character',
+        targetName: '犬冢夏美',
+        description: '需要犬冢夏美在淋浴間使用中',
+      },
+    },
+    ReversePath: {
+      status: 'open',
+      cost: { timeCostMinutes: 1, energyCost: 0 },
+    },
+  },
+
+  // 6. 單向通道: 屋頂平台 -> 學校操場
+  {
+    id: 'edge_rooftop_playground',
+    zoneId: 'school_zone',
+    StartNodeId: 'school_rooftop',
+    EndNodeId: 'school_playground',
+    forwardPath: {
+      status: 'open',
+      cost: { timeCostMinutes: 3, energyCost: 2 },
+    },
+    ReversePath: {
+      status: 'locked',
+      cost: { timeCostMinutes: 3, energyCost: 2 },
+      unlockCondition: {
+        type: 'always_locked',
+        description: '安全通道鐵門已從內側鎖上，無法從外側拉開',
+      },
+    },
+  },
+
+  // ==========================================
+  // 主角家區域連線
+  // ==========================================
+  {
+    id: 'edge_living_myroom',
+    zoneId: 'home_zone',
+    StartNodeId: 'home_living_room',
+    EndNodeId: 'home_my_room',
+    forwardPath: {
+      status: 'open',
+      cost: { timeCostMinutes: 2, energyCost: 0 },
+    },
+    ReversePath: {
+      status: 'open',
+      cost: { timeCostMinutes: 2, energyCost: 0 },
+    },
+  },
+  {
+    id: 'edge_living_basement',
+    zoneId: 'home_zone',
+    StartNodeId: 'home_living_room',
+    EndNodeId: 'home_basement_corridor',
+    forwardPath: {
+      status: 'open',
+      cost: { timeCostMinutes: 3, energyCost: 0 },
+    },
+    ReversePath: {
+      status: 'open',
+      cost: { timeCostMinutes: 3, energyCost: 0 },
+    },
+  },
+
+  // 7. 阻擋通道 3: 姐姐臥室 (愛麗莎服從 >= 20 解鎖)
+  {
+    id: 'edge_living_sisterroom',
+    zoneId: 'home_zone',
+    StartNodeId: 'home_living_room',
+    EndNodeId: 'home_sister_room',
+    forwardPath: {
+      status: 'locked',
+      cost: { timeCostMinutes: 2, energyCost: 0 },
+      unlockCondition: {
+        type: 'obedience',
+        targetName: '西园寺爱丽莎',
+        value: 20,
+        description: '需要愛麗莎的服從度達到 20 以上才能進入',
+      },
+    },
+    ReversePath: {
+      status: 'open',
+      cost: { timeCostMinutes: 2, energyCost: 0 },
+    },
+  },
+
+  // 8. 阻擋通道 4: 浴室 (愛麗莎服從 >= 30 解鎖)
+  {
+    id: 'edge_living_bathroom',
+    zoneId: 'home_zone',
+    StartNodeId: 'home_living_room',
+    EndNodeId: 'home_bathroom',
+    forwardPath: {
+      status: 'locked',
+      cost: { timeCostMinutes: 1, energyCost: 0 },
+      unlockCondition: {
+        type: 'obedience',
+        targetName: '西园寺爱丽莎',
+        value: 30,
+        description: '需要愛麗莎的服從度達到 30 以上才能進入',
+      },
+    },
+    ReversePath: {
+      status: 'open',
+      cost: { timeCostMinutes: 1, energyCost: 0 },
+    },
+  },
+
+  // 9. 臨時開放通道 3: 廚房 (Item 臨時條件)
+  {
+    id: 'edge_living_kitchen',
+    zoneId: 'home_zone',
+    StartNodeId: 'home_living_room',
+    EndNodeId: 'home_kitchen',
+    forwardPath: {
+      status: 'temp_open',
+      cost: { timeCostMinutes: 1, energyCost: 0 },
+      tempConditon: {
+        type: 'item',
+        targetName: '冰箱食材',
+        description: '需要先從冰箱拿到「冰箱食材」才能進去煮飯',
+      },
+    },
+    ReversePath: {
+      status: 'open',
+      cost: { timeCostMinutes: 1, energyCost: 0 },
+    },
+  },
+
+  // 10. 隱藏且阻擋通道 5: 地下室被鎖房間 (Always Locked)
+  {
+    id: 'edge_basement_locked',
+    zoneId: 'home_zone',
+    StartNodeId: 'home_basement_corridor',
+    EndNodeId: 'home_basement_locked',
+    forwardPath: {
+      status: 'locked',
+      cost: { timeCostMinutes: 2, energyCost: 0 },
+      unlockCondition: {
+        type: 'always_locked',
+        description: '門把上落滿了灰塵，似乎從裡面被反鎖了',
+      },
+    },
+    ReversePath: {
+      status: 'open',
+      cost: { timeCostMinutes: 2, energyCost: 0 },
+    },
+  },
+
+  // 11. 臨時開放通道 4: 網球場 (Time 臨時條件)
+  {
+    id: 'edge_playground_tennis',
+    zoneId: 'school_zone',
+    StartNodeId: 'school_playground',
+    EndNodeId: 'school_tennis_court',
+    forwardPath: {
+      status: 'temp_open',
+      cost: { timeCostMinutes: 2, energyCost: 1 },
+      tempConditon: {
+        type: 'time',
+        targetName: '15:00-18:00',
+        description: '網球場僅在社團活動時間 15:00-18:00 開放',
+      },
+    },
+    ReversePath: {
+      status: 'open',
+      cost: { timeCostMinutes: 2, energyCost: 1 },
+    },
+  },
+
+  // 12. 臨時開放通道 5: 弓道場 (Time 跨日/星期 臨時條件)
+  {
+    id: 'edge_playground_kyudo',
+    zoneId: 'school_zone',
+    StartNodeId: 'school_playground',
+    EndNodeId: 'school_kyudo_field',
+    forwardPath: {
+      status: 'temp_open',
+      cost: { timeCostMinutes: 3, energyCost: 1 },
+      tempConditon: {
+        type: 'time',
+        targetName: '1-5 00:00-07:30;1-5 20:00-24:00',
+        description: '弓道場僅在週一至週五的深夜與清晨時段 (20:00-07:30) 開放',
+      },
+    },
+    ReversePath: {
+      status: 'open',
+      cost: { timeCostMinutes: 3, energyCost: 1 },
+    },
+  },
+];

@@ -8,7 +8,8 @@ import {
   AchievementOrQuestDef,
   ConditionOnProgram,
   MockApiSettings,
-  CalendarEvent
+  CalendarEvent,
+  MockMapState
 } from './mockModels';
 
 import {
@@ -27,7 +28,9 @@ import {
   EQUIPMENT_DICTIONARY,
   ACHIEVEMENT_DICTIONARY,
   QUEST_DICTIONARY,
-  CALENDAR_STATIC_EVENTS
+  CALENDAR_STATIC_EVENTS,
+  MAP_LOCATION_NODES,
+  MAP_MAP_EDGES
 } from './mockStaticData';
 
 // 模擬網路延遲
@@ -597,5 +600,507 @@ export const MockApi = {
     if (TestCustomCalendarEvents[id]) {
       delete TestCustomCalendarEvents[id];
     }
+  },
+
+  // ==========================================
+  // 地圖 APP 相關 API (Map App APIs)
+  // ==========================================
+
+  async getMapState(): Promise<MockMapState> {
+    await delay(100);
+    if (!mockDatabase.mapState) {
+      throw new Error('[HypnoOS][MapMock] 偵測到 mockDatabase.mapState 缺少模擬運行時資料！請檢查 mockDatabase.ts 中是否正確配置。');
+    }
+    return JSON.parse(JSON.stringify(mockDatabase.mapState));
+  },
+
+  async moveToLocation(
+    targetNodeId: string,
+    items: string[] = [],
+    npcObedience: Record<string, number> = {}
+  ): Promise<{
+    success: boolean;
+    path: string[];
+    timeCost: number;
+    energyCost: number;
+    errorMsg?: string;
+    nextState: MockMapState;
+  }> {
+    await delay(150);
+    if (!mockDatabase.mapState) {
+      throw new Error('[HypnoOS][MapMock] 偵測到 mockDatabase.mapState 缺少模擬運行時資料！請檢查 mockDatabase.ts 中是否正確配置。');
+    }
+    const state = mockDatabase.mapState;
+    const startNodeId = state.currentLocationId;
+    if (startNodeId === targetNodeId) {
+      return { success: true, path: [targetNodeId], timeCost: 0, energyCost: 0, nextState: { ...state } };
+    }
+
+    if (!state.discoveredNodeIds.includes(targetNodeId)) {
+      return { success: false, path: [], timeCost: 0, energyCost: 0, errorMsg: '該地點尚未被發現。', nextState: { ...state } };
+    }
+
+    // 移動前動態解鎖檢測：若滿足條件，將已發現的 locked 通道升格為 open (Runtime)
+    for (const edge of MAP_MAP_EDGES) {
+      if (edge.forwardPath && edge.forwardPath.status === 'locked' && edge.forwardPath.unlockCondition) {
+        if (checkUnlockCondition(edge.forwardPath.unlockCondition, items, npcObedience)) {
+          edge.forwardPath.status = 'open';
+          console.info(`[HypnoOS][MapMock] 通路正向【${edge.id}】已滿足條件，動態自動解鎖為 open。`);
+        }
+      }
+      if (edge.ReversePath && edge.ReversePath.status === 'locked' && edge.ReversePath.unlockCondition) {
+        if (checkUnlockCondition(edge.ReversePath.unlockCondition, items, npcObedience)) {
+          edge.ReversePath.status = 'open';
+          console.info(`[HypnoOS][MapMock] 通路反向【${edge.id}】已滿足條件，動態自動解鎖為 open。`);
+        }
+      }
+    }
+
+    const path = findShortestPath(startNodeId, targetNodeId, state.discoveredNodeIds, items);
+    if (path.length === 0) {
+      return { success: false, path: [], timeCost: 0, energyCost: 0, errorMsg: '兩地點之間沒有通路，無法前往。', nextState: { ...state } };
+    }
+
+    let totalTime = 0;
+    let totalEnergy = 0;
+    for (let i = 0; i < path.length - 1; i++) {
+      const from = path[i];
+      const to = path[i + 1];
+      const edge = MAP_MAP_EDGES.find(
+        e => (e.StartNodeId === from && e.EndNodeId === to) ||
+             (e.StartNodeId === to && e.EndNodeId === from)
+      );
+      if (edge) {
+        const pathInfo = edge.StartNodeId === from ? edge.forwardPath : edge.ReversePath;
+        if (pathInfo) {
+          totalTime += pathInfo.cost.timeCostMinutes;
+          totalEnergy += pathInfo.cost.energyCost ?? 0;
+        }
+      }
+    }
+
+    state.currentLocationId = targetNodeId;
+
+    const pathNames = path.map(id => MAP_LOCATION_NODES.find(n => n.id === id)?.name ?? id).join(' -> ');
+    const entry = `[模擬移動定位] 從「${MAP_LOCATION_NODES.find(n => n.id === startNodeId)?.name}」移動至「${MAP_LOCATION_NODES.find(n => n.id === targetNodeId)?.name}」，途經路線：${pathNames}。耗時：${totalTime}分鐘，消耗MC能量：${totalEnergy}點。`;
+    console.info(`[HypnoOS][MapMock] ${entry}`);
+
+    return {
+      success: true,
+      path,
+      timeCost: totalTime,
+      energyCost: totalEnergy,
+      nextState: { ...state }
+    };
+  },
+
+  async scanForLocations(
+    items: string[],
+    npcObedience: Record<string, number>
+  ): Promise<{
+    success: boolean;
+    unlockedNodeIds: string[];
+    messages: string[];
+    nextState: MockMapState;
+  }> {
+    await delay(200);
+    if (!mockDatabase.mapState) {
+      throw new Error('[HypnoOS][MapMock] 偵測到 mockDatabase.mapState 缺少模擬運行時資料！請檢查 mockDatabase.ts 中是否正確配置。');
+    }
+    const state = mockDatabase.mapState;
+    const unlockedNodeIds: string[] = [];
+    const messages: string[] = [];
+
+    const currentZoneId = MAP_LOCATION_NODES.find(n => n.id === state.currentLocationId)?.zoneId;
+    if (!currentZoneId) {
+      return { success: false, unlockedNodeIds: [], messages: ['定位失敗，無法判定當前區域。'], nextState: { ...state } };
+    }
+
+    let changed = true;
+    let iterations = 0;
+    const maxIterations = 20;
+    const processedEdges = new Set<string>();
+
+    while (changed && iterations < maxIterations) {
+      changed = false;
+      iterations++;
+
+      const reachable = findReachableNodes(state.currentLocationId, state.discoveredNodeIds, items);
+
+      for (const edge of MAP_MAP_EDGES) {
+        if (edge.zoneId !== currentZoneId) continue;
+
+        // 正向解鎖與發現
+        const isEndHidden = !state.discoveredNodeIds.includes(edge.EndNodeId);
+        const canScanForward = isEndHidden
+          ? state.currentLocationId === edge.StartNodeId
+          : reachable.has(edge.StartNodeId);
+
+        if (canScanForward && edge.forwardPath) {
+          const pathInfo = edge.forwardPath;
+          const nodeName = MAP_LOCATION_NODES.find(n => n.id === edge.EndNodeId)?.name ?? edge.EndNodeId;
+
+          // 1. 不論通路狀態，在此次掃描中必定會發現該節點
+          let newlyDiscovered = false;
+          if (!state.discoveredNodeIds.includes(edge.EndNodeId)) {
+            state.discoveredNodeIds.push(edge.EndNodeId);
+            unlockedNodeIds.push(edge.EndNodeId);
+            newlyDiscovered = true;
+            changed = true;
+          }
+
+          // 2. 僅在新發現節點時才發送通知訊息 (不再自動解鎖 locked 通道)
+          if (pathInfo.status === 'locked') {
+            const cond = pathInfo.unlockCondition;
+            if (cond) {
+              const edgeKeyForward = `${edge.id}_forward`;
+              if (newlyDiscovered && !processedEdges.has(edgeKeyForward)) {
+                messages.push(`偵測到鄰近地點：「${nodeName}」，但通道鎖定：${cond.description}`);
+                processedEdges.add(edgeKeyForward);
+              }
+            }
+          } else {
+            // 通路原本就是 open 或 temp_open
+            const edgeKeyForward = `${edge.id}_forward`;
+            if (newlyDiscovered && !processedEdges.has(edgeKeyForward)) {
+              messages.push(`成功掃描發現新地點：「${nodeName}」！`);
+              processedEdges.add(edgeKeyForward);
+            }
+          }
+        }
+
+        // 反向解鎖與發現
+        const isStartHidden = !state.discoveredNodeIds.includes(edge.StartNodeId);
+        const canScanReverse = isStartHidden
+          ? state.currentLocationId === edge.EndNodeId
+          : reachable.has(edge.EndNodeId);
+
+        if (canScanReverse && edge.ReversePath) {
+          const pathInfo = edge.ReversePath;
+          const nodeName = MAP_LOCATION_NODES.find(n => n.id === edge.StartNodeId)?.name ?? edge.StartNodeId;
+
+          // 1. 不論通路狀態，在此次掃描中必定會發現該節點
+          let newlyDiscovered = false;
+          if (!state.discoveredNodeIds.includes(edge.StartNodeId)) {
+            state.discoveredNodeIds.push(edge.StartNodeId);
+            unlockedNodeIds.push(edge.StartNodeId);
+            newlyDiscovered = true;
+            changed = true;
+          }
+
+          // 2. 僅在新發現節點時才發送通知訊息 (不再自動解鎖 locked 通道)
+          if (pathInfo.status === 'locked') {
+            const cond = pathInfo.unlockCondition;
+            if (cond) {
+              const edgeKeyReverse = `${edge.id}_reverse`;
+              if (newlyDiscovered && !processedEdges.has(edgeKeyReverse)) {
+                messages.push(`偵測到鄰近地點：「${nodeName}」，但通道鎖定：${cond.description}`);
+                processedEdges.add(edgeKeyReverse);
+              }
+            }
+          } else {
+            // 通路原本就是 open 或 temp_open
+            const edgeKeyReverse = `${edge.id}_reverse`;
+            if (newlyDiscovered && !processedEdges.has(edgeKeyReverse)) {
+              messages.push(`成功掃描發現新地點：「${nodeName}」！`);
+              processedEdges.add(edgeKeyReverse);
+            }
+          }
+        }
+      }
+    }
+
+    if (unlockedNodeIds.length > 0) {
+      const entry = `[模擬地圖雷達掃描] 成功解鎖了新地點：${unlockedNodeIds.map(id => MAP_LOCATION_NODES.find(n => n.id === id)?.name ?? id).join(', ')}。`;
+      console.info(`[HypnoOS][MapMock] ${entry}`);
+    }
+
+    return {
+      success: true,
+      unlockedNodeIds,
+      messages,
+      nextState: { ...state }
+    };
+  },
+
+  // 新增手動開鎖 API
+  async unlockEdge(
+    edgeId: string,
+    isForward: boolean,
+    items: string[] = [],
+    npcObedience: Record<string, number> = {}
+  ): Promise<{ success: boolean; errorMsg?: string }> {
+    await delay(150);
+    const edge = MAP_MAP_EDGES.find(e => e.id === edgeId);
+    if (!edge) return { success: false, errorMsg: '未找到該通路。' };
+
+    const pathInfo = isForward ? edge.forwardPath : edge.ReversePath;
+    if (!pathInfo) return { success: false, errorMsg: '未找到該通路的特定方向。' };
+    if (pathInfo.status !== 'locked') return { success: true }; // 早已解鎖
+
+    const cond = pathInfo.unlockCondition;
+    if (!cond) return { success: false, errorMsg: '此通路無解鎖條件。' };
+
+    const isEligible = checkUnlockCondition(cond, items, npcObedience);
+    if (!isEligible) return { success: false, errorMsg: `未滿足解鎖條件：${cond.description}` };
+
+    pathInfo.status = 'open';
+    console.info(`[HypnoOS][MapMock] 手動解鎖通路【${edgeId}】(${isForward ? '正向' : '反向'}) 成功。`);
+    return { success: true };
+  },
+
+  async updateLocationNote(nodeId: string, newNote: string): Promise<boolean> {
+    await delay(100);
+    const node = MAP_LOCATION_NODES.find(n => n.id === nodeId);
+    if (node) {
+      node.description = newNote;
+      return true;
+    }
+    return false;
+  },
+
+  findShortestPath(
+    startId: string,
+    endId: string,
+    discovered: string[],
+    items: string[] = []
+  ): string[] {
+    return findShortestPath(startId, endId, discovered, items);
   }
 };
+
+// ====== 輔助函式 ======
+
+function checkUnlockCondition(
+  cond: { type: 'obedience' | 'item' | 'always_locked'; targetName?: string; value?: number },
+  items: string[],
+  npcObedience: Record<string, number>
+): boolean {
+  if (cond.type === 'item') {
+    return cond.targetName ? items.includes(cond.targetName) : false;
+  }
+  if (cond.type === 'obedience') {
+    if (cond.targetName) {
+      const currentVal = npcObedience[cond.targetName] ?? 0;
+      return currentVal >= (cond.value ?? 999);
+    }
+  }
+  return false;
+}
+
+function isTimeInPeriod(currentDateTimeStr: string, periodString: string): boolean {
+  let currentMinutes = 12 * 60; // 預設 12:00
+  let currentDayOfWeek = 5; // 預設週五 (2026-05-01 是週五)
+
+  if (currentDateTimeStr.includes(' ')) {
+    const parts = currentDateTimeStr.split(' ');
+    const datePart = parts[0];
+    const timePart = parts[1];
+    
+    // 解析星期幾 (用 / 替換 - 防止部分環境解析錯誤)
+    const dateObj = new Date(datePart.replace(/-/g, '/'));
+    if (!isNaN(dateObj.getTime())) {
+      const rawDay = dateObj.getDay(); // 0-6 (0 是週日)
+      currentDayOfWeek = rawDay === 0 ? 7 : rawDay;
+    }
+    
+    const [h, m] = timePart.split(':').map(Number);
+    currentMinutes = h * 60 + m;
+  } else if (currentDateTimeStr.includes(':')) {
+    const [h, m] = currentDateTimeStr.split(':').map(Number);
+    currentMinutes = h * 60 + m;
+  }
+
+  // 以分號分隔多個時段
+  const periods = periodString.split(';');
+  
+  return periods.some(period => {
+    const trimmed = period.trim();
+    if (!trimmed) return false;
+
+    let weekPart = "";
+    let timePart = trimmed;
+
+    // 檢查是否有空格分隔星期與時間，例如 "1-5 15:00-18:00"
+    if (trimmed.includes(' ')) {
+      const parts = trimmed.split(/\s+/);
+      weekPart = parts[0];
+      timePart = parts[1];
+    }
+
+    // 1. 星期判定
+    if (weekPart) {
+      let isWeekMatched = false;
+      if (weekPart.includes('-')) {
+        const [startW, endW] = weekPart.split('-').map(Number);
+        isWeekMatched = currentDayOfWeek >= startW && currentDayOfWeek <= endW;
+      } else if (weekPart.includes(',')) {
+        const weeks = weekPart.split(',').map(Number);
+        isWeekMatched = weeks.includes(currentDayOfWeek);
+      } else {
+        isWeekMatched = Number(weekPart) === currentDayOfWeek;
+      }
+      if (!isWeekMatched) return false;
+    }
+
+    // 2. 時間判定 (支援跨日，例如 20:00-07:30)
+    const [startStr, endStr] = timePart.split('-');
+    if (!startStr || !endStr) return false;
+
+    const toMinutes = (tStr: string) => {
+      const [h, m] = tStr.trim().split(':').map(Number);
+      return h * 60 + m;
+    };
+
+    const start = toMinutes(startStr);
+    const end = toMinutes(endStr);
+
+    if (start <= end) {
+      return currentMinutes >= start && currentMinutes <= end;
+    } else {
+      return currentMinutes >= start || currentMinutes <= end;
+    }
+  });
+}
+
+function checkTempCondition(
+  pathInfo: any,
+  toId: string,
+  items: string[]
+): boolean {
+  const cond = pathInfo.tempConditon;
+  if (!cond) return true;
+
+  if (cond.type === 'item') {
+    return cond.targetName ? items.includes(cond.targetName) : false;
+  }
+  if (cond.type === 'character') {
+    const node = MAP_LOCATION_NODES.find(n => n.id === toId);
+    return node?.presentNpcs?.some(npc => npc.name === cond.targetName) ?? false;
+  }
+  if (cond.type === 'time') {
+    return cond.targetName ? isTimeInPeriod(mockSystemData.time, cond.targetName) : false;
+  }
+  return false;
+}
+
+function findReachableNodes(
+  startId: string,
+  discovered: string[],
+  items: string[]
+): Set<string> {
+  const reachable = new Set<string>([startId]);
+  const queue = [startId];
+
+  while (queue.length > 0) {
+    const curr = queue.shift()!;
+    for (const edge of MAP_MAP_EDGES) {
+      // 情況 A：正向 (Start -> End)
+      if (edge.StartNodeId === curr && discovered.includes(edge.EndNodeId) && edge.forwardPath) {
+        const path = edge.forwardPath;
+        if (path.status === 'open' || (path.status === 'temp_open' && checkTempCondition(path, edge.EndNodeId, items))) {
+          if (!reachable.has(edge.EndNodeId)) {
+            reachable.add(edge.EndNodeId);
+            queue.push(edge.EndNodeId);
+          }
+        }
+      }
+      // 情況 B：反向 (End -> Start)
+      if (edge.EndNodeId === curr && discovered.includes(edge.StartNodeId) && edge.ReversePath) {
+        const path = edge.ReversePath;
+        if (path.status === 'open' || (path.status === 'temp_open' && checkTempCondition(path, edge.StartNodeId, items))) {
+          if (!reachable.has(edge.StartNodeId)) {
+            reachable.add(edge.StartNodeId);
+            queue.push(edge.StartNodeId);
+          }
+        }
+      }
+    }
+  }
+  return reachable;
+}
+
+function findShortestPath(
+  startId: string,
+  endId: string,
+  discovered: string[],
+  items: string[] = []
+): string[] {
+  if (startId === endId) return [startId];
+  
+  const queue: Array<{ path: string[]; cost: number }> = [
+    { path: [startId], cost: 0 }
+  ];
+  
+  const visited: Record<string, number> = {};
+  visited[startId] = 0;
+
+  while (queue.length > 0) {
+    let minIdx = 0;
+    for (let i = 1; i < queue.length; i++) {
+      if (queue[i].cost < queue[minIdx].cost) {
+        minIdx = i;
+      }
+    }
+    const { path, cost } = queue.splice(minIdx, 1)[0];
+    const curr = path[path.length - 1];
+
+    if (curr === endId) {
+      const truncatedPath: string[] = [path[0]];
+      for (let i = 0; i < path.length - 1; i++) {
+        const u = path[i];
+        const v = path[i + 1];
+        const edge = MAP_MAP_EDGES.find(
+          e => (e.StartNodeId === u && e.EndNodeId === v) || (e.EndNodeId === u && e.StartNodeId === v)
+        );
+        if (edge) {
+          let isOpen = false;
+          if (edge.StartNodeId === u && edge.EndNodeId === v) {
+            const p = edge.forwardPath;
+            isOpen = p ? (p.status === 'open' || (p.status === 'temp_open' && checkTempCondition(p, v, items))) : false;
+          } else {
+            const p = edge.ReversePath;
+            isOpen = p ? (p.status === 'open' || (p.status === 'temp_open' && checkTempCondition(p, u, items))) : false;
+          }
+          truncatedPath.push(v);
+          if (!isOpen) {
+            return truncatedPath;
+          }
+        } else {
+          truncatedPath.push(v);
+        }
+      }
+      return truncatedPath;
+    }
+
+    for (const edge of MAP_MAP_EDGES) {
+      // 情況 A：正向 (Start -> End)
+      if (edge.StartNodeId === curr && discovered.includes(edge.EndNodeId) && edge.forwardPath) {
+        const p = edge.forwardPath;
+        const isOpen = p.status === 'open' || (p.status === 'temp_open' && checkTempCondition(p, edge.EndNodeId, items));
+        const edgeWeight = isOpen ? 1 : 1000;
+        const newCost = cost + edgeWeight;
+        
+        if (visited[edge.EndNodeId] === undefined || newCost < visited[edge.EndNodeId]) {
+          visited[edge.EndNodeId] = newCost;
+          queue.push({ path: [...path, edge.EndNodeId], cost: newCost });
+        }
+      }
+      
+      // 情況 B：反向 (End -> Start)
+      if (edge.EndNodeId === curr && discovered.includes(edge.StartNodeId) && edge.ReversePath) {
+        const p = edge.ReversePath;
+        const isOpen = p.status === 'open' || (p.status === 'temp_open' && checkTempCondition(p, edge.StartNodeId, items));
+        const edgeWeight = isOpen ? 1 : 1000;
+        const newCost = cost + edgeWeight;
+        
+        if (visited[edge.StartNodeId] === undefined || newCost < visited[edge.StartNodeId]) {
+          visited[edge.StartNodeId] = newCost;
+          queue.push({ path: [...path, edge.StartNodeId], cost: newCost });
+        }
+      }
+    }
+  }
+
+  return [];
+}

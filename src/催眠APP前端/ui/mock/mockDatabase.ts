@@ -1,4 +1,4 @@
-import { MockUserData, MockSystemData, MockcharData, HypnosisDef, ComboDef, AchievementOrQuestDef, CalendarEvent } from './mockModels';
+import { MockUserData, MockSystemData, MockcharData, HypnosisDef, ComboDef, AchievementOrQuestDef, CalendarEvent, MockMapState } from './mockModels';
 
 export const mockSystemData: MockSystemData = {
   time: '2026-05-01 11:28:00',
@@ -20,7 +20,7 @@ export const TestCharDataInput: Record<string, MockcharData> = {
     identity: '青梅竹馬',
     alertness: 0,
     affection: 0,
-    obedience: 0,
+    obedience: 22,
     lust: 0,
     arousal: 0,
     sensitivity: {
@@ -323,6 +323,30 @@ export const defaultMockUserData: MockUserData = {
     quest_naked_public_no_hypno: { status: 'completed' }, // 測試已完成
     quest_placebo_hypno: { status: 'accepted' }, // 測試已接取
     quest_naked_school: { status: 'claimed' }, // 測試已領取
+  },
+  mapState: {
+    currentLocationId: 'home_my_room',
+    discoveredNodeIds: [
+      'home_my_room',
+      'home_living_room',
+      'home_kitchen',
+      'home_sister_room',
+      'home_bathroom',
+      'home_basement_corridor',
+      'school_gate',
+      'school_courtyard',
+      'school_lobby',
+      'school_playground',
+      'school_classroom_2b',
+      'school_corridor_2f',
+      'school_student_council',
+      'school_science_lab',
+      'school_gym',
+      'school_shower',
+      'school_rooftop',
+      'school_tennis_court',
+      'school_kyudo_field'
+    ],
   },
 };
 
