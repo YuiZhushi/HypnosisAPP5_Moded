@@ -1,11 +1,61 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Activity, AlertTriangle, ArrowLeft, BookOpen, ChevronDown, ChevronUp, Lock, Search, User } from 'lucide-react';
+import {
+  Activity,
+  AlertTriangle,
+  ArrowLeft,
+  BookOpen,
+  ChevronDown,
+  ChevronUp,
+  Lock,
+  Search,
+  User,
+} from 'lucide-react';
 
-import { getRoleSnapshot, getOrderedStatEntries, STAT_ORDER, BAR_STATS, type RoleMap } from '../../backend/body-stats';
-import { getUnlocks } from '../../backend/hypnosis';
-import { checkAndEnsureEntry } from '../../backend/character-editor';
-import { waitForMvuReady } from '../../shared/mvu/mvuBridge';
+import { MockApi } from '../mock/mockApi';
+import { waitForMvuReady } from '../mock/mvuBridge';
 import { logger } from '../../../催眠APP共用/debug/loggerService';
+
+export type RoleMap = Record<string, Record<string, unknown>>;
+
+export const STAT_ORDER: string[] = [
+  '警戒度',
+  '服从度',
+  '好感度',
+  '性欲',
+  '快感值',
+  '阴蒂敏感度',
+  '小穴敏感度',
+  '菊穴敏感度',
+  '尿道敏感度',
+  '乳头敏感度',
+  '阴蒂高潮次数',
+  '小穴高潮次数',
+  '菊穴高潮次数',
+  '尿道高潮次数',
+  '乳头高潮次数',
+];
+
+export const BAR_STATS = new Set(['警戒度', '服从度', '好感度', '性欲', '快感值']);
+
+export function getOrderedStatEntries(roleData: Record<string, unknown>): Array<[string, unknown]> {
+  const seen = new Set<string>();
+  const entries: Array<[string, unknown]> = [];
+
+  for (const k of STAT_ORDER) {
+    if (Object.prototype.hasOwnProperty.call(roleData, k)) {
+      entries.push([k, roleData[k]]);
+      seen.add(k);
+    }
+  }
+
+  for (const [k, v] of Object.entries(roleData)) {
+    if (seen.has(k)) continue;
+    if (k.startsWith('_')) continue;
+    entries.push([k, v]);
+  }
+
+  return entries;
+}
 
 function extractScalar(value: unknown): string {
   if (value === null || value === undefined) return '—';
@@ -47,7 +97,6 @@ export const BodyStatsApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // World book check state
   const [wbStatus, setWbStatus] = useState<'idle' | 'checking' | 'pass' | 'created' | 'error'>('idle');
   const [wbMessage, setWbMessage] = useState('');
 
@@ -55,10 +104,7 @@ export const BodyStatsApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const selectorRef = useRef<HTMLDivElement | null>(null);
 
   const roleNames = useMemo(
-    () =>
-      Object.keys(roles)
-        .filter(Boolean)
-        .sort((a, b) => a.localeCompare(b, 'zh-CN')),
+    () => Object.keys(roles).filter(Boolean).sort((a, b) => a.localeCompare(b, 'zh-CN')),
     [roles],
   );
   const filteredRoleNames = useMemo(() => {
@@ -67,10 +113,7 @@ export const BodyStatsApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     return roleNames.filter(name => name.includes(q));
   }, [roleNames, search]);
 
-  const roleData = useMemo(() => {
-    if (!selectedRole) return null;
-    return roles[selectedRole] ?? null;
-  }, [roles, selectedRole]);
+  const roleData = useMemo(() => (selectedRole ? roles[selectedRole] ?? null : null), [roles, selectedRole]);
 
   const orderedStatEntries = useMemo(() => {
     if (!roleData || typeof roleData !== 'object') return [];
@@ -101,16 +144,32 @@ export const BodyStatsApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setLoading(true);
 
     try {
-      const snapshot = await getRoleSnapshot();
-      if (!snapshot) {
-        setRoles({});
-        setSelectedRole(null);
-        setError('未连接到酒馆变量（MVU 未初始化或不在酒馆环境中）');
-        return;
+      const charData = await MockApi.getCharData();
+      const rolesSnapshot: RoleMap = {};
+      
+      for (const [name, char] of Object.entries(charData)) {
+        rolesSnapshot[name] = {
+          '身份': char.identity,
+          '警戒度': char.alertness,
+          '服从度': char.obedience,
+          '好感度': char.affection,
+          '性欲': char.lust,
+          '快感值': char.arousal,
+          '阴蒂敏感度': char.sensitivity.clitSensitivity,
+          '小穴敏感度': char.sensitivity.vaginaSensitivity,
+          '菊穴敏感度': char.sensitivity.anusSensitivity,
+          '尿道敏感度': char.sensitivity.urethraSensitivity,
+          '乳头敏感度': char.sensitivity.nippleSensitivity,
+          '阴蒂高潮次数': char.orgasm.clitOrgasms,
+          '小穴高潮次数': char.orgasm.vaginaOrgasms,
+          '菊穴高潮次数': char.orgasm.anusOrgasms,
+          '尿道高潮次数': char.orgasm.urethraOrgasms,
+          '乳头高潮次数': char.orgasm.nippleOrgasms,
+        };
       }
 
-      setRoles(snapshot.roles);
-      const nextNames = snapshot.roleNames;
+      setRoles(rolesSnapshot);
+      const nextNames = Object.keys(rolesSnapshot).filter(Boolean).sort((a, b) => a.localeCompare(b, 'zh-CN'));
       setSelectedRole(prev => {
         if (prev && nextNames.includes(prev)) return prev;
         return nextNames[0] ?? null;
@@ -123,7 +182,6 @@ export const BodyStatsApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     }
   };
 
-  // Reset wb check when role changes
   useEffect(() => {
     setWbStatus('idle');
     setWbMessage('');
@@ -133,11 +191,8 @@ export const BodyStatsApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     if (!selectedRole) return;
     setWbStatus('checking');
     setWbMessage('');
-    const result = await checkAndEnsureEntry(selectedRole);
-    setWbStatus(result.status);
-    if (result.status === 'error') {
-      setWbMessage(result.message);
-    }
+    await new Promise(resolve => setTimeout(resolve, 500));
+    setWbStatus('pass');
   };
 
   refreshRef.current = refresh;
@@ -146,9 +201,9 @@ export const BodyStatsApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     let stopped = false;
     void (async () => {
       try {
-        const unlocks = await getUnlocks();
+        const user = await MockApi.getUserInfo();
         if (stopped) return;
-        setVipUnlocked(unlocks.bodyStatsUnlocked);
+        setVipUnlocked(user.vipTier >= 1);
       } catch (err) {
         logger.warn('读取功能解锁状态失败', err);
       }
@@ -176,27 +231,23 @@ export const BodyStatsApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   }, []);
 
   useEffect(() => {
-    let stops: Array<{ stop: () => void }> = [];
+    let stopped = false;
     void (async () => {
       try {
-        const ready = await waitForMvuReady({ timeoutMs: 5000, pollMs: 150 });
-        if (!ready) return;
-        stops = [
-          eventOn(Mvu.events.VARIABLE_INITIALIZED, () => refreshRef.current()),
-          eventOn(Mvu.events.VARIABLE_UPDATE_ENDED, () => refreshRef.current()),
-        ];
+        await waitForMvuReady({ timeoutMs: 5000, pollMs: 150 });
+        if (stopped) return;
+        void refreshRef.current();
       } catch {
         // ignore: not in tavern env
       }
     })();
     return () => {
-      stops.forEach(s => s.stop());
+      stopped = true;
     };
   }, []);
 
   return (
     <div className="h-full relative flex flex-col bg-linear-to-b from-slate-950 via-slate-950 to-black text-white overflow-hidden animate-fade-in">
-      {/* Header */}
       <div className="px-4 pt-6 pb-4 flex items-center justify-between border-b border-white/10 bg-black/20 backdrop-blur-md">
         <div className="flex items-center gap-2 min-w-0">
           <button onClick={onBack} className="p-2 rounded-full hover:bg-white/10 transition-colors">
@@ -329,7 +380,7 @@ export const BodyStatsApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               <div className="flex-1">
                 <div className="text-sm font-bold">检测模块未授权</div>
                 <div className="text-xs text-white/60 mt-1 leading-relaxed">
-                  该模块属于 VIP1「角色状态可视化」。解锁后可查看警戒度、服从度、性欲、快感值等量化数据与明细项。
+                  该模块属于 VIP1「角色状态可视化」。解锁后可查看警戒度、服从度、性欲、快感值等量化数据與明细項。
                 </div>
               </div>
             </div>
@@ -341,14 +392,13 @@ export const BodyStatsApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               <div className="text-base font-bold truncate">{selectedRole}</div>
             </div>
 
-            {/* World Book Check */}
             <div className="p-3 rounded-2xl border border-white/10 bg-white/5 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 min-w-0">
                 <BookOpen size={16} className="text-cyan-300 shrink-0" />
                 <div className="text-xs text-white/70 truncate">
                   世界书变量条目
                   {wbStatus === 'pass' && <span className="ml-2 text-emerald-400">✔ 已存在</span>}
-                  {wbStatus === 'created' && <span className="ml-2 text-amber-300">✔ 已补入</span>}
+                  {wbStatus === 'created' && <span className="ml-2 text-amber-300">✔ 已補入</span>}
                   {wbStatus === 'error' && <span className="ml-2 text-red-400">✖ {wbMessage}</span>}
                   {wbStatus === 'checking' && <span className="ml-2 text-white/50">检查中…</span>}
                 </div>

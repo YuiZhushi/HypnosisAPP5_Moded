@@ -9,15 +9,13 @@ import { WipApp } from './ui/shared/PageLayout';
 import { SettingsApp } from './ui/settings/SettingsApp';
 import { CharacterBackgroundApp } from './ui/character-background/CharacterBackgroundApp';
 import { MapApp } from './ui/map/MapApp';
-import { waitForMvuReady } from './shared/mvu/mvuBridge';
+import { waitForMvuReady } from './ui/mock/mvuBridge';
 import { UserResources } from './constants/interfaces';
 import { AppMode } from './constants/types';
 import { Activity, Calendar, HelpCircle, Trophy, Globe, Settings, PenSquare, Compass } from 'lucide-react';
 
 import { logger } from '../催眠APP共用/debug/loggerService';
-import { getUserData, updateResources, getSystemClock } from './shared/store/resourceSync';
-import { getUnlocks } from './backend/hypnosis';
-import { processCalendarBridgeEventsOnLoad } from './backend/calendar';
+import { MockApi } from './ui/mock/mockApi';
 
 const FALLBACK_USER_DATA: UserResources = {
   mcEnergy: 25,
@@ -64,8 +62,7 @@ const App = () => {
     const load = async () => {
       attempt += 1;
       try {
-        await processCalendarBridgeEventsOnLoad();
-        const data = await withTimeout(getUserData(), 4000, 'getUserData');
+        const data = await MockApi.getUserInfo();
         if (stopped) return;
         setUserData(data);
       } catch (err) {
@@ -96,8 +93,8 @@ const App = () => {
 
   const refreshUnlocks = async () => {
     try {
-      const unlocks = await getUnlocks();
-      setBodyStatsUnlocked(unlocks.bodyStatsUnlocked);
+      const user = await MockApi.getUserInfo();
+      setBodyStatsUnlocked(user.vipTier >= 1);
     } catch (err) {
       logger.warn('读取解锁状态失败', err);
       setBodyStatsUnlocked(false);
@@ -112,7 +109,7 @@ const App = () => {
     if (userRefreshInFlightRef.current) return;
     userRefreshInFlightRef.current = true;
     try {
-      const data = await withTimeout(getUserData(), 4000, 'getUserData');
+      const data = await MockApi.getUserInfo();
       setUserData(data);
     } catch (err) {
       logger.warn('刷新用户数据失败', err);
@@ -125,16 +122,20 @@ const App = () => {
     if (currentApp !== AppMode.HOME) return;
 
     let stopped = false;
-    let stops: Array<{ stop: () => void }> = [];
     let scheduled: number | null = null;
 
     const refreshHomeHeader = async () => {
       try {
-        const [clock, unlocks] = await Promise.all([getSystemClock(), getUnlocks()]);
+        const [system, user] = await Promise.all([MockApi.getSystemData(), MockApi.getUserInfo()]);
         if (stopped) return;
-        setSystemTimeText(clock.timeText);
-        setSystemDateText(clock.dateText);
-        setBodyStatsUnlocked(unlocks.bodyStatsUnlocked);
+        
+        const dateObj = new Date(system.time);
+        const timeText = dateObj.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
+        const dateText = dateObj.toLocaleDateString('zh-CN', { weekday: 'long', month: 'long', day: 'numeric' });
+        
+        setSystemTimeText(timeText);
+        setSystemDateText(dateText);
+        setBodyStatsUnlocked(user.vipTier >= 1);
       } catch (err) {
         logger.warn('刷新主页信息失败', err);
       }
@@ -152,18 +153,9 @@ const App = () => {
 
     void (async () => {
       try {
-        const ready = await waitForMvuReady({ timeoutMs: 5000, pollMs: 150 });
-        if (!ready) return;
+        await waitForMvuReady({ timeoutMs: 5000, pollMs: 150 });
         if (stopped) return;
-        stops = [
-          // @ts-ignore
-          eventOn(Mvu.events.VARIABLE_INITIALIZED, () => {
-            requestRefresh();
-            void refreshUserData();
-          }),
-          // @ts-ignore
-          eventOn(Mvu.events.VARIABLE_UPDATE_ENDED, requestRefresh),
-        ];
+        void refreshUserData();
       } catch {
         // ignore: not in tavern env
       }
@@ -172,13 +164,12 @@ const App = () => {
     return () => {
       stopped = true;
       if (scheduled !== null) window.clearTimeout(scheduled);
-      stops.forEach(s => s.stop());
     };
   }, [currentApp]);
 
   const updateUser = (data: UserResources) => {
     setUserData(data);
-    void updateResources(data);
+    void MockApi.updateUserResource(data);
   };
 
   // --- Router ---
@@ -274,39 +265,13 @@ const HomeScreen = ({
   const [notice, setNotice] = useState<string | null>(null);
 
   const appendMcAnonTagToThisFloor = async () => {
-    const marker = '<匿名版></匿名版>';
+    // 模擬匿名版標籤插入，避免在純模擬模式下調用 Tavern 聊天變量接口報錯
     try {
-      const messageId = (() => {
-        try {
-          // @ts-ignore
-          return getCurrentMessageId();
-        } catch {
-          // @ts-ignore
-          const latest = getChatMessages(-1)[0];
-          return latest?.message_id ?? 0;
-        }
-      })();
-
-      // @ts-ignore
-      const chatMessage = getChatMessages(messageId)[0];
-      if (!chatMessage) throw new Error(`missing chat message: ${messageId}`);
-
-      if (chatMessage.message.includes(marker)) {
-        setNotice('已存在');
-        window.setTimeout(() => setNotice(null), 1500);
-        return;
-      }
-
-      const base = chatMessage.message.replace(/\s+$/, '');
-      const nextMessage = `${base}${base ? '\n' : ''}${marker}`;
-
-      // @ts-ignore
-      await setChatMessages([{ message_id: messageId, message: nextMessage }], { refresh: 'affected' });
-      setNotice('已插入');
+      setNotice('已插入匿名版標籤 (模擬)');
       window.setTimeout(() => setNotice(null), 1500);
     } catch (err) {
       logger.warn('插入匿名版标签失败', err);
-      setNotice('插入失败');
+      setNotice('插入失敗');
       window.setTimeout(() => setNotice(null), 1500);
     }
   };

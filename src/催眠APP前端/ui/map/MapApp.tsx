@@ -30,7 +30,6 @@ import {
 } from '../mock/mockStaticData';
 import { MockApi as MockMapApi } from '../mock/mockApi';
 import { TestCharDataInput, mockDatabase, mockSystemData } from '../mock/mockDatabase';
-import { getUserData, getSystemClock } from '../../shared/store/resourceSync';
 import { logger } from '../../../催眠APP共用/debug/loggerService';
 
 interface MapAppProps {
@@ -372,8 +371,12 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
 
       // 3. 獲取系統資源與時間
       try {
-        const [clock, user] = await Promise.all([getSystemClock(), getUserData()]);
-        if (clock.timeText) setTimeText(clock.timeText);
+        const [system, user] = await Promise.all([MockMapApi.getSystemData(), MockMapApi.getUserInfo()]);
+        if (system.time) {
+          const dateObj = new Date(system.time);
+          const timeString = dateObj.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
+          setTimeText(timeString);
+        }
         setMcEnergy(user.mcEnergy);
         setMcEnergyMax(user.mcEnergyMax);
         setMcPoints(user.mcPoints);
