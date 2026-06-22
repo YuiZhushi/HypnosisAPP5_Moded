@@ -1,9 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { logger } from '../催眠APP共用/debug/loggerService';
-import App from './App';
+import App from './ui/os/App';
 import './index.css';
-import { waitForMvuReady } from './ui/mock/mvuBridge';
+import { waitForMvuReady } from './shared/api/mvuBridge';
 
 let root: ReactDOM.Root | undefined;
 
