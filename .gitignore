@@ -18,3 +18,5 @@ components.d.ts
 
 .vscode/
 .github/
+
+dist/*
