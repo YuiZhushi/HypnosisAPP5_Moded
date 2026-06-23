@@ -203,7 +203,7 @@ export const BodyStatsApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       try {
         const user = await MockApi.getUserInfo();
         if (stopped) return;
-        setVipUnlocked(user.vipTier >= 1);
+        setVipUnlocked(user.effectiveVipTier >= 1);
       } catch (err) {
         logger.warn('读取功能解锁状态失败', err);
       }

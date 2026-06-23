@@ -58,7 +58,7 @@ const IconMap: Record<string, React.FC<any>> = {
 // ==========================================
 // 底部導航頁籤枚舉
 // ==========================================
-type BottomTab = 'use' | 'manage' | 'equipment' | 'profile';
+type BottomTab = 'use' | 'manage' | 'equipment' | 'profile'; // 為保持 tab 路由一致，可保留 'equipment' 鍵值，但內容對應催眠模組
 
 export const useHypnosisRuntimeData = () => {
   const [data, setData] = useState<RuntimeData | null>(null);
@@ -68,10 +68,10 @@ export const useHypnosisRuntimeData = () => {
   const loadData = async (isReload = false) => {
     if (!isReload) setLoading(true);
     try {
-      const [user, system, equipment, hypnosis, combos, chars, achievements, quests] = await Promise.all([
+      const [user, system, hypnoModules, hypnosis, combos, chars, achievements, quests] = await Promise.all([
         MockApi.getUserInfo(),
         MockApi.getSystemData(),
-        MockApi.getAllEquipment(),
+        MockApi.getAllHypnoModules(),
         MockApi.getAllHypnosis(),
         MockApi.getAllCombos(),
         MockApi.getCharData(),
@@ -84,7 +84,7 @@ export const useHypnosisRuntimeData = () => {
         user,
         chars,
         hypnosis,
-        equipment,
+        hypnoModules,
         combos,
         achievements,
         quests,
@@ -177,11 +177,11 @@ export const HypnosisApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>
         <div className="flex items-center gap-1.5">
           {data &&
-            Object.entries(data.user.ownedEquipments)
+            Object.entries(data.user.ownedHypnoModules)
               .filter(([_, state]) => state.enabled)
               .slice(0, 7)
               .map(([id]) => {
-                const eq = data.equipment[id];
+                const eq = data.hypnoModules[id];
                 if (!eq) return null;
                 const IconComp = IconMap[eq.icon] || Box;
                 return <IconComp key={id} size={12} />;
@@ -212,7 +212,10 @@ export const HypnosisApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         {data && (
           <div className="flex items-center gap-1 px-1.5 md:px-2.5 py-0.5 md:py-1 rounded-md border border-amber-500/50 bg-amber-900/20 shrink-0">
             <Crown className="w-[10px] h-[10px] md:w-[12px] md:h-[12px] text-amber-400" />
-            <span className="text-[10px] md:text-[11px] font-bold text-amber-400">VIP {data.user.vipTier}</span>
+            <span className="text-[10px] md:text-[11px] font-bold text-amber-400">
+              VIP {data.user.effectiveVipTier ?? data.user.vipTier}
+              {data.user.effectiveVipTier !== data.user.vipTier && ' (▲)'}
+            </span>
           </div>
         )}
       </div>
@@ -271,7 +274,7 @@ export const HypnosisApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             icon={
               <Wrench className="w-[18px] h-[18px] md:w-5 md:h-5" strokeWidth={activeTab === 'equipment' ? 2.2 : 1.5} />
             }
-            label="設備管理區"
+            label="模組管理區"
             active={activeTab === 'equipment'}
             onClick={() => setActiveTab('equipment')}
           />

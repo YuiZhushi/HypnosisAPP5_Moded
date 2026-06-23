@@ -4,11 +4,20 @@
  * character-mock-data.ts 以及 mvuBridge.ts 內的所有型別宣告。
  */
 
-// ====== 基礎別名與枚舉型別 ======
+// ============================================================================
+// 第一區：遊戲系統運行相關 (Runtime / Database 狀態)
+// ============================================================================
+
+// ==========================================
+// 基礎別名與全域定義
+// ==========================================
 export type yaml = any;
 export type operator = '<' | '<=' | '>=' | '>' | '==' | 'else';
+export type WaitOptions = { timeoutMs?: number; pollMs?: number };
 
-// ====== APP 路由枚舉 (遷移自 constants/types.ts) ======
+// ==========================================
+// 系統路由與 API 設定
+// ==========================================
 export enum AppMode {
   HOME = 'HOME',
   HYPNOSIS = 'HYPNOSIS',
@@ -22,7 +31,164 @@ export enum AppMode {
   MAP = 'MAP',
 }
 
-// ====== 催眠功能相關型別 ======
+export interface MockApiSettings {
+  apiEndpoint: string;
+  apiKey: string;
+  modelName: string;
+  temperature: number;
+  maxTokens: number;
+  topP: number;
+  presencePenalty: number;
+  frequencyPenalty: number;
+  streamMode: 'non_streaming' | 'streaming' | 'fake_streaming';
+}
+
+export interface MockSystemData {
+  time: string;
+  apiSettings?: MockApiSettings;
+}
+
+// ==========================================
+// 運行時當前狀態
+// ==========================================
+export interface MockAchievementState {
+  claimed: boolean;
+}
+
+export interface MockQuestState {
+  status: 'accepted' | 'completed' | 'claimed';
+}
+
+export interface MockMapState {
+  currentLocationId: string;
+  discoveredNodeIds: string[];
+}
+
+export interface MockUserData {
+  userName: string;
+  money: number;
+  mcEnergy: number;
+  mcEnergyMax: number;
+  mcPoints: number;
+  totalConsumedMc: number;
+  vipTier: number;
+  vipEndVirtualMinutes: number;
+  vipAutoRenew: boolean;
+  suspicion: number;
+  ownedHypnoModules: Record<string, { enabled: boolean; settings?: any }>;
+  ownedHypnosis: Record<string, { enabled: boolean; settings?: any }>;
+  ownedCombos: Record<string, { enabled: boolean; settings?: any }>;
+  ownedAchievements: Record<string, MockAchievementState>;
+  ownedQuests: Record<string, MockQuestState>;
+  mapState?: MockMapState;
+  // 玩家背包：以 itemId 為 key
+  inventory: Record<string, InventoryItemState>;
+  effectiveVipTier: number;
+}
+
+export interface MockcharData {
+  identity: string;
+  alertness: number;
+  affection: number;
+  obedience: number;
+  lust: number;
+  arousal: number;
+  sensitivity: sensitivityDefs;
+  orgasm: OrgasmDefs;
+  ownedHypnosisEffects: Record<
+    string,
+    { endTime: string; hypnosisType: 'temporary' | 'permanent' | 'oneTime'; description: string }
+  >;
+  // NPC 的背包與裝備，與玩家背包結構對稱
+  inventory: Record<string, InventoryItemState>;
+  ownedBodyModifications: Record<string, any>;
+}
+
+// ==========================================
+// 執行期全局總狀態與變數介面
+// ==========================================
+export interface RuntimeData {
+  system: MockSystemData;
+  user: MockUserData;
+  chars: Record<string, MockcharData>;
+  hypnosis: Record<string, HypnosisDef>;
+  hypnoModules: Record<string, HypnoModuleDef>;
+  combos: Record<string, ComboDef>;
+  achievements: Record<string, AchievementOrQuestDef>;
+  quests: Record<string, AchievementOrQuestDef>;
+}
+
+export interface ChatVariables {
+  apiSettings?: MockApiSettings;
+  hypnosis: Record<string, HypnosisDef>;
+  combos: Record<string, ComboDef>;
+  hypnoModules: Record<string, HypnoModuleDef>;
+  quests: Record<string, AchievementOrQuestDef>;
+  achievements: Record<string, AchievementOrQuestDef>;
+  calendarEvents: Record<string, CalendarEvent>;
+  zones: Record<string, MockZone>;
+  locations: Record<string, MockLocationNode>;
+  mapEdges: MockMapEdge[];
+  // 物品靜態資料庫
+  items: Record<string, ItemDef>;
+}
+
+export interface MvuVariables {
+  time: string;
+  user: {
+    userName: string;
+    money: number;
+    mcEnergy: number;
+    mcEnergyMax: number;
+    mcPoints: number;
+    totalConsumedMc: number;
+    vipTier: number;
+    vipEndVirtualMinutes: number;
+    vipAutoRenew: boolean;
+    suspicion: number;
+    ownedHypnosis: Record<string, { enabled: boolean; settings?: any }>;
+    ownedHypnoModules: Record<string, { enabled: boolean; settings?: any }>;
+    ownedCombos: Record<string, { enabled: boolean; settings?: any }>;
+    mapState: MockMapState;
+    ownedAchievements: Record<string, MockAchievementState>;
+    ownedQuests: Record<string, MockQuestState>;
+    
+    // 玩家背包
+    inventory: Record<string, InventoryItemState>;
+  };
+  chars: Record<string, {
+    identity?: string;
+    alertness: number;
+    affection: number;
+    obedience: number;
+    lust: number;
+    arousal: number;
+    sensitivity: sensitivityDefs;
+    orgasm: OrgasmDefs;
+    ownedHypnosisEffects: Record<
+      string,
+      { endTime: string; hypnosisType: 'temporary' | 'permanent' | 'oneTime'; description: string }
+    >;
+    
+    // 主要 NPC 背包
+    inventory: Record<string, InventoryItemState>;
+    ownedBodyModifications: Record<string, any>;
+  }>;
+}
+
+export interface DevRuntimeVariables {
+  prompts: PromptTemplate[];
+  charBackgrounds: Record<string, CharacterBackgroundData>;
+}
+
+
+// ============================================================================
+// 第二區：資料類定義 (StaticData / 世界書解析變數)
+// ============================================================================
+
+// ==========================================
+// 催眠與裝備相關定義
+// ==========================================
 export type VipTier = 'TRIAL' | 'VIP1' | 'VIP2' | 'VIP3' | 'VIP4' | 'VIP5' | 'VIP6';
 export type CostType = 'PER_MINUTE' | 'ONE_TIME';
 export type CostCurrency = 'MC_ENERGY' | 'MC_POINTS';
@@ -31,6 +197,42 @@ export interface CostDict {
   mc?: number;
   money?: number;
   pts?: number;
+}
+
+// 實體物品相關型別定義
+export type ItemType = 'consumable' | 'passive' | 'equipment' | 'material';
+export type ItemRarity = 'common' | 'rare' | 'epic' | 'legendary';
+
+export interface ItemDef {
+  id: string;               // 唯一識別碼 (例如: item_old_key, item_mc_potion_s)
+  name: string;             // 物品名稱 (例如: "老舊鑰匙", "低階能量藥水")
+  description: string;      // 物品詳細描述
+  type: ItemType;           // 物品類型
+  rarity: ItemRarity;       // 稀有度
+
+  // 經濟與商店屬性
+  cost?: {
+    money?: number;         // 購買所需的零花錢
+    pts?: number;           // 購買所需的 MC 點
+  };
+  isSellable: boolean;      // 是否可以出售
+  vipTierLimit?: number;    // 購買或使用所需的 VIP 等級限制 (0 ~ 5)
+  isPurchasable: boolean;   // 是否可直接在商店中購買
+
+  // 堆疊限制
+  isStackable: boolean;     // 是否可堆疊 (若是，quantity 可大於 1)
+  maxStack?: number;        // 堆疊上限 (例如 99，預設為 99)
+
+  // 使用效果 (純文字描述，保留 AI 靈活性與被動效果描述)
+  effectDescription?: string; // 物品使用效果、被動效果或裝備影響的純文字說明
+}
+
+// 背包項目狀態定義 (包含數量、裝備狀態、部位與自訂臨時描述)
+export interface InventoryItemState {
+  quantity: number;             // 持有數量
+  isEquipped?: boolean;         // (僅裝備) 是否正被玩家或 NPC 裝備/穿戴中
+  equipSlot?: string;           // (僅裝備) 裝備部位描述 (如: "head", "eyes", "body", "crotch" 等)
+  customDescription?: string;    // 物品可選的附加臨時描述 (例如: "沾著泥土的鑰匙")
 }
 
 export interface HypnosisDef {
@@ -42,11 +244,12 @@ export interface HypnosisDef {
   isPermanent: boolean;
   isOneTime: boolean;
   duration?: number | 'onetime' | 'permanent'; // 單次持續時間 (分鐘)
-  energyCost: number; // 消耗的 MC 能量
+  energyCost: number; // 消耗 the MC 能量
   defaultNote?: string; // 預設備註
 }
 
-export interface EquipmentDef {
+// 手機催眠模組定義 (原 EquipmentDef)
+export interface HypnoModuleDef {
   name: string;
   description: string;
   icon: string;
@@ -70,8 +273,9 @@ export interface ComboDef {
   includedHypnosis: Record<string, ComboHypnosisConfig>; // 以催眠 ID 為 key
 }
 
-// ====== 任務相關型別 ======
-
+// ==========================================
+// 任務與成就相關定義
+// ==========================================
 export interface ConditionOnProgram {
   target:
     | 'money'
@@ -121,7 +325,9 @@ export interface AchievementOrQuestDef {
   };
 }
 
-// ====== 日曆 APP 相關型別 ======
+// ==========================================
+// 日曆相關定義
+// ==========================================
 export type EventColor =
   | 'red'
   | 'blue'
@@ -147,25 +353,9 @@ export interface MockCalendarData {
   events: Record<string, CalendarEvent>; // 以 id 為 key
 }
 
-// ====== 系統與通用型別 ======
-export interface MockApiSettings {
-  apiEndpoint: string;
-  apiKey: string;
-  modelName: string;
-  temperature: number;
-  maxTokens: number;
-  topP: number;
-  presencePenalty: number;
-  frequencyPenalty: number;
-  streamMode: 'non_streaming' | 'streaming' | 'fake_streaming';
-}
-
-export interface MockSystemData {
-  time: string;
-  apiSettings?: MockApiSettings;
-}
-
-// ====== 角色資料與屬性型別 ======
+// ==========================================
+// 角色屬性微定義
+// ==========================================
 export interface sensitivityDefs {
   clitSensitivity: number;
   vaginaSensitivity: number;
@@ -182,24 +372,9 @@ export interface OrgasmDefs {
   nippleOrgasms: number;
 }
 
-export interface MockcharData {
-  identity: string;
-  alertness: number;
-  affection: number;
-  obedience: number;
-  lust: number;
-  arousal: number;
-  sensitivity: sensitivityDefs;
-  orgasm: OrgasmDefs;
-  ownedHypnosisEffects: Record<
-    string,
-    { endTime: string; hypnosisType: 'temporary' | 'permanent' | 'oneTime'; description: string }
-  >;
-  ownedEquipment: Record<string, any>;
-  ownedBodyModifications: Record<string, any>;
-}
-
-// ====== 地圖 APP 相關型別 ======
+// ==========================================
+// 地圖與區域定義
+// ==========================================
 export interface MockNpcTrace {
   name: string;
   status: string;
@@ -250,52 +425,21 @@ export interface MockZone {
   description: string;
 }
 
-export interface MockMapState {
-  currentLocationId: string;
-  discoveredNodeIds: string[];
-}
-
-// ====== 狀態與使用者資料定義 ======
-export interface MockAchievementState {
-  claimed: boolean;
-}
-
-export interface MockQuestState {
-  status: 'accepted' | 'completed' | 'claimed';
-}
-
-export interface MockUserData {
-  userName: string;
-  money: number;
+// ==========================================
+// 使用者與資源定義
+// ==========================================
+export interface UserResources {
   mcEnergy: number;
   mcEnergyMax: number;
   mcPoints: number;
   totalConsumedMc: number;
-  vipTier: number;
-  vipEndVirtualMinutes: number;
-  vipAutoRenew: boolean;
+  money: number;
   suspicion: number;
-  ownedEquipments: Record<string, { enabled: boolean; settings?: any }>;
-  ownedHypnosis: Record<string, { enabled: boolean; settings?: any }>;
-  ownedCombos: Record<string, { enabled: boolean; settings?: any }>;
-  ownedAchievements: Record<string, MockAchievementState>;
-  ownedQuests: Record<string, MockQuestState>;
-  mapState?: MockMapState;
 }
 
-// ====== 遊戲執行期資料型別 ======
-export interface RuntimeData {
-  system: MockSystemData;
-  user: MockUserData;
-  chars: Record<string, MockcharData>;
-  hypnosis: Record<string, HypnosisDef>;
-  equipment: Record<string, EquipmentDef>;
-  combos: Record<string, ComboDef>;
-  achievements: Record<string, AchievementOrQuestDef>;
-  quests: Record<string, AchievementOrQuestDef>;
-}
-
-// ====== 角色背景編輯 APP 相關定義 (遷移自 character-mock-data.ts) ======
+// ==========================================
+// 角色背景編輯定義
+// ==========================================
 export interface EJSnode {
   logic: {
     operator: operator;
@@ -319,18 +463,3 @@ export interface PromptTemplate {
 export interface AppSettings {
   prompts: PromptTemplate[];
 }
-
-// ====== 介面定義 (相容頂層 App.tsx 對 constants/ 的引用) ======
-export interface UserResources {
-  mcEnergy: number;
-  mcEnergyMax: number;
-  mcPoints: number;
-  totalConsumedMc: number;
-  money: number;
-  suspicion: number;
-}
-
-// ====== 其他輔助定義 (如 mvuBridge.ts 中的 options) ======
-export type WaitOptions = { timeoutMs?: number; pollMs?: number };
-
-

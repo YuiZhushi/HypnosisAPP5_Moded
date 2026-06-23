@@ -30,6 +30,8 @@ const CalendarApp: React.FC<CalendarAppProps> = ({ onBack }) => {
       if (data.time) {
         const d = new Date(data.time);
         setSystemTimeText(d.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: true }));
+        setCurrentDate(d);
+        setSelectedDate(d);
       }
     };
     fetchSystemData();
@@ -43,10 +45,13 @@ const CalendarApp: React.FC<CalendarAppProps> = ({ onBack }) => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 
-  const handleToday = () => {
-    const today = new Date('2026-05-01'); // 模擬的今天
-    setCurrentDate(today);
-    setSelectedDate(today);
+  const handleToday = async () => {
+    const data = await MockApi.getSystemData();
+    if (data.time) {
+      const today = new Date(data.time);
+      setCurrentDate(today);
+      setSelectedDate(today);
+    }
   };
 
   const handleDateSelect = (date: Date) => {

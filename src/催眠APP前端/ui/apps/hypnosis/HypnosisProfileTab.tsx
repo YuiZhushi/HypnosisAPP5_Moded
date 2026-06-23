@@ -55,7 +55,10 @@ export const HypnosisProfileTab: React.FC<{
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 px-1.5 md:px-2 py-0.5 rounded-md bg-amber-900/30 border border-amber-500/30 text-[10px] md:text-[11px] font-bold text-amber-400 whitespace-nowrap shrink-0">
                 <Crown className="w-[11px] h-[11px] md:w-3 md:h-3" />
-                <span>VIP {data.user.vipTier}</span>
+                <span>
+                  VIP {data.user.effectiveVipTier ?? data.user.vipTier}
+                  {data.user.effectiveVipTier !== data.user.vipTier && ' (▲)'}
+                </span>
               </div>
               <div className="text-[9px] md:text-[10px] text-gray-400 flex flex-col md:flex-row items-start md:items-center gap-px md:gap-1 shrink-0 text-left md:text-left">
                 <div className="flex items-center gap-0.5 md:gap-1">

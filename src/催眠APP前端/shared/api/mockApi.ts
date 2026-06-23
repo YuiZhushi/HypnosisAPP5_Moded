@@ -3,7 +3,9 @@ import {
   MockSystemData,
   MockcharData,
   HypnosisDef,
-  EquipmentDef,
+  HypnoModuleDef,
+  ItemDef,
+  InventoryItemState,
   ComboDef,
   AchievementOrQuestDef,
   ConditionOnProgram,
@@ -13,24 +15,17 @@ import {
 } from '../../models';
 
 import {
-  mockDatabase,
-  setMockDatabase,
-  mockSystemData,
-  TestCharDataInput,
-  TestCustomHypnosisInput,
-  TestComboDataInput,
-  TestQuestDataInput,
-  TestCustomCalendarEvents,
+  mockChatVariables,
+  mockMvuVariables,
 } from '../../database/mockDatabase';
 
 import {
   HYPNOSIS_DICTIONARY,
-  EQUIPMENT_DICTIONARY,
+  HYPNO_MODULE_DICTIONARY,
+  ITEM_DICTIONARY,
   ACHIEVEMENT_DICTIONARY,
   QUEST_DICTIONARY,
   CALENDAR_STATIC_EVENTS,
-  MAP_LOCATION_NODES,
-  MAP_MAP_EDGES,
 } from '../../staticData';
 
 // 模擬網路延遲
@@ -94,7 +89,7 @@ function getDynamicAchievements(): Record<string, AchievementOrQuestDef> {
   const obedienceNames = ['初步馴服', '漸露順從', '高度服從', '絕對服從'];
   const obedienceRewards = [10, 20, 30, 50];
 
-  for (const charName in TestCharDataInput) {
+  for (const charName in mockMvuVariables.chars) {
     sensitivityThresholds.forEach((val, i) => {
       dynamic[`ach_sensitivity_${val}_${charName}`] = {
         name: `${sensitivityNames[i]} (${charName})`,
@@ -153,13 +148,18 @@ function evaluateProgramConditions(conditions: ConditionOnProgram[] | string): b
     const targetValues: number[] = [];
 
     // 1. 檢查全域資源 (user data)
-    if (cond.target.includes('money')) targetValues.push(mockDatabase.money);
-    if (cond.target.includes('pts')) targetValues.push(mockDatabase.mcPoints);
-    if (cond.target.includes('totalConsumedMc')) targetValues.push(mockDatabase.totalConsumedMc);
-    if (cond.target.includes('mcEnergy')) targetValues.push(mockDatabase.mcEnergy);
-    if (cond.target.includes('mcEnergyMax')) targetValues.push(mockDatabase.mcEnergyMax);
-    if (cond.target.includes('suspicion')) targetValues.push(mockDatabase.suspicion);
-    if (cond.target === 'vipTier') targetValues.push(mockDatabase.vipTier);
+    if (cond.target.includes('money')) targetValues.push(mockMvuVariables.user.money);
+    if (cond.target.includes('pts')) targetValues.push(mockMvuVariables.user.mcPoints);
+    if (cond.target.includes('totalConsumedMc')) targetValues.push(mockMvuVariables.user.totalConsumedMc);
+    if (cond.target.includes('mcEnergy')) targetValues.push(mockMvuVariables.user.mcEnergy);
+    if (cond.target.includes('mcEnergyMax')) targetValues.push(mockMvuVariables.user.mcEnergyMax);
+    if (cond.target.includes('suspicion')) targetValues.push(mockMvuVariables.user.suspicion);
+    if (cond.target === 'vipTier') {
+      const user = mockMvuVariables.user;
+      const hasVipCard = user.inventory && user.inventory['item_vip_card_passive'] && user.inventory['item_vip_card_passive'].quantity > 0;
+      const effectiveVipTier = hasVipCard ? Math.min(6, user.vipTier + 1) : user.vipTier;
+      targetValues.push(effectiveVipTier);
+    }
 
     // 2. 檢查角色屬性 (char data)，將所有角色的該屬性值加入陣列
     const charTargets = [
@@ -182,10 +182,10 @@ function evaluateProgramConditions(conditions: ConditionOnProgram[] | string): b
       'arousal',
     ];
     if (charTargets.includes(cond.target)) {
-      for (const charName in TestCharDataInput) {
+      for (const charName in mockMvuVariables.chars) {
         if (cond.charName && cond.charName !== charName) continue; // 如果指定了角色，只檢查該角色
 
-        const char = TestCharDataInput[charName];
+        const char = mockMvuVariables.chars[charName] as any;
         const s = char.sensitivity || {};
         const o = char.orgasm || {};
 
@@ -272,10 +272,12 @@ function evaluateProgramConditions(conditions: ConditionOnProgram[] | string): b
   return true; // 所有 conditions 都達成
 }
 
-const FULL_ACHIEVEMENT_DICTIONARY: Record<string, AchievementOrQuestDef> = {
-  ...ACHIEVEMENT_DICTIONARY,
-  ...getDynamicAchievements(),
-};
+function getFullAchievementDictionary(): Record<string, AchievementOrQuestDef> {
+  return {
+    ...mockChatVariables.achievements,
+    ...getDynamicAchievements(),
+  };
+}
 
 export const MockApi = {
   // ==========================================
@@ -284,13 +286,13 @@ export const MockApi = {
 
   async getApiSettings(): Promise<MockApiSettings> {
     await delay(150);
-    return JSON.parse(JSON.stringify(mockSystemData.apiSettings || {}));
+    return JSON.parse(JSON.stringify(mockChatVariables.apiSettings || {}));
   },
 
   async updateApiSettings(newSettings: Partial<MockApiSettings>): Promise<void> {
     await delay(300);
-    if (!mockSystemData.apiSettings) {
-      mockSystemData.apiSettings = {
+    if (!mockChatVariables.apiSettings) {
+      mockChatVariables.apiSettings = {
         apiEndpoint: '',
         apiKey: '',
         modelName: '',
@@ -302,7 +304,7 @@ export const MockApi = {
         streamMode: 'non_streaming',
       };
     }
-    mockSystemData.apiSettings = { ...mockSystemData.apiSettings, ...newSettings };
+    mockChatVariables.apiSettings = { ...mockChatVariables.apiSettings, ...newSettings };
   },
 
   async fetchAvailableModels(): Promise<string[]> {
@@ -324,32 +326,90 @@ export const MockApi = {
 
   async getUserInfo(): Promise<MockUserData> {
     await delay(200);
-    return JSON.parse(JSON.stringify(mockDatabase));
+    const user = JSON.parse(JSON.stringify(mockMvuVariables.user)) as MockUserData;
+    const hasVipCard = user.inventory && user.inventory['item_vip_card_passive'] && user.inventory['item_vip_card_passive'].quantity > 0;
+    user.effectiveVipTier = hasVipCard ? Math.min(6, user.vipTier + 1) : user.vipTier;
+    return user;
   },
 
   async getSystemData(): Promise<MockSystemData> {
     await delay(100);
-    return JSON.parse(JSON.stringify(mockSystemData));
+    return JSON.parse(JSON.stringify({
+      time: mockMvuVariables.time,
+      apiSettings: mockChatVariables.apiSettings,
+    }));
   },
 
   async getCharData(): Promise<Record<string, MockcharData>> {
     await delay(100);
-    return TestCharDataInput;
+    return mockMvuVariables.chars as any;
   },
 
-  async getAllEquipment(): Promise<Record<string, EquipmentDef>> {
+  async getAllHypnoModules(): Promise<Record<string, HypnoModuleDef>> {
     await delay(150);
-    return { ...EQUIPMENT_DICTIONARY };
+    return { ...mockChatVariables.hypnoModules };
   },
 
   async getAllHypnosis(): Promise<Record<string, HypnosisDef>> {
     await delay(150);
-    return { ...HYPNOSIS_DICTIONARY, ...TestCustomHypnosisInput };
+    return { ...mockChatVariables.hypnosis };
   },
 
   async getAllCombos(): Promise<Record<string, ComboDef>> {
     await delay(150);
-    return { ...TestComboDataInput };
+    return { ...mockChatVariables.combos };
+  },
+
+  // ==========================================
+  // 物品 (Item) 背包相關 API
+  // ==========================================
+  async getAllItems(): Promise<Record<string, ItemDef>> {
+    await delay(100);
+    return { ...mockChatVariables.items };
+  },
+
+  async getUserInventory(): Promise<Record<string, InventoryItemState>> {
+    await delay(100);
+    return JSON.parse(JSON.stringify(mockMvuVariables.user.inventory || {}));
+  },
+
+  async getCharInventory(charName: string): Promise<Record<string, InventoryItemState>> {
+    await delay(100);
+    const char = mockMvuVariables.chars[charName];
+    return char ? JSON.parse(JSON.stringify(char.inventory || {})) : {};
+  },
+
+  async updateUserInventoryItem(itemId: string, quantityPatch: number, customDesc?: string): Promise<void> {
+    await delay(200);
+    const inv = mockMvuVariables.user.inventory;
+    if (!inv[itemId]) {
+      inv[itemId] = { quantity: 0 };
+    }
+    inv[itemId].quantity = Math.max(0, inv[itemId].quantity + quantityPatch);
+    if (customDesc !== undefined) {
+      inv[itemId].customDescription = customDesc;
+    }
+    if (inv[itemId].quantity === 0 && !inv[itemId].isEquipped) {
+      delete inv[itemId];
+    }
+  },
+
+  async updateCharInventoryItem(charName: string, itemId: string, quantityPatch: number, isEquipped?: boolean, equipSlot?: string, customDesc?: string): Promise<void> {
+    await delay(200);
+    const char = mockMvuVariables.chars[charName];
+    if (!char) return;
+    if (!char.inventory) char.inventory = {};
+    const inv = char.inventory;
+    if (!inv[itemId]) {
+      inv[itemId] = { quantity: 0 };
+    }
+    inv[itemId].quantity = Math.max(0, inv[itemId].quantity + quantityPatch);
+    if (isEquipped !== undefined) inv[itemId].isEquipped = isEquipped;
+    if (equipSlot !== undefined) inv[itemId].equipSlot = equipSlot;
+    if (customDesc !== undefined) inv[itemId].customDescription = customDesc;
+    if (inv[itemId].quantity === 0 && !inv[itemId].isEquipped) {
+      delete inv[itemId];
+    }
   },
 
   async updateUserResource(
@@ -369,29 +429,29 @@ export const MockApi = {
     >,
   ): Promise<void> {
     await delay(300);
-    const newData = { ...mockDatabase };
+    const user = mockMvuVariables.user;
 
-    if (patch.mcEnergy !== undefined && patch.mcEnergy < newData.mcEnergy) {
-      const consumed = newData.mcEnergy - patch.mcEnergy;
-      patch.totalConsumedMc = (patch.totalConsumedMc ?? newData.totalConsumedMc) + consumed;
+    if (patch.mcEnergy !== undefined && patch.mcEnergy < user.mcEnergy) {
+      const consumed = user.mcEnergy - patch.mcEnergy;
+      patch.totalConsumedMc = (patch.totalConsumedMc ?? user.totalConsumedMc) + consumed;
     }
 
-    setMockDatabase({ ...newData, ...patch });
+    Object.assign(user, patch);
   },
 
   async updateUserOwnedHypnosis(id: string, enabled: boolean, settings?: any): Promise<void> {
     await delay(200);
-    mockDatabase.ownedHypnosis[id] = { enabled, settings: settings || mockDatabase.ownedHypnosis[id]?.settings };
+    mockMvuVariables.user.ownedHypnosis[id] = { enabled, settings: settings || mockMvuVariables.user.ownedHypnosis[id]?.settings };
   },
 
-  async updateUserOwnedEquipments(id: string, enabled: boolean, settings?: any): Promise<void> {
+  async updateUserOwnedHypnoModules(id: string, enabled: boolean, settings?: any): Promise<void> {
     await delay(200);
-    mockDatabase.ownedEquipments[id] = { enabled, settings: settings || mockDatabase.ownedEquipments[id]?.settings };
+    mockMvuVariables.user.ownedHypnoModules[id] = { enabled, settings: settings || mockMvuVariables.user.ownedHypnoModules[id]?.settings };
   },
 
   async updateUserOwnedCombos(id: string, enabled: boolean, settings?: any): Promise<void> {
     await delay(200);
-    mockDatabase.ownedCombos[id] = { enabled, settings: settings || mockDatabase.ownedCombos[id]?.settings };
+    mockMvuVariables.user.ownedCombos[id] = { enabled, settings: settings || mockMvuVariables.user.ownedCombos[id]?.settings };
   },
 
   async sendHypnosis(launchData: any[]): Promise<void> {
@@ -401,45 +461,45 @@ export const MockApi = {
 
   async saveNewHypnosis(id: string, def: HypnosisDef): Promise<void> {
     await delay(300);
-    TestCustomHypnosisInput[id] = def;
+    mockChatVariables.hypnosis[id] = def;
   },
 
   async saveNewCombo(comboId: string, comboDef: ComboDef): Promise<void> {
     await delay(200);
-    TestComboDataInput[comboId] = comboDef;
-    mockDatabase.ownedCombos[comboId] = { enabled: true };
+    mockChatVariables.combos[comboId] = comboDef;
+    mockMvuVariables.user.ownedCombos[comboId] = { enabled: true };
   },
 
   async updateCombo(comboId: string, comboDef: ComboDef): Promise<void> {
     await delay(200);
-    if (TestComboDataInput[comboId]) {
-      TestComboDataInput[comboId] = comboDef;
+    if (mockChatVariables.combos[comboId]) {
+      mockChatVariables.combos[comboId] = comboDef;
     }
   },
 
   async deleteCombo(comboId: string): Promise<void> {
     await delay(200);
-    delete TestComboDataInput[comboId];
-    if (mockDatabase.ownedCombos[comboId]) {
-      delete mockDatabase.ownedCombos[comboId];
+    delete mockChatVariables.combos[comboId];
+    if (mockMvuVariables.user.ownedCombos[comboId]) {
+      delete mockMvuVariables.user.ownedCombos[comboId];
     }
   },
 
   async deleteHypnosis(id: string): Promise<void> {
     await delay(200);
-    if (TestCustomHypnosisInput[id]) {
-      delete TestCustomHypnosisInput[id];
+    if (mockChatVariables.hypnosis[id]) {
+      delete mockChatVariables.hypnosis[id];
     }
-    if (mockDatabase.ownedHypnosis[id]) {
-      delete mockDatabase.ownedHypnosis[id];
+    if (mockMvuVariables.user.ownedHypnosis[id]) {
+      delete mockMvuVariables.user.ownedHypnosis[id];
     }
-    for (const comboId in TestComboDataInput) {
-      if (TestComboDataInput[comboId].includedHypnosis[id]) {
-        delete TestComboDataInput[comboId].includedHypnosis[id];
-        if (Object.keys(TestComboDataInput[comboId].includedHypnosis).length === 0) {
-          delete TestComboDataInput[comboId];
-          if (mockDatabase.ownedCombos[comboId]) {
-            delete mockDatabase.ownedCombos[comboId];
+    for (const comboId in mockChatVariables.combos) {
+      if (mockChatVariables.combos[comboId].includedHypnosis[id]) {
+        delete mockChatVariables.combos[comboId].includedHypnosis[id];
+        if (Object.keys(mockChatVariables.combos[comboId].includedHypnosis).length === 0) {
+          delete mockChatVariables.combos[comboId];
+          if (mockMvuVariables.user.ownedCombos[comboId]) {
+            delete mockMvuVariables.user.ownedCombos[comboId];
           }
         }
       }
@@ -452,12 +512,12 @@ export const MockApi = {
 
   async getTotalAchievementsCount(): Promise<number> {
     await delay(50);
-    return Object.keys(FULL_ACHIEVEMENT_DICTIONARY).length;
+    return Object.keys(getFullAchievementDictionary()).length;
   },
 
   async getAllAchievements(): Promise<Record<string, AchievementOrQuestDef>> {
     await delay(100);
-    const fullDict = FULL_ACHIEVEMENT_DICTIONARY;
+    const fullDict = getFullAchievementDictionary();
     const filtered: Record<string, AchievementOrQuestDef> = {};
 
     // Group dynamic achievements by series
@@ -490,7 +550,7 @@ export const MockApi = {
 
       let activeItem = items[items.length - 1]; // default to last
       for (const item of items) {
-        const state = mockDatabase.ownedAchievements[item.id];
+        const state = mockMvuVariables.user.ownedAchievements[item.id];
         if (!state || !state.claimed) {
           activeItem = item;
           break;
@@ -498,15 +558,15 @@ export const MockApi = {
       }
 
       // Character removal filter
-      if (activeItem.charName && !TestCharDataInput[activeItem.charName]) {
+      if (activeItem.charName && !mockMvuVariables.chars[activeItem.charName]) {
         // Character not in current floor
-        const state = mockDatabase.ownedAchievements[activeItem.id];
+        const state = mockMvuVariables.user.ownedAchievements[activeItem.id];
         if (!state) {
           // Not unlocked, so we should hide it.
           // Show the last claimed/unlocked one instead if it exists
           let lastValid: typeof activeItem | null = null;
           for (let i = items.indexOf(activeItem) - 1; i >= 0; i--) {
-            const prevState = mockDatabase.ownedAchievements[items[i].id];
+            const prevState = mockMvuVariables.user.ownedAchievements[items[i].id];
             if (prevState) {
               lastValid = items[i];
               break;
@@ -527,22 +587,22 @@ export const MockApi = {
 
   async getAllQuests(): Promise<Record<string, AchievementOrQuestDef>> {
     await delay(100);
-    return { ...QUEST_DICTIONARY, ...TestQuestDataInput };
+    return { ...mockChatVariables.quests };
   },
 
   async claimAchievement(id: string): Promise<boolean> {
     await delay(300);
-    const achState = mockDatabase.ownedAchievements[id];
+    const achState = mockMvuVariables.user.ownedAchievements[id];
     if (achState && !achState.claimed) {
       achState.claimed = true;
 
-      const def = FULL_ACHIEVEMENT_DICTIONARY[id];
+      const def = getFullAchievementDictionary()[id];
       if (def && def.reward) {
-        if (def.reward.pts) mockDatabase.mcPoints += def.reward.pts;
-        if (def.reward.money) mockDatabase.money += def.reward.money;
-        if (def.reward.mcEnergyMax) mockDatabase.mcEnergyMax += def.reward.mcEnergyMax;
-        if (def.reward.mcEnergy) mockDatabase.mcEnergy += def.reward.mcEnergy;
-        if (def.reward.suspicion) mockDatabase.suspicion += def.reward.suspicion;
+        if (def.reward.pts) mockMvuVariables.user.mcPoints += def.reward.pts;
+        if (def.reward.money) mockMvuVariables.user.money += def.reward.money;
+        if (def.reward.mcEnergyMax) mockMvuVariables.user.mcEnergyMax += def.reward.mcEnergyMax;
+        if (def.reward.mcEnergy) mockMvuVariables.user.mcEnergy += def.reward.mcEnergy;
+        if (def.reward.suspicion) mockMvuVariables.user.suspicion += def.reward.suspicion;
       }
       return true;
     }
@@ -551,9 +611,9 @@ export const MockApi = {
 
   async acceptQuest(id: string): Promise<boolean> {
     await delay(200);
-    const questState = mockDatabase.ownedQuests[id];
+    const questState = mockMvuVariables.user.ownedQuests[id];
     if (!questState) {
-      mockDatabase.ownedQuests[id] = { status: 'accepted' }; // 模擬新增
+      mockMvuVariables.user.ownedQuests[id] = { status: 'accepted' }; // 模擬新增
       return true;
     }
     return false;
@@ -561,9 +621,9 @@ export const MockApi = {
 
   async cancelQuest(id: string): Promise<boolean> {
     await delay(200);
-    const questState = mockDatabase.ownedQuests[id];
+    const questState = mockMvuVariables.user.ownedQuests[id];
     if (questState && questState.status === 'accepted') {
-      delete mockDatabase.ownedQuests[id];
+      delete mockMvuVariables.user.ownedQuests[id];
       return true;
     }
     return false;
@@ -571,7 +631,7 @@ export const MockApi = {
 
   async completeQuest(id: string): Promise<boolean> {
     await delay(200);
-    const questState = mockDatabase.ownedQuests[id];
+    const questState = mockMvuVariables.user.ownedQuests[id];
     if (questState && questState.status === 'accepted') {
       questState.status = 'completed';
       return true;
@@ -582,7 +642,7 @@ export const MockApi = {
   async checkCondition(id: string, type: 'achievement' | 'quest'): Promise<boolean> {
     await delay(150);
     const def =
-      type === 'achievement' ? FULL_ACHIEVEMENT_DICTIONARY[id] : { ...QUEST_DICTIONARY, ...TestQuestDataInput }[id];
+      type === 'achievement' ? getFullAchievementDictionary()[id] : mockChatVariables.quests[id];
     if (!def) return false;
     if (def.completionCondition.type === 'ai') {
       return false; // AI 判斷暫不處理
@@ -595,8 +655,8 @@ export const MockApi = {
 
   async unlockAchievement(id: string): Promise<boolean> {
     await delay(100);
-    if (!mockDatabase.ownedAchievements[id]) {
-      mockDatabase.ownedAchievements[id] = { claimed: false };
+    if (!mockMvuVariables.user.ownedAchievements[id]) {
+      mockMvuVariables.user.ownedAchievements[id] = { claimed: false };
       return true;
     }
     return false;
@@ -604,17 +664,17 @@ export const MockApi = {
 
   async claimQuest(id: string): Promise<boolean> {
     await delay(300);
-    const questState = mockDatabase.ownedQuests[id];
+    const questState = mockMvuVariables.user.ownedQuests[id];
     if (questState && questState.status === 'completed') {
       questState.status = 'claimed';
 
-      const def = { ...QUEST_DICTIONARY, ...TestQuestDataInput }[id];
+      const def = mockChatVariables.quests[id];
       if (def && def.reward) {
-        if (def.reward.pts) mockDatabase.mcPoints += def.reward.pts;
-        if (def.reward.money) mockDatabase.money += def.reward.money;
-        if (def.reward.mcEnergyMax) mockDatabase.mcEnergyMax += def.reward.mcEnergyMax;
-        if (def.reward.mcEnergy) mockDatabase.mcEnergy += def.reward.mcEnergy;
-        if (def.reward.suspicion) mockDatabase.suspicion += def.reward.suspicion;
+        if (def.reward.pts) mockMvuVariables.user.mcPoints += def.reward.pts;
+        if (def.reward.money) mockMvuVariables.user.money += def.reward.money;
+        if (def.reward.mcEnergyMax) mockMvuVariables.user.mcEnergyMax += def.reward.mcEnergyMax;
+        if (def.reward.mcEnergy) mockMvuVariables.user.mcEnergy += def.reward.mcEnergy;
+        if (def.reward.suspicion) mockMvuVariables.user.suspicion += def.reward.suspicion;
       }
       return true;
     }
@@ -623,16 +683,16 @@ export const MockApi = {
 
   async saveNewQuest(id: string, def: AchievementOrQuestDef): Promise<void> {
     await delay(300);
-    TestQuestDataInput[id] = def;
+    mockChatVariables.quests[id] = def;
   },
 
   async deleteQuest(id: string): Promise<void> {
     await delay(200);
-    if (TestQuestDataInput[id]) {
-      delete TestQuestDataInput[id];
+    if (mockChatVariables.quests[id]) {
+      delete mockChatVariables.quests[id];
     }
-    if (mockDatabase.ownedQuests[id]) {
-      delete mockDatabase.ownedQuests[id];
+    if (mockMvuVariables.user.ownedQuests[id]) {
+      delete mockMvuVariables.user.ownedQuests[id];
     }
   },
 
@@ -642,25 +702,25 @@ export const MockApi = {
 
   async getCalendarEvents(): Promise<Record<string, CalendarEvent>> {
     await delay(150);
-    return { ...CALENDAR_STATIC_EVENTS, ...TestCustomCalendarEvents };
+    return { ...mockChatVariables.calendarEvents };
   },
 
   async createCalendarEvent(id: string, event: CalendarEvent): Promise<void> {
     await delay(300);
-    TestCustomCalendarEvents[id] = event;
+    mockChatVariables.calendarEvents[id] = event;
   },
 
   async updateCalendarEvent(id: string, event: CalendarEvent): Promise<void> {
     await delay(200);
-    if (TestCustomCalendarEvents[id]) {
-      TestCustomCalendarEvents[id] = event;
+    if (mockChatVariables.calendarEvents[id]) {
+      mockChatVariables.calendarEvents[id] = event;
     }
   },
 
   async deleteCalendarEvent(id: string): Promise<void> {
     await delay(200);
-    if (TestCustomCalendarEvents[id]) {
-      delete TestCustomCalendarEvents[id];
+    if (mockChatVariables.calendarEvents[id]) {
+      delete mockChatVariables.calendarEvents[id];
     }
   },
 
@@ -668,14 +728,29 @@ export const MockApi = {
   // 地圖 APP 相關 API (Map App APIs)
   // ==========================================
 
+  async getMapLocations(): Promise<Record<string, any>> {
+    await delay(100);
+    return JSON.parse(JSON.stringify(mockChatVariables.locations));
+  },
+
+  async getMapEdges(): Promise<any[]> {
+    await delay(100);
+    return JSON.parse(JSON.stringify(mockChatVariables.mapEdges));
+  },
+
+  async getMapZones(): Promise<Record<string, any>> {
+    await delay(100);
+    return JSON.parse(JSON.stringify(mockChatVariables.zones));
+  },
+
   async getMapState(): Promise<MockMapState> {
     await delay(100);
-    if (!mockDatabase.mapState) {
+    if (!mockMvuVariables.user.mapState) {
       throw new Error(
-        '[HypnoOS][MapMock] 偵測到 mockDatabase.mapState 缺少模擬運行時資料！請檢查 mockDatabase.ts 中是否正確配置。',
+        '[HypnoOS][MapMock] 偵測到 mockMvuVariables.user.mapState 缺少模擬運行時資料！請檢查 mockDatabase.ts 中是否正確配置。',
       );
     }
-    return JSON.parse(JSON.stringify(mockDatabase.mapState));
+    return JSON.parse(JSON.stringify(mockMvuVariables.user.mapState));
   },
 
   async moveToLocation(
@@ -691,12 +766,12 @@ export const MockApi = {
     nextState: MockMapState;
   }> {
     await delay(150);
-    if (!mockDatabase.mapState) {
+    if (!mockMvuVariables.user.mapState) {
       throw new Error(
-        '[HypnoOS][MapMock] 偵測到 mockDatabase.mapState 缺少模擬運行時資料！請檢查 mockDatabase.ts 中是否正確配置。',
+        '[HypnoOS][MapMock] 偵測到 mockMvuVariables.user.mapState 缺少模擬運行時資料！請檢查 mockDatabase.ts 中是否正確配置。',
       );
     }
-    const state = mockDatabase.mapState;
+    const state = mockMvuVariables.user.mapState;
     const startNodeId = state.currentLocationId;
     if (startNodeId === targetNodeId) {
       return { success: true, path: [targetNodeId], timeCost: 0, energyCost: 0, nextState: { ...state } };
@@ -714,7 +789,7 @@ export const MockApi = {
     }
 
     // 移動前動態解鎖檢測：若滿足條件，將已發現的 locked 通道升格為 open (Runtime)
-    for (const edge of MAP_MAP_EDGES) {
+    for (const edge of mockChatVariables.mapEdges) {
       if (edge.forwardPath && edge.forwardPath.status === 'locked' && edge.forwardPath.unlockCondition) {
         if (checkUnlockCondition(edge.forwardPath.unlockCondition, items, npcObedience)) {
           edge.forwardPath.status = 'open';
@@ -746,7 +821,7 @@ export const MockApi = {
     for (let i = 0; i < path.length - 1; i++) {
       const from = path[i];
       const to = path[i + 1];
-      const edge = MAP_MAP_EDGES.find(
+      const edge = mockChatVariables.mapEdges.find(
         e => (e.StartNodeId === from && e.EndNodeId === to) || (e.StartNodeId === to && e.EndNodeId === from),
       );
       if (edge) {
@@ -760,8 +835,8 @@ export const MockApi = {
 
     state.currentLocationId = targetNodeId;
 
-    const pathNames = path.map(id => MAP_LOCATION_NODES.find(n => n.id === id)?.name ?? id).join(' -> ');
-    const entry = `[模擬移動定位] 從「${MAP_LOCATION_NODES.find(n => n.id === startNodeId)?.name}」移動至「${MAP_LOCATION_NODES.find(n => n.id === targetNodeId)?.name}」，途經路線：${pathNames}。耗時：${totalTime}分鐘，消耗MC能量：${totalEnergy}點。`;
+    const pathNames = path.map(id => mockChatVariables.locations[id]?.name ?? id).join(' -> ');
+    const entry = `[模擬移動定位] 從「${mockChatVariables.locations[startNodeId]?.name ?? startNodeId}」移動至「${mockChatVariables.locations[targetNodeId]?.name ?? targetNodeId}」，途經路線：${pathNames}。耗時：${totalTime}分鐘，消耗MC能量：${totalEnergy}點。`;
     console.info(`[HypnoOS][MapMock] ${entry}`);
 
     return {
@@ -783,16 +858,16 @@ export const MockApi = {
     nextState: MockMapState;
   }> {
     await delay(200);
-    if (!mockDatabase.mapState) {
+    if (!mockMvuVariables.user.mapState) {
       throw new Error(
-        '[HypnoOS][MapMock] 偵測到 mockDatabase.mapState 缺少模擬運行時資料！請檢查 mockDatabase.ts 中是否正確配置。',
+        '[HypnoOS][MapMock] 偵測到 mockMvuVariables.user.mapState 缺少模擬運行時資料！請檢查 mockDatabase.ts 中是否正確配置。',
       );
     }
-    const state = mockDatabase.mapState;
+    const state = mockMvuVariables.user.mapState;
     const unlockedNodeIds: string[] = [];
     const messages: string[] = [];
 
-    const currentZoneId = MAP_LOCATION_NODES.find(n => n.id === state.currentLocationId)?.zoneId;
+    const currentZoneId = mockChatVariables.locations[state.currentLocationId]?.zoneId;
     if (!currentZoneId) {
       return {
         success: false,
@@ -813,7 +888,7 @@ export const MockApi = {
 
       const reachable = findReachableNodes(state.currentLocationId, state.discoveredNodeIds, items);
 
-      for (const edge of MAP_MAP_EDGES) {
+      for (const edge of mockChatVariables.mapEdges) {
         if (edge.zoneId !== currentZoneId) continue;
 
         // 正向解鎖與發現
@@ -824,7 +899,7 @@ export const MockApi = {
 
         if (canScanForward && edge.forwardPath) {
           const pathInfo = edge.forwardPath;
-          const nodeName = MAP_LOCATION_NODES.find(n => n.id === edge.EndNodeId)?.name ?? edge.EndNodeId;
+          const nodeName = mockChatVariables.locations[edge.EndNodeId]?.name ?? edge.EndNodeId;
 
           // 1. 不論通路狀態，在此次掃描中必定會發現該節點
           let newlyDiscovered = false;
@@ -863,7 +938,7 @@ export const MockApi = {
 
         if (canScanReverse && edge.ReversePath) {
           const pathInfo = edge.ReversePath;
-          const nodeName = MAP_LOCATION_NODES.find(n => n.id === edge.StartNodeId)?.name ?? edge.StartNodeId;
+          const nodeName = mockChatVariables.locations[edge.StartNodeId]?.name ?? edge.StartNodeId;
 
           // 1. 不論通路狀態，在此次掃描中必定會發現該節點
           let newlyDiscovered = false;
@@ -897,7 +972,7 @@ export const MockApi = {
     }
 
     if (unlockedNodeIds.length > 0) {
-      const entry = `[模擬地圖雷達掃描] 成功解鎖了新地點：${unlockedNodeIds.map(id => MAP_LOCATION_NODES.find(n => n.id === id)?.name ?? id).join(', ')}。`;
+      const entry = `[模擬地圖雷達掃描] 成功解鎖了新地點：${unlockedNodeIds.map(id => mockChatVariables.locations[id]?.name ?? id).join(', ')}。`;
       console.info(`[HypnoOS][MapMock] ${entry}`);
     }
 
@@ -917,7 +992,7 @@ export const MockApi = {
     npcObedience: Record<string, number> = {},
   ): Promise<{ success: boolean; errorMsg?: string }> {
     await delay(150);
-    const edge = MAP_MAP_EDGES.find(e => e.id === edgeId);
+    const edge = mockChatVariables.mapEdges.find(e => e.id === edgeId);
     if (!edge) return { success: false, errorMsg: '未找到該通路。' };
 
     const pathInfo = isForward ? edge.forwardPath : edge.ReversePath;
@@ -937,7 +1012,7 @@ export const MockApi = {
 
   async updateLocationNote(nodeId: string, newNote: string): Promise<boolean> {
     await delay(100);
-    const node = MAP_LOCATION_NODES.find(n => n.id === nodeId);
+    const node = mockChatVariables.locations[nodeId];
     if (node) {
       node.description = newNote;
       return true;
@@ -947,6 +1022,24 @@ export const MockApi = {
 
   findShortestPath(startId: string, endId: string, discovered: string[], items: string[] = []): string[] {
     return findShortestPath(startId, endId, discovered, items);
+  },
+
+  async updateSystemTime(newTime: string): Promise<void> {
+    await delay(100);
+    mockMvuVariables.time = newTime;
+  },
+
+  async teleportToLocation(targetNodeId: string): Promise<MockMapState> {
+    await delay(100);
+    if (!mockMvuVariables.user.mapState) {
+      throw new Error('[MapMock] mapState is missing');
+    }
+    const state = mockMvuVariables.user.mapState;
+    state.currentLocationId = targetNodeId;
+    if (!state.discoveredNodeIds.includes(targetNodeId)) {
+      state.discoveredNodeIds.push(targetNodeId);
+    }
+    return JSON.parse(JSON.stringify(state));
   },
 };
 
@@ -1052,11 +1145,11 @@ function checkTempCondition(pathInfo: any, toId: string, items: string[]): boole
     return cond.targetName ? items.includes(cond.targetName) : false;
   }
   if (cond.type === 'character') {
-    const node = MAP_LOCATION_NODES.find(n => n.id === toId);
+    const node = mockChatVariables.locations[toId];
     return node?.presentNpcs?.some(npc => npc.name === cond.targetName) ?? false;
   }
   if (cond.type === 'time') {
-    return cond.targetName ? isTimeInPeriod(mockSystemData.time, cond.targetName) : false;
+    return cond.targetName ? isTimeInPeriod(mockMvuVariables.time, cond.targetName) : false;
   }
   return false;
 }
@@ -1067,7 +1160,7 @@ function findReachableNodes(startId: string, discovered: string[], items: string
 
   while (queue.length > 0) {
     const curr = queue.shift()!;
-    for (const edge of MAP_MAP_EDGES) {
+    for (const edge of mockChatVariables.mapEdges) {
       // 情況 A：正向 (Start -> End)
       if (edge.StartNodeId === curr && discovered.includes(edge.EndNodeId) && edge.forwardPath) {
         const path = edge.forwardPath;
@@ -1122,7 +1215,7 @@ function findShortestPath(startId: string, endId: string, discovered: string[], 
       for (let i = 0; i < path.length - 1; i++) {
         const u = path[i];
         const v = path[i + 1];
-        const edge = MAP_MAP_EDGES.find(
+        const edge = mockChatVariables.mapEdges.find(
           e => (e.StartNodeId === u && e.EndNodeId === v) || (e.EndNodeId === u && e.StartNodeId === v),
         );
         if (edge) {
@@ -1145,7 +1238,7 @@ function findShortestPath(startId: string, endId: string, discovered: string[], 
       return truncatedPath;
     }
 
-    for (const edge of MAP_MAP_EDGES) {
+    for (const edge of mockChatVariables.mapEdges) {
       // 情況 A：正向 (Start -> End)
       if (edge.StartNodeId === curr && discovered.includes(edge.EndNodeId) && edge.forwardPath) {
         const p = edge.forwardPath;

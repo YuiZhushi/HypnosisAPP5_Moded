@@ -1,19 +1,15 @@
 import React, { useState, useMemo } from 'react';
-import { RuntimeData, EquipmentDef } from '../../../models';
+import { RuntimeData, HypnoModuleDef } from '../../../models';
 import { MockApi } from '../../../shared/api/mockApi';
 import {
   Wrench,
   ShoppingCart,
   X,
   AlertTriangle,
-  Eye,
-  Zap,
-  Coins,
-  Star,
   Monitor,
   Activity,
   FileText,
-  Image as ImageIcon,
+  ImageIcon,
   AlignCenter,
   Volume2,
   Music,
@@ -47,13 +43,13 @@ const IconMap: Record<string, React.FC<any>> = {
   cpu: Cpu,
 };
 
-type EquipmentSubTab = 'installed' | 'shop';
+type HypnoModuleSubTab = 'installed' | 'shop';
 
 export const HypnosisEquipmentTab: React.FC<{
   data: RuntimeData | null;
   reload: () => void;
 }> = ({ data, reload }) => {
-  const [activeSubTab, setActiveSubTab] = useState<EquipmentSubTab>('installed');
+  const [activeSubTab, setActiveSubTab] = useState<HypnoModuleSubTab>('installed');
 
   if (!data) return null;
 
@@ -68,13 +64,13 @@ export const HypnosisEquipmentTab: React.FC<{
             active={activeSubTab === 'installed'}
             onClick={() => setActiveSubTab('installed')}
             icon={<Wrench className="w-[13px] h-[13px] md:w-3.5 md:h-3.5" />}
-            label="已安裝設備"
+            label="已啟用模組"
           />
           <SubTabButton
             active={activeSubTab === 'shop'}
             onClick={() => setActiveSubTab('shop')}
             icon={<ShoppingCart className="w-[13px] h-[13px] md:w-3.5 md:h-3.5" />}
-            label="設備商店"
+            label="模組商店"
           />
         </div>
       </div>
@@ -83,8 +79,8 @@ export const HypnosisEquipmentTab: React.FC<{
       {/* 內容區塊 */}
       {/* ============================================ */}
       <div className="flex-1 overflow-y-auto px-3 md:px-4 pb-20 md:pb-24 flex flex-col gap-3 md:gap-4 no-scrollbar">
-        {activeSubTab === 'installed' && <InstalledEquipmentSection data={data} reload={reload} />}
-        {activeSubTab === 'shop' && <EquipmentShopSection data={data} reload={reload} />}
+        {activeSubTab === 'installed' && <InstalledHypnoModuleSection data={data} reload={reload} />}
+        {activeSubTab === 'shop' && <HypnoModuleShopSection data={data} reload={reload} />}
       </div>
     </div>
   );
@@ -112,18 +108,18 @@ const SubTabButton: React.FC<{
 };
 
 // ==========================================
-// 已安裝的設備區塊
+// 已啟用的模組區塊
 // ==========================================
-const InstalledEquipmentSection: React.FC<{
+const InstalledHypnoModuleSection: React.FC<{
   data: RuntimeData;
   reload: () => void;
 }> = ({ data, reload }) => {
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const installedEquipments = useMemo(() => {
-    const list: Array<{ id: string; def: EquipmentDef; enabled: boolean }> = [];
-    for (const [id, state] of Object.entries(data.user.ownedEquipments)) {
-      const def = data.equipment[id];
+  const installedModules = useMemo(() => {
+    const list: Array<{ id: string; def: HypnoModuleDef; enabled: boolean }> = [];
+    for (const [id, state] of Object.entries(data.user.ownedHypnoModules)) {
+      const def = data.hypnoModules[id];
       if (def) {
         list.push({ id, def, enabled: state.enabled });
       }
@@ -134,18 +130,18 @@ const InstalledEquipmentSection: React.FC<{
   const handleToggle = async (id: string, currentEnabled: boolean) => {
     if (isProcessing) return;
     setIsProcessing(true);
-    await MockApi.updateUserOwnedEquipments(id, !currentEnabled);
+    await MockApi.updateUserOwnedHypnoModules(id, !currentEnabled);
     reload();
     setIsProcessing(false);
   };
 
   return (
     <div className="flex flex-col gap-3">
-      {installedEquipments.length === 0 ? (
-        <div className="text-center py-8 text-gray-500 text-sm">尚未安裝任何設備</div>
+      {installedModules.length === 0 ? (
+        <div className="text-center py-8 text-gray-500 text-sm">尚未啟用任何催眠模組</div>
       ) : (
         <div className="flex flex-col gap-1.5 md:gap-2">
-          {installedEquipments.map(({ id, def, enabled }) => {
+          {installedModules.map(({ id, def, enabled }) => {
             const IconComp = IconMap[def.icon] || Box;
             return (
               <div
@@ -205,18 +201,18 @@ const InstalledEquipmentSection: React.FC<{
 };
 
 // ==========================================
-// 設備商店區塊
+// 模組商店區塊
 // ==========================================
-const EquipmentShopSection: React.FC<{
+const HypnoModuleShopSection: React.FC<{
   data: RuntimeData;
   reload: () => void;
 }> = ({ data, reload }) => {
-  const [selectedEquipment, setSelectedEquipment] = useState<{ id: string; def: EquipmentDef } | null>(null);
+  const [selectedModule, setSelectedModule] = useState<{ id: string; def: HypnoModuleDef } | null>(null);
 
-  const availableEquipments = useMemo(() => {
-    const list: Array<{ id: string; def: EquipmentDef }> = [];
-    for (const [id, def] of Object.entries(data.equipment)) {
-      if (!data.user.ownedEquipments[id]) {
+  const availableModules = useMemo(() => {
+    const list: Array<{ id: string; def: HypnoModuleDef }> = [];
+    for (const [id, def] of Object.entries(data.hypnoModules)) {
+      if (!data.user.ownedHypnoModules[id]) {
         list.push({ id, def });
       }
     }
@@ -225,23 +221,22 @@ const EquipmentShopSection: React.FC<{
 
   return (
     <div className="flex flex-col gap-3">
-      {availableEquipments.length === 0 ? (
-        <div className="text-center py-8 text-gray-500 text-sm">沒有可購買的設備</div>
+      {availableModules.length === 0 ? (
+        <div className="text-center py-8 text-gray-500 text-sm">沒有可購買的模組</div>
       ) : (
         <div className="flex flex-col gap-1.5 md:gap-2">
-          {availableEquipments.map(({ id, def }) => {
+          {availableModules.map(({ id, def }) => {
             const IconComp = IconMap[def.icon] || Box;
-            const isLocked = def.tier > data.user.vipTier;
+            const isLocked = def.tier > (data.user.effectiveVipTier ?? data.user.vipTier);
 
             const canAffordMoney = def.cost.money === undefined || data.user.money >= def.cost.money;
             const canAffordPts = def.cost.pts === undefined || data.user.mcPoints >= def.cost.pts;
             const canAffordMc = def.cost.mc === undefined || data.user.mcEnergy >= def.cost.mc;
-            // canAfford is kept for reference if needed, though not directly used in the list view
 
             return (
               <div
                 key={id}
-                onClick={() => !isLocked && setSelectedEquipment({ id, def })}
+                onClick={() => !isLocked && setSelectedModule({ id, def })}
                 className={`bg-[#13102a] rounded-xl border px-3 md:px-3.5 py-2.5 md:py-3 flex items-center justify-between transition-colors ${
                   isLocked
                     ? 'border-gray-800 opacity-50 cursor-not-allowed'
@@ -313,24 +308,24 @@ const EquipmentShopSection: React.FC<{
         </div>
       )}
 
-      {selectedEquipment && (
-        <EquipmentShopDetailModal
-          id={selectedEquipment.id}
-          def={selectedEquipment.def}
+      {selectedModule && (
+        <HypnoModuleShopDetailModal
+          id={selectedModule.id}
+          def={selectedModule.def}
           data={data}
           reload={reload}
-          onClose={() => setSelectedEquipment(null)}
+          onClose={() => setSelectedModule(null)}
           onPurchase={async () => {
-            const def = selectedEquipment.def;
+            const def = selectedModule.def;
             const patch: any = {};
             if (def.cost.money !== undefined) patch.money = data.user.money - def.cost.money;
             if (def.cost.pts !== undefined) patch.mcPoints = data.user.mcPoints - def.cost.pts;
             if (def.cost.mc !== undefined) patch.mcEnergy = data.user.mcEnergy - def.cost.mc;
 
             await MockApi.updateUserResource(patch);
-            await MockApi.updateUserOwnedEquipments(selectedEquipment.id, true);
+            await MockApi.updateUserOwnedHypnoModules(selectedModule.id, true);
             reload();
-            setSelectedEquipment(null);
+            setSelectedModule(null);
           }}
         />
       )}
@@ -338,9 +333,9 @@ const EquipmentShopSection: React.FC<{
   );
 };
 
-const EquipmentShopDetailModal: React.FC<{
+const HypnoModuleShopDetailModal: React.FC<{
   id: string;
-  def: EquipmentDef;
+  def: HypnoModuleDef;
   data: RuntimeData;
   reload: () => void;
   onClose: () => void;
@@ -367,7 +362,7 @@ const EquipmentShopDetailModal: React.FC<{
         <div className="flex items-center justify-between mb-3 md:mb-4">
           <div className="flex items-center gap-2">
             <ShoppingCart size={18} className="text-purple-400" />
-            <span className="text-[14px] md:text-base font-bold text-white">購買設備</span>
+            <span className="text-[14px] md:text-base font-bold text-white">購買催眠模組</span>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
             <X size={20} />
@@ -393,7 +388,7 @@ const EquipmentShopDetailModal: React.FC<{
           </div>
 
           <div>
-            <div className="text-[9px] md:text-[10px] text-gray-500 mb-1">設備描述</div>
+            <div className="text-[9px] md:text-[10px] text-gray-500 mb-1">模組描述</div>
             <div className="text-[11px] md:text-[12px] text-gray-300 leading-relaxed bg-[#0c0a1e] p-2.5 md:p-3 rounded-lg border border-purple-900/20">
               {def.description}
             </div>
@@ -401,7 +396,7 @@ const EquipmentShopDetailModal: React.FC<{
 
           {def.usageCostRate > 0 && (
             <div>
-              <div className="text-[9px] md:text-[10px] text-gray-500 mb-1">啟動消耗</div>
+              <div className="text-[9px] md:text-[10px] text-gray-500 mb-1">啟用消耗</div>
               <div className="text-[11px] md:text-xs text-amber-400 font-semibold bg-amber-900/10 border border-amber-900/30 p-1.5 md:p-2 rounded-lg inline-block">
                 每次/每分鐘消耗 {def.usageCostRate} {def.usageCostType.join('/')}
               </div>
@@ -453,7 +448,7 @@ const EquipmentShopDetailModal: React.FC<{
             {!canAfford && (
               <div className="text-[10px] md:text-[11px] text-red-400 mt-2 md:mt-3 flex items-center gap-1 md:gap-1.5">
                 <AlertTriangle size={14} />
-                您的資源不足，無法購買此設備。
+                您的資源不足，無法購買此模組。
               </div>
             )}
           </div>

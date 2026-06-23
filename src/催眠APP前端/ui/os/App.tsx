@@ -10,25 +10,37 @@ import { SettingsApp } from '../apps/settings/SettingsApp';
 import { CharacterBackgroundApp } from '../apps/character-background/CharacterBackgroundApp';
 import { MapApp } from '../apps/map/MapApp';
 import { waitForMvuReady } from '../../shared/api/mvuBridge';
-import { UserResources, AppMode } from '../../models';
+import { MockUserData, AppMode } from '../../models';
+import { DebugPanel } from '../../shared/components/DebugPanel';
 
 import { logger } from '../../../催眠APP共用/debug/loggerService';
 import { MockApi } from '../../shared/api/mockApi';
 import { HomeScreen } from './HomeScreen';
 
-const FALLBACK_USER_DATA: UserResources = {
+const FALLBACK_USER_DATA: MockUserData = {
+  userName: 'MC',
+  money: 6000,
   mcEnergy: 25,
   mcEnergyMax: 25,
   mcPoints: 25,
   totalConsumedMc: 0,
-  money: 6000,
+  vipTier: 0,
+  vipEndVirtualMinutes: 0,
+  vipAutoRenew: false,
   suspicion: 0,
+  ownedHypnoModules: {},
+  ownedHypnosis: {},
+  ownedCombos: {},
+  ownedAchievements: {},
+  ownedQuests: {},
+  inventory: {},
+  effectiveVipTier: 0,
 };
 
 const App = () => {
   // Global State
   const [currentApp, setCurrentApp] = useState<AppMode>(AppMode.HOME);
-  const [userData, setUserData] = useState<UserResources | null>(null);
+  const [userData, setUserData] = useState<MockUserData | null>(null);
   const [bodyStatsUnlocked, setBodyStatsUnlocked] = useState(false);
   const [systemTimeText, setSystemTimeText] = useState<string | undefined>(undefined);
   const [systemDateText, setSystemDateText] = useState<string | undefined>(undefined);
@@ -76,7 +88,7 @@ const App = () => {
   const refreshUnlocks = async () => {
     try {
       const user = await MockApi.getUserInfo();
-      setBodyStatsUnlocked(user.vipTier >= 1);
+      setBodyStatsUnlocked(user.effectiveVipTier >= 1);
     } catch (err) {
       logger.warn('读取解锁状态失败', err);
       setBodyStatsUnlocked(false);
@@ -117,7 +129,7 @@ const App = () => {
         
         setSystemTimeText(timeText);
         setSystemDateText(dateText);
-        setBodyStatsUnlocked(user.vipTier >= 1);
+        setBodyStatsUnlocked(user.effectiveVipTier >= 1);
       } catch (err) {
         logger.warn('刷新主页信息失败', err);
       }
@@ -216,6 +228,11 @@ const App = () => {
         {/* Home Indicator (iOS style) - Always visible except in immersive hypnosis */}
         <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1/3 h-1 bg-white/20 rounded-full z-50 pointer-events-none mb-1"></div>
       </div>
+
+      {/* ==========================================
+      // 調試控制台 (Debug Panel)
+      // ========================================== */}
+      <DebugPanel />
     </div>
   );
 };

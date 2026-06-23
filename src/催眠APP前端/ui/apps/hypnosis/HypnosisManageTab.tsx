@@ -822,7 +822,7 @@ const HypnosisShopSection: React.FC<{
       </div>
 
       {/* 權限不足提示 */}
-      {activeVipTab > data.user.vipTier && (
+      {activeVipTab > (data.user.effectiveVipTier ?? data.user.vipTier) && (
         <div className="bg-red-900/20 rounded-xl border border-red-500/30 px-3.5 py-2.5 flex items-center gap-2 mb-2">
           <AlertTriangle size={14} className="text-red-400 shrink-0" />
           <span className="text-[11px] text-red-400 font-semibold">您的 VIP 等級不足，無法購買此區的催眠</span>
@@ -832,7 +832,7 @@ const HypnosisShopSection: React.FC<{
       {/* 列表 */}
       <div className="flex flex-col gap-2 relative">
         {/* 霧化遮罩 */}
-        {activeVipTab > data.user.vipTier && (
+        {activeVipTab > (data.user.effectiveVipTier ?? data.user.vipTier) && (
           <div className="absolute inset-0 z-10 backdrop-blur-[2px] bg-black/20 rounded-xl flex items-center justify-center">
             <div className="bg-black/60 px-4 py-2 rounded-lg border border-red-500/30 flex items-center gap-2 shadow-xl">
               <Crown size={16} className="text-red-400" />
@@ -842,7 +842,7 @@ const HypnosisShopSection: React.FC<{
         )}
 
         {(shopByTier[activeVipTab] || []).map(({ id, def }) => {
-          const isLocked = activeVipTab > data.user.vipTier;
+          const isLocked = activeVipTab > (data.user.effectiveVipTier ?? data.user.vipTier);
           const canAffordMoney = def.cost.money === undefined || data.user.money >= def.cost.money;
           const canAffordPts = def.cost.pts === undefined || data.user.mcPoints >= def.cost.pts;
           const canAffordMc = def.cost.mc === undefined || data.user.mcEnergy >= def.cost.mc;
@@ -1338,7 +1338,7 @@ const HypnosisCraftSection: React.FC<{
   const [showConfirm, setShowConfirm] = useState(false);
 
   // 權限檢查
-  if (data.user.vipTier < 4) {
+  if ((data.user.effectiveVipTier ?? data.user.vipTier) < 4) {
     return (
       <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
         <AlertTriangle size={32} className="text-red-400 mb-3 opacity-80" />

@@ -1,6 +1,7 @@
 import {
   HypnosisDef,
-  EquipmentDef,
+  HypnoModuleDef,
+  ItemDef,
   AchievementOrQuestDef,
   CalendarEvent,
   MockZone,
@@ -1047,7 +1048,7 @@ export const HYPNOSIS_DICTIONARY: Record<string, HypnosisDef> = {
   },
 };
 
-export const EQUIPMENT_DICTIONARY: Record<string, EquipmentDef> = {
+export const HYPNO_MODULE_DICTIONARY: Record<string, HypnoModuleDef> = {
   eq_screen: {
     name: '屏幕',
     description: '基礎視覺輸出設備。',
@@ -1207,6 +1208,123 @@ export const EQUIPMENT_DICTIONARY: Record<string, EquipmentDef> = {
     type: 'device',
     usageCostType: ['none'],
     usageCostRate: 0,
+  },
+};
+
+// ==========================================
+// 物品靜態資料定義 (Item Static Dictionary)
+// ==========================================
+export const ITEM_DICTIONARY: Record<string, ItemDef> = {
+  // 1. 解鎖與劇情道具 (Material)
+  item_old_key: {
+    id: 'item_old_key',
+    name: '老舊鑰匙',
+    description: '一把生鏽的金屬鑰匙，看起來可以用來解鎖學校的某些老舊倉庫。',
+    type: 'material',
+    rarity: 'common',
+    isSellable: false,
+    isPurchasable: false,
+    isStackable: false,
+  },
+  item_lab_card: {
+    id: 'item_lab_card',
+    name: '實驗室磁卡',
+    description: '印有理科字樣的電子感應磁卡，似乎是理科實驗室專用的門禁卡。',
+    type: 'material',
+    rarity: 'rare',
+    isSellable: false,
+    isPurchasable: false,
+    isStackable: false,
+  },
+  item_student_key: {
+    id: 'item_student_key',
+    name: '學生會鑰匙',
+    description: '學生會室的備用鑰匙，上面掛著象徵學生會的精緻掛飾。',
+    type: 'material',
+    rarity: 'rare',
+    isSellable: false,
+    isPurchasable: false,
+    isStackable: false,
+  },
+  item_fridge_food: {
+    id: 'item_fridge_food',
+    name: '冰箱食材',
+    description: '從廚房冰箱拿出來的食材，可以用於料理或調配藥劑。',
+    type: 'material',
+    rarity: 'common',
+    isSellable: true,
+    cost: { money: 100 },
+    isPurchasable: true,
+    isStackable: true,
+    maxStack: 99,
+  },
+
+  // 2. 消耗品 (Consumable)
+  item_mc_potion_s: {
+    id: 'item_mc_potion_s',
+    name: '低階能量藥水',
+    description: '特製的能量飲料，飲用後可恢復些許MC精神力。',
+    type: 'consumable',
+    rarity: 'common',
+    cost: { money: 500, pts: 2 },
+    isSellable: true,
+    isPurchasable: true,
+    isStackable: true,
+    maxStack: 99,
+    effectDescription: '恢復 50 點 MC 能量。',
+  },
+  item_suspicion_remover: {
+    id: 'item_suspicion_remover',
+    name: '避嫌噴霧',
+    description: '特製的化學香水，噴灑後可以降低主角身上可疑的氣息，平息懷疑。',
+    type: 'consumable',
+    rarity: 'rare',
+    cost: { money: 2000, pts: 5 },
+    isSellable: true,
+    isPurchasable: true,
+    isStackable: true,
+    maxStack: 10,
+    effectDescription: '使主角的可疑度降低 10%。',
+  },
+
+  // 3. 被動加成道具 (Passive)
+  item_vip_card_passive: {
+    id: 'item_vip_card_passive',
+    name: 'VIP尊榮卡',
+    description: '放在背包中即可生效，使您在購買手機模組或商店交易時享有 9 折優惠。',
+    type: 'passive',
+    rarity: 'epic',
+    cost: { pts: 50 },
+    isSellable: false,
+    isPurchasable: true,
+    isStackable: false,
+    effectDescription: '放在背包即可生效，使商店所有商品售價打 9 折。',
+  },
+
+  // 4. 調教與裝備道具 (Equipment)
+  item_eye_mask: {
+    id: 'item_eye_mask',
+    name: '睡眠眼罩',
+    description: '柔軟且完全遮光的眼罩。戴上後能阻斷視覺，讓目標產生不安與感官放大效果。',
+    type: 'equipment',
+    rarity: 'common',
+    cost: { money: 800 },
+    isSellable: true,
+    isPurchasable: true,
+    isStackable: false,
+    effectDescription: '裝備於眼部。大幅降低警戒度增加速度，並在催眠中增加其服從。',
+  },
+  item_gag: {
+    id: 'item_gag',
+    name: '膠球口塞',
+    description: '配有固定皮帶的紅色膠球口塞。裝備後阻礙語言能力，使其只能發出嗚嗚的聲音。',
+    type: 'equipment',
+    rarity: 'rare',
+    cost: { money: 1500 },
+    isSellable: true,
+    isPurchasable: true,
+    isStackable: false,
+    effectDescription: '裝備於口部。限制其發聲，使其難以反抗，提高對話催眠效率。',
   },
 };
 

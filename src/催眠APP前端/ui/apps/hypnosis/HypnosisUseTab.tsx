@@ -18,9 +18,9 @@ const APPLY_METHODS = [
 ];
 
 // ==========================================
-// 施加方式 → 所需設備 ID 映射
+// 施加方式 → 所需催眠模組 ID 映射
 // ==========================================
-const APPLY_METHOD_REQUIRED_EQUIPMENT: Record<string, string[]> = {
+const APPLY_METHOD_REQUIRED_HYPNO_MODULE: Record<string, string[]> = {
   '直接輸入-圖像': ['eq_screen'],
   '直接輸入-聲音': ['eq_audio_modulator'],
   '直接輸入-文字': ['eq_text_compiler'],
@@ -31,16 +31,16 @@ const APPLY_METHOD_REQUIRED_EQUIPMENT: Record<string, string[]> = {
   '間接輸入-電磁波': ['eq_em_modulator', 'eq_em_transmitter', 'eq_em_receiver'],
 };
 
-/** 檢查施加方式所需的設備，回傳缺少的設備名稱列表 */
-function getMissingEquipment(
+/** 檢查施加方式所需的催眠模組，回傳缺少的模組名稱列表 */
+function getMissingHypnoModule(
   method: string,
-  ownedEquipments: Record<string, { enabled: boolean }>,
-  equipmentDefs: Record<string, { name: string }>,
+  ownedHypnoModules: Record<string, { enabled: boolean }>,
+  hypnoModuleDefs: Record<string, { name: string }>,
 ): string[] {
-  const required = APPLY_METHOD_REQUIRED_EQUIPMENT[method] || [];
+  const required = APPLY_METHOD_REQUIRED_HYPNO_MODULE[method] || [];
   return required
-    .filter(eqId => !ownedEquipments[eqId] || !ownedEquipments[eqId].enabled)
-    .map(eqId => equipmentDefs[eqId]?.name || eqId);
+    .filter(eqId => !ownedHypnoModules[eqId] || !ownedHypnoModules[eqId].enabled)
+    .map(eqId => hypnoModuleDefs[eqId]?.name || eqId);
 }
 
 // ==========================================
@@ -243,8 +243,8 @@ export const HypnosisUseTab: React.FC<{
           enabledItems={enabledItems}
           totalMcCost={totalMcCost}
           userEnergy={data.user.mcEnergy}
-          ownedEquipments={data.user.ownedEquipments}
-          equipmentDefs={data.equipment}
+          ownedHypnoModules={data.user.ownedHypnoModules}
+          hypnoModuleDefs={data.hypnoModules}
           onClose={() => setShowConfirm(false)}
           onConfirm={handleLaunchHypnosis}
         />
@@ -715,15 +715,15 @@ const ConfirmModal: React.FC<{
   enabledItems: Array<{ id: string; def: HypnosisDef; state: HypnosisItemState }>;
   totalMcCost: number;
   userEnergy: number;
-  ownedEquipments: Record<string, { enabled: boolean }>;
-  equipmentDefs: Record<string, { name: string }>;
+  ownedHypnoModules: Record<string, { enabled: boolean }>;
+  hypnoModuleDefs: Record<string, { name: string }>;
   onClose: () => void;
   onConfirm: () => void;
-}> = ({ enabledItems, totalMcCost, userEnergy, ownedEquipments, equipmentDefs, onClose, onConfirm }) => {
+}> = ({ enabledItems, totalMcCost, userEnergy, ownedHypnoModules, hypnoModuleDefs, onClose, onConfirm }) => {
   // 對每個催眠項目做驗證
   const itemChecks = enabledItems.map(({ id, def, state }) => {
     const method = state.applyMethod || '直接輸入-圖像'; // 預設施加方式
-    const missing = getMissingEquipment(method, ownedEquipments, equipmentDefs);
+    const missing = getMissingHypnoModule(method, ownedHypnoModules, hypnoModuleDefs);
     const targets = [...state.targets, state.customTarget].filter(Boolean);
     const hasTarget = targets.length > 0;
     const dur = typeof state.duration === 'number' ? state.duration : 10;
@@ -781,7 +781,7 @@ const ConfirmModal: React.FC<{
                   {missing.length > 0 && (
                     <div className="flex items-center gap-1 mt-1 md:mt-1.5 text-[10px] md:text-[11px] text-red-400">
                       <AlertTriangle size={11} />
-                      <span>缺少設備: {missing.join(', ')}</span>
+                      <span>缺少模組: {missing.join(', ')}</span>
                     </div>
                   )}
                   <div className="text-amber-400 text-[10px] md:text-[11px] font-semibold mt-1 md:mt-1.5">
@@ -806,7 +806,7 @@ const ConfirmModal: React.FC<{
           <div className="mt-2 md:mt-2.5 bg-red-900/20 rounded-xl border border-red-500/30 px-2.5 md:px-3.5 py-2 md:py-2.5 flex items-start gap-1.5 md:gap-2">
             <AlertTriangle size={14} className="text-red-400 shrink-0 mt-0.5" />
             <div>
-              <div className="text-[10px] md:text-[11px] text-red-400 font-semibold">總共缺少的設備:</div>
+              <div className="text-[10px] md:text-[11px] text-red-400 font-semibold">總共缺少的催眠模組:</div>
               <div className="text-[10px] md:text-[11px] text-red-300 mt-0.5">{uniqueMissing.join(', ')}</div>
             </div>
           </div>

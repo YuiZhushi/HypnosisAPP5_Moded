@@ -20,13 +20,7 @@ import {
   MockMapEdge as MapEdge,
   MockMapState as MapState,
 } from '../../../models';
-import {
-  MAP_ZONES as ZONES,
-  MAP_LOCATION_NODES as LOCATION_NODES,
-  MAP_MAP_EDGES as MAP_EDGES,
-} from '../../../staticData';
-import { MockApi as MockMapApi } from '../../../shared/api/mockApi';
-import { TestCharDataInput, mockDatabase, mockSystemData } from '../../../database/mockDatabase';
+import { MockApi, MockApi as MockMapApi } from '../../../shared/api/mockApi';
 import { logger } from '../../../../催眠APP共用/debug/loggerService';
 
 interface MapAppProps {
@@ -197,6 +191,30 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
   // ====== 佈局設定 ======
   // 由於本系統已被限制在 420px 的手機框 (Phone Bezel) 內渲染，一律採用手機端單欄佈局以獲得最佳體驗。
 
+  // ====== 地圖與物品動態資料庫 State ======
+  const [locations, setLocations] = useState<Record<string, LocationNode>>({});
+  const [mapEdges, setMapEdges] = useState<MapEdge[]>([]);
+  const [zones, setZones] = useState<Record<string, any>>({});
+  const [itemsDict, setItemsDict] = useState<Record<string, any>>({});
+  const [mapDataLoading, setMapDataLoading] = useState<boolean>(true);
+
+  const loadMapData = async () => {
+    try {
+      const [locsData, edgesData, zonesData, itemsData] = await Promise.all([
+        MockMapApi.getMapLocations(),
+        MockMapApi.getMapEdges(),
+        MockMapApi.getMapZones(),
+        MockMapApi.getAllItems(),
+      ]);
+      setLocations(locsData);
+      setMapEdges(edgesData);
+      setZones(zonesData);
+      setItemsDict(itemsData);
+    } catch (err) {
+      logger.warn('讀取地圖資料與道具字典失敗', err);
+    }
+  };
+
   // ====== 核心狀態 ======
   const [mapState, setMapState] = useState<MapState>({
     currentLocationId: 'home_my_room',
@@ -222,6 +240,10 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
   const [mcPoints, setMcPoints] = useState<number>(25);
   const [money, setMoney] = useState<number>(5000);
 
+  // ====== 遊戲環境與時間詳細狀態 (避免直接引用全域後端變數) ======
+  const [charsData, setCharsData] = useState<Record<string, any>>({});
+  const [currentDateTimeStr, setCurrentDateTimeStr] = useState<string>('2026-05-01 11:28:00');
+
   // ====== 畫布縮放與平移 ======
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1.0);
@@ -237,22 +259,78 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
   const [isEditingDesc, setIsEditingDesc] = useState(false);
   const [tempDesc, setTempDesc] = useState('');
 
-  // ====== 測試輔助 (Mock 模式專屬) ======
-  const [mockItems, setMockItems] = useState<string[]>([]); // 模擬玩家持有的道具列表
+  // ====== 測試輔助 (物品背包載入與動態修改) ======
+  const [userInventory, setUserInventory] = useState<Record<string, any>>({});
 
-  const toggleMockItem = (itemName: string) => {
-    setMockItems(prev => (prev.includes(itemName) ? prev.filter(item => item !== itemName) : [...prev, itemName]));
+  // ==========================================
+  // 資源與時間加載邏輯
+  // ==========================================
+  const loadPlayerResources = async () => {
+    try {
+      const [system, user, chars] = await Promise.all([
+        MockMapApi.getSystemData(),
+        MockMapApi.getUserInfo(),
+        MockMapApi.getCharData(),
+      ]);
+      if (system.time) {
+        setCurrentDateTimeStr(system.time);
+        const dateObj = new Date(system.time);
+        const timeString = dateObj.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
+        setTimeText(timeString);
+      }
+      setMcEnergy(user.mcEnergy);
+      setMcEnergyMax(user.mcEnergyMax);
+      setMcPoints(user.mcPoints);
+      setMoney(user.money);
+      setCharsData(chars || {});
+    } catch (err) {
+      logger.warn('讀取系統與角色變數失敗', err);
+    }
+  };
+
+  useEffect(() => {
+    const loadInventory = async () => {
+      const inv = await MockApi.getUserInventory();
+      setUserInventory(inv);
+    };
+    loadInventory();
+  }, [mapState.currentLocationId]);
+
+  const toggleMockItem = async (itemName: string) => {
+    // 根據物品名稱找對應的 ID
+    const itemId = Object.keys(itemsDict).find(key => itemsDict[key].name === itemName) || itemName;
+    const hasItem = userInventory[itemId] && userInventory[itemId].quantity > 0;
+    
+    // 如果持有則扣除 (設為 0)，未持有則加 1
+    await MockApi.updateUserInventoryItem(itemId, hasItem ? -userInventory[itemId].quantity : 1);
+    
+    const newInv = await MockApi.getUserInventory();
+    setUserInventory(newInv);
+
+    // 修改道具後，可能影響通路狀態，更新地圖資料
+    await loadMapData();
   };
 
   // ====== 輔助取得目前環境中可用於判斷的變數 ======
-  const getEnvVariablesHelper = (itemsList: string[]) => {
-    const items: string[] = [...itemsList];
-    const npcObedience: Record<string, number> = {};
+  const getEnvVariablesHelper = (inv: Record<string, any>) => {
+    // 搜集背包中持有的物品 ID 與物品名稱
+    const items: string[] = [];
+    Object.entries(inv).forEach(([itemId, state]) => {
+      if (state && state.quantity > 0) {
+        items.push(itemId);
+        const def = itemsDict[itemId];
+        if (def) {
+          items.push(def.name);
+        }
+      }
+    });
 
-    if (TestCharDataInput) {
-      Object.keys(TestCharDataInput).forEach(name => {
-        if (TestCharDataInput[name]?.obedience !== undefined) {
-          npcObedience[name] = Number(TestCharDataInput[name].obedience);
+    const npcObedience: Record<string, number> = {};
+    if (charsData) {
+      Object.keys(charsData).forEach(name => {
+        const char = charsData[name];
+        if (char && char.obedience !== undefined) {
+          npcObedience[name] = Number(char.obedience);
         }
       });
     }
@@ -341,14 +419,15 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
       const cond = pathInfo.tempConditon;
       if (!cond) return true;
       if (cond.type === 'item') {
-        return cond.targetName ? mockItems.includes(cond.targetName) : false;
+        const env = getEnvVariablesHelper(userInventory);
+        return cond.targetName ? env.items.includes(cond.targetName) : false;
       }
       if (cond.type === 'character') {
-        const node = LOCATION_NODES.find(n => n.id === targetNodeId);
+        const node = locations[targetNodeId];
         return node?.presentNpcs?.some((npc: any) => npc.name === cond.targetName) ?? false;
       }
       if (cond.type === 'time') {
-        return cond.targetName ? isTimeInPeriod(mockSystemData.time, cond.targetName) : false;
+        return cond.targetName ? isTimeInPeriod(currentDateTimeStr, cond.targetName) : false;
       }
     }
     return false;
@@ -357,39 +436,39 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
   // ====== 初始化載入 ======
   useEffect(() => {
     const init = async () => {
-      // 1. 獲取地圖狀態
-      const state = await MockMapApi.getMapState();
-      setMapState(state);
-
-      // 2. 依據當前地點設定初始大區域
-      const currentNode = LOCATION_NODES.find(n => n.id === state.currentLocationId);
-      if (currentNode) {
-        setCurrentZoneId(currentNode.zoneId);
-      }
-
-      // 3. 獲取系統資源與時間
+      setMapDataLoading(true);
       try {
-        const [system, user] = await Promise.all([MockMapApi.getSystemData(), MockMapApi.getUserInfo()]);
-        if (system.time) {
-          const dateObj = new Date(system.time);
-          const timeString = dateObj.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
-          setTimeText(timeString);
+        // 1. 載入地圖動態/模擬資料
+        const [locsData, edgesData, zonesData, itemsData] = await Promise.all([
+          MockMapApi.getMapLocations(),
+          MockMapApi.getMapEdges(),
+          MockMapApi.getMapZones(),
+          MockMapApi.getAllItems(),
+        ]);
+        setLocations(locsData);
+        setMapEdges(edgesData);
+        setZones(zonesData);
+        setItemsDict(itemsData);
+
+        // 2. 獲取地圖狀態
+        const state = await MockMapApi.getMapState();
+        setMapState(state);
+
+        // 3. 依據當前地點設定初始大區域
+        const currentNode = locsData[state.currentLocationId];
+        if (currentNode) {
+          setCurrentZoneId(currentNode.zoneId);
         }
-        setMcEnergy(user.mcEnergy);
-        setMcEnergyMax(user.mcEnergyMax);
-        setMcPoints(user.mcPoints);
-        setMoney(user.money);
+
+        // 4. 獲取系統資源與時間
+        await loadPlayerResources();
       } catch (err) {
-        logger.warn('讀取系統變數失敗，採用預設 mock 資源值', err);
-        if (mockDatabase) {
-          setMcEnergy(mockDatabase.mcEnergy);
-          setMcEnergyMax(mockDatabase.mcEnergyMax);
-          setMcPoints(mockDatabase.mcPoints);
-          setMoney(mockDatabase.money);
-        }
+        logger.warn('地圖初始化資料載入失敗', err);
+      } finally {
+        setMapDataLoading(false);
       }
 
-      // 4. 開啟時自動執行有動畫的雷達掃描 (延遲 200ms 等地圖與 SVG 容器掛載完成)
+      // 5. 開啟時自動執行有動畫的雷達掃描 (延遲 200ms 等地圖與 SVG 容器掛載完成)
       setTimeout(() => {
         void handleRadarScan(true);
       }, 200);
@@ -399,67 +478,61 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
 
   // ====== 自動計算節點位置 ======
   useEffect(() => {
-    const zoneNodes = LOCATION_NODES.filter(n => n.zoneId === currentZoneId);
-    const zoneEdges = MAP_EDGES.filter(e => e.zoneId === currentZoneId);
+    if (Object.keys(locations).length === 0) return;
+    const zoneNodes = Object.values(locations).filter(n => n.zoneId === currentZoneId);
+    const zoneEdges = mapEdges.filter(e => e.zoneId === currentZoneId);
     const layout = computeDeterministicLayout(zoneNodes, zoneEdges);
     setNodePositions(layout);
-  }, [currentZoneId, mapState.currentLocationId]);
+  }, [currentZoneId, mapState.currentLocationId, locations, mapEdges]);
 
   // ====== 選中節點時計算高亮最短路徑 ======
   useEffect(() => {
     if (selectedNodeId && selectedNodeId !== mapState.currentLocationId) {
+      const env = getEnvVariablesHelper(userInventory);
       const path = MockMapApi.findShortestPath(
         mapState.currentLocationId,
         selectedNodeId,
         mapState.discoveredNodeIds,
-        mockItems,
+        env.items,
       );
       setShortestPath(path);
     } else {
       setShortestPath([]);
     }
-  }, [selectedNodeId, mapState.currentLocationId, mapState.discoveredNodeIds, mockItems]);
+  }, [selectedNodeId, mapState.currentLocationId, mapState.discoveredNodeIds, userInventory]);
 
   // ====== 取得目前環境中可用於判斷的變數 ======
   const getEnvVariables = async () => {
-    return getEnvVariablesHelper(mockItems);
+    return getEnvVariablesHelper(userInventory);
   };
 
   // ====== 行動：移動至目標地點 ======
   const handleMove = async (targetId: string) => {
-    const targetNode = LOCATION_NODES.find(n => n.id === targetId);
+    const targetNode = locations[targetId];
     if (!targetNode) return;
 
     // 取得只到 targetId 為止的子路徑
     const idx = shortestPath.indexOf(targetId);
     const actualPath = idx !== -1 ? shortestPath.slice(0, idx + 1) : shortestPath;
 
-    // 計算總耗時與消耗
-    let totalTime = 0;
-    let totalEnergy = 0;
-    for (let i = 0; i < actualPath.length - 1; i++) {
-      const from = actualPath[i];
-      const to = actualPath[i + 1];
-      const edge = MAP_EDGES.find(
-        e => (e.StartNodeId === from && e.EndNodeId === to) || (e.StartNodeId === to && e.EndNodeId === from),
-      );
-      if (edge) {
-        const pathInfo = edge.StartNodeId === from ? edge.forwardPath : edge.ReversePath;
-        if (pathInfo) {
-          totalTime += pathInfo.cost.timeCostMinutes;
-          totalEnergy += pathInfo.cost.energyCost ?? 0;
-        }
-      }
+    // 獲取當前道具與服從度
+    const { items, npcObedience } = await getEnvVariables();
+
+    // 呼叫實體移動 API
+    const res = await MockMapApi.moveToLocation(targetId, items, npcObedience);
+    if (res.success) {
+      setMapState(res.nextState);
+      setSelectedNodeId(targetId);
+      await loadPlayerResources();
+      // 同步地圖狀態，可能通路有變化
+      await loadMapData();
+
+      const pathNames = actualPath.map(id => locations[id]?.name ?? id).join(' -> ');
+      const msg = `已抵達「${targetNode.name}」\n(途經：${pathNames}，耗時 ${res.timeCost} 分鐘，消耗 MC 能量 ${res.energyCost} 點)`;
+      setNotification({ type: 'move', content: msg });
+    } else {
+      setNotification({ type: 'move', content: `移動失敗：${res.errorMsg || '未知錯誤'}` });
     }
-
-    const pathNames = actualPath.map(id => LOCATION_NODES.find(n => n.id === id)?.name ?? id).join(' -> ');
-    const msg = `*動身前往 ${targetNode.name} (途中經過：${pathNames}，預計耗時 ${totalTime} 分鐘，消耗 MC 能量 ${totalEnergy} 點)*`;
-
-    // 暫時用 logger 取代實際發送訊息
-    logger.info(`[移動指令] ${msg}`);
-
-    // 彈出提示，顯示已發送指令
-    setNotification({ type: 'move', content: `已發送行動指令：\n${msg}` });
     setTimeout(() => setNotification(null), 5000);
   };
 
@@ -486,6 +559,9 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
       const res = await MockMapApi.scanForLocations(items, npcObedience);
       setScanning(false);
       setMapState(res.nextState);
+      await loadPlayerResources();
+      // 同步地圖狀態，解鎖新地點
+      await loadMapData();
 
       if (res.unlockedNodeIds.length > 0) {
         setNotification({ type: 'radar', content: res.messages.join('\n') });
@@ -510,7 +586,7 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
   // ====== 行動：GPS定位 (重置視角居中) ======
   const handleLocateCurrent = () => {
     const currentLocId = mapState.currentLocationId;
-    const currentNode = LOCATION_NODES.find(n => n.id === currentLocId);
+    const currentNode = locations[currentLocId];
     if (!currentNode) return;
 
     // 自動切換為該節點所屬的 Zone
@@ -548,8 +624,8 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
     const ok = await MockMapApi.updateLocationNote(nodeId, tempDesc);
     if (ok) {
       setIsEditingDesc(false);
-      // 重新觸發 state 刷新
-      setMapState(prev => ({ ...prev }));
+      // 重新加載地圖資料以更新 UI 中的 description
+      await loadMapData();
     }
   };
 
@@ -559,8 +635,8 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
     const path = isForward ? edge.forwardPath : edge.ReversePath;
     if (!path) return;
 
-    const fromNodeName = LOCATION_NODES.find(n => n.id === edge.StartNodeId)?.name ?? edge.StartNodeId;
-    const toNodeName = LOCATION_NODES.find(n => n.id === edge.EndNodeId)?.name ?? edge.EndNodeId;
+    const fromNodeName = locations[edge.StartNodeId]?.name ?? edge.StartNodeId;
+    const toNodeName = locations[edge.EndNodeId]?.name ?? edge.EndNodeId;
     const title = isForward ? `通道鎖定：${fromNodeName} ➔ ${toNodeName}` : `通道鎖定：${toNodeName} ➔ ${fromNodeName}`;
 
     // 取得解鎖條件文字描述
@@ -597,8 +673,9 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
     const res = await MockMapApi.unlockEdge(edgeId, isForward, items, npcObedience);
     if (res.success) {
       setActiveLockDetail(null);
-      // 彈出提示並刷新 mapState 以更新 UI
-      setMapState(prev => ({ ...prev }));
+      // 重新加載地圖資料以將通路狀態更新為 open
+      await loadMapData();
+      await loadPlayerResources();
       setNotification({ type: 'unlock', content: '🔐 通道已成功解鎖！您現在可以通行了。' });
       setTimeout(() => setNotification(null), 3000);
     } else if (res.errorMsg) {
@@ -724,10 +801,10 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
   }, []);
 
   // ====== 取得畫布上節點與線的數據 ======
-  const filteredNodes = LOCATION_NODES.filter(n => n.zoneId === currentZoneId);
-  const filteredEdges = MAP_EDGES.filter(e => e.zoneId === currentZoneId);
-  const currentZone = ZONES.find(z => z.id === currentZoneId);
-  const selectedNode = LOCATION_NODES.find(n => n.id === selectedNodeId);
+  const filteredNodes = Object.values(locations).filter(n => n.zoneId === currentZoneId);
+  const filteredEdges = mapEdges.filter(e => e.zoneId === currentZoneId);
+  const currentZone = Object.values(zones).find(z => z.id === currentZoneId);
+  const selectedNode = locations[selectedNodeId ?? ''];
 
   // ====== 計算選中路徑的總消耗與步驟 ======
   let routeTotalTime = 0;
@@ -738,7 +815,7 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
     for (let i = 0; i < shortestPath.length - 1; i++) {
       const u = shortestPath[i];
       const v = shortestPath[i + 1];
-      const edge = MAP_EDGES.find(
+      const edge = mapEdges.find(
         e => (e.StartNodeId === u && e.EndNodeId === v) || (e.EndNodeId === u && e.StartNodeId === v),
       );
       if (edge) {
@@ -749,8 +826,8 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
           routeTotalTime += timeCost;
           routeTotalEnergy += energyCost;
 
-          const fromNode = LOCATION_NODES.find(n => n.id === u);
-          const toNode = LOCATION_NODES.find(n => n.id === v);
+          const fromNode = locations[u];
+          const toNode = locations[v];
           routeSteps.push({
             fromName: fromNode?.name ?? u,
             toName: toNode?.name ?? v,
@@ -771,7 +848,7 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
     for (let i = 0; i < shortestPath.length - 1; i++) {
       const u = shortestPath[i];
       const v = shortestPath[i + 1];
-      const edge = MAP_EDGES.find(
+      const edge = mapEdges.find(
         e => (e.StartNodeId === u && e.EndNodeId === v) || (e.EndNodeId === u && e.StartNodeId === v),
       );
       if (edge) {
@@ -795,16 +872,27 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
   }
 
   const isMoveDisabled = !lastReachableNodeId || lastReachableNodeId === mapState.currentLocationId;
-  const lastReachableNode = lastReachableNodeId ? LOCATION_NODES.find(n => n.id === lastReachableNodeId) : null;
+  const lastReachableNode = lastReachableNodeId ? locations[lastReachableNodeId] : null;
 
   // 取得大區域的探索進度
   const getZoneProgress = (zoneId: string) => {
-    const nodesInZone = LOCATION_NODES.filter(n => n.zoneId === zoneId);
+    const nodesInZone = Object.values(locations).filter(n => n.zoneId === zoneId);
     const discoveredInZone = nodesInZone.filter(n => mapState.discoveredNodeIds.includes(n.id));
     return nodesInZone.length > 0 ? Math.round((discoveredInZone.length / nodesInZone.length) * 100) : 0;
   };
 
   // ====== 渲染邏輯 ======
+  if (mapDataLoading || Object.keys(locations).length === 0) {
+    return (
+      <div className="flex h-full w-full flex-col bg-slate-950 text-white items-center justify-center">
+        <div className="relative">
+          <div className="w-12 h-12 rounded-full border-2 border-emerald-500/30 border-t-emerald-500 animate-spin" />
+        </div>
+        <div className="text-sm text-slate-400 mt-4">載入地圖系統中...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full w-full bg-slate-950 flex flex-col overflow-hidden text-slate-100 font-sans relative">
       {/* 1. 頂部狀態欄 */}
@@ -857,7 +945,7 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
 
           {/* 下拉列表 */}
           <div className="absolute left-0 mt-1 w-48 max-h-72 overflow-y-auto rounded-xl bg-slate-900 border border-slate-850 shadow-xl hidden group-focus-within:block group-hover:block z-50 hypno-scrollbar">
-            {ZONES.map(zone => (
+            {Object.values(zones).map(zone => (
               <button
                 key={zone.id}
                 onClick={() => {
@@ -876,12 +964,12 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
         {/* 測試輔助道具面板 */}
         <div className="flex flex-wrap items-center gap-1 justify-end max-w-[60%]">
           {[
-            { name: '老舊鑰匙', icon: '🔑' },
-            { name: '實驗室磁卡', icon: '💳' },
-            { name: '學生會鑰匙', icon: '🔑' },
-            { name: '冰箱食材', icon: '🥩' },
+            { name: '老舊鑰匙', id: 'item_old_key', icon: '🔑' },
+            { name: '實驗室磁卡', id: 'item_lab_card', icon: '💳' },
+            { name: '學生會鑰匙', id: 'item_student_key', icon: '🔑' },
+            { name: '冰箱食材', id: 'item_fridge_food', icon: '🥩' },
           ].map(item => {
-            const hasItem = mockItems.includes(item.name);
+            const hasItem = userInventory[item.id] && userInventory[item.id].quantity > 0;
             return (
               <button
                 key={item.name}
@@ -906,13 +994,13 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
             { label: '🌙 平日深夜(週五)', time: '22:00', dateTime: '2026-05-01 22:00:00' },
             { label: '💤 週末深夜(週六)', time: '22:00', dateTime: '2026-05-02 22:00:00' },
           ].map(tConfig => {
-            const isCurrent = mockSystemData.time === tConfig.dateTime;
+            const isCurrent = currentDateTimeStr === tConfig.dateTime;
             return (
               <button
                 key={tConfig.label}
-                onClick={() => {
-                  setTimeText(tConfig.time);
-                  mockSystemData.time = tConfig.dateTime;
+                onClick={async () => {
+                  await MockMapApi.updateSystemTime(tConfig.dateTime);
+                  await loadPlayerResources();
                 }}
                 className={`text-[9px] px-2 py-0.5 rounded-full border transition-all ${
                   isCurrent
@@ -948,8 +1036,8 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
             <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
               {/* 繪製連線 (Edges) */}
               {filteredEdges.map(edge => {
-                const fromNode = LOCATION_NODES.find(n => n.id === edge.StartNodeId);
-                const toNode = LOCATION_NODES.find(n => n.id === edge.EndNodeId);
+                const fromNode = locations[edge.StartNodeId];
+                const toNode = locations[edge.EndNodeId];
                 if (!fromNode || !toNode) return null;
 
                 const isStartDiscovered = mapState.discoveredNodeIds.includes(edge.StartNodeId);
@@ -1538,7 +1626,7 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
                 <span className="text-[9px] text-slate-500 font-bold">在場NPC蹤跡</span>
                 {selectedNode.presentNpcs && selectedNode.presentNpcs.length > 0 ? (
                   selectedNode.presentNpcs.map(npc => {
-                    const charData = TestCharDataInput[npc.name];
+                    const charData = charsData[npc.name];
                     const obedience = charData ? charData.obedience : 0;
                     const alertness = charData ? charData.alertness : 0;
                     return (
@@ -1612,27 +1700,11 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
 
               {mapState.currentLocationId !== selectedNode.id && (
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     const targetId = selectedNode.id;
-
-                    // 更新 React State 內的主角位置與已探索列表
-                    setMapState(prev => {
-                      const nextDiscovered = prev.discoveredNodeIds.includes(targetId)
-                        ? prev.discoveredNodeIds
-                        : [...prev.discoveredNodeIds, targetId];
-
-                      // 同步寫回 Mock Database
-                      if (mockDatabase.mapState) {
-                        mockDatabase.mapState.currentLocationId = targetId;
-                        mockDatabase.mapState.discoveredNodeIds = nextDiscovered;
-                      }
-
-                      return {
-                        ...prev,
-                        currentLocationId: targetId,
-                        discoveredNodeIds: nextDiscovered,
-                      };
-                    });
+                    const nextState = await MockMapApi.teleportToLocation(targetId);
+                    setMapState(nextState);
+                    await loadPlayerResources();
 
                     logger.info(`[測試傳送] 主角已強制移動至：${selectedNode.name}`);
                     setNotification({ type: 'move', content: `[測試傳送] 已強制將主角傳送至：\n${selectedNode.name}` });

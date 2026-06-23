@@ -260,7 +260,7 @@ export const AchievementApp: React.FC<{ onBack?: () => void }> = ({ onBack }) =>
             active={activeTab === 'quests'}
             onClick={() => setActiveTab('quests')}
           />
-          {userData.vipTier >= 4 && (
+          {userData.effectiveVipTier >= 4 && (
             <BottomTabButton
               icon={
                 <PenTool className="w-[18px] h-[18px] md:w-5 md:h-5" strokeWidth={activeTab === 'craft' ? 2.2 : 1.5} />
