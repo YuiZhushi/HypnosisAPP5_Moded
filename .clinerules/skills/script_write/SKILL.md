@@ -3,35 +3,40 @@ name: script_write
 description: 當需要編寫獨立腳本時，你應該參考本文件
 ---
 
-# 腳本編寫
+# script_write 技能指引
 
-在 HypnoOS 專案中，除了主體的「前端介面」外，還有背景運行的獨立腳本。
+在 HypnoOS 專案中，除了前台的 UI 介面，還有背景運行的獨立腳本：
+* **`src/催眠APP腳本/`**：處理與 UI 無關的後台遊戲機制（如每日結算、能量自動恢復）。
+* **`src/催眠APP監聽/`**：背景腳本，負責監聽酒館的關鍵事件（如訊息刪除、滑動），並將其寫入聊天變數供前台 iframe 讀取。
 
-- **`src/催眠APP腳本/`**：負責與 UI 無關的遊戲機制腳本（如每日結算、能量恢復）。
-- **`src/催眠APP監聽/`**：背景腳本，負責監聽酒館關鍵事件（如訊息刪除、滑動），並橋接至聊天變數供 iframe 讀取。
+這些腳本在酒館後台以 iframe 形式運行，無獨立頁面，以純邏輯執行為主。
 
-這些腳本以無沙盒 iframe 的形式在酒館後台運行，沒有自己的獨立頁面，主要是代碼邏輯的執行。
+---
 
-## jQuery 的使用
+## 1. jQuery 的全局作用域影響
 
-腳本中的 jQuery 將直接作用於整個酒館頁面而非僅作用於腳本所在的 iframe，因為它是透過 `window.$ = window.parent.$` 得到的。例如 `$('body')` 將選擇酒館網頁的 `<body>` 標籤，而不是腳本所在 iframe 的 `<body>` 標籤。
+腳本中的 jQuery 經由 `window.$ = window.parent.$` 引入，將會**作用於整個酒館宿主頁面**而非腳本所在的 iframe：
+* 例如 `$('body')` 會選擇酒館網頁的 `<body>` 標籤，操作時必須極度小心，避免破壞宿主的 DOM 結構與影響效能。
 
-## React 與 UI 渲染
+---
 
-若腳本需要向酒館網頁掛載額外的 UI 元素（例如懸浮窗或提示框）：
+## 2. React 與 UI 動態掛載
 
-由於腳本運行在 iframe 中，當需要在腳本中向酒館頁面掛載 React 組件時，你應該使用 jQuery 來創建一個要掛載的位置，將其添加到酒館網頁上，並使用 `createRoot` 來掛載。
+若腳本需要向酒館網頁掛載額外的懸浮窗或提示框：
+* 使用 jQuery 在酒館網頁創建掛載節點，使用 React `createRoot` 掛載。
+* **卸載機制**：在 `pagehide` 事件觸發時，必須將其安全 unmount 並移除 DOM 節點，防止記憶體洩漏。
 
 ```tsx
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 
 $(() => {
+  // 創建並掛載到父頁面 body
   const $app = $('<div id="my-script-container"></div>').appendTo('body');
   const root = createRoot($app[0]);
   root.render(<App />);
 
-  // 關閉腳本時卸載組件
+  // 卸載清理
   $(window).on('pagehide', () => {
     root.unmount();
     $app.remove();
@@ -39,9 +44,8 @@ $(() => {
 });
 ```
 
-### 樣式與 TailwindCSS
-
-由於腳本運行在 iframe 中，若直接將組件掛載到酒館網頁（父層 DOM），iframe 內的 TailwindCSS 樣式將無法直接生效。若需要隔離樣式或使用 TailwindCSS，建議將組件掛載於一個新建立的 iframe 內部：
+### 樣式隔離 (Iframe 包裹)
+若組件掛載於父 DOM，iframe 內的 Tailwind 樣式無法直接生效。若需要隔離樣式，建議使用 `createScriptIdIframe()` 掛載於獨立 iframe 中：
 
 ```tsx
 import { createScriptIdIframe } from 'util/script';
@@ -58,21 +62,16 @@ $(() => {
   });
 });
 ```
+可以使用 `teleportStyle($app[0].contentDocument!.head)` 函數將樣式複製到 iframe 中。
 
-這種情況應該**優先使用無須自行複製樣式的 TailwindCSS class**。若有需要複製的樣式，可以使用 `teleportStyle($app[0].contentDocument!.head)` 函數來複製樣式。
+---
 
-## 腳本變數與設置
+## 3. 按鈕事件註冊 (真實對接期)
 
-如果需要為用戶提供自定義設置，可以使用聊天變數，並用 `zod` 來定義設置的類型和預設值。
-
-## 註冊按鈕事件
-
-腳本可以在酒館助手腳本庫介面中設置按鈕，用戶點擊按鈕時將會觸發對應的事件。
-
-我們可以在代碼中這樣註冊按鈕事件：
+腳本若要在酒館助手的設置介面註冊按鈕事件，可使用 `eventOn` 與 `getButtonEvent`：
 
 ```typescript
 eventOn(getButtonEvent('按鈕名'), () => {
-  logger.info('[HypnoOS] 按鈕被點擊了');
+  logger.info('[HypnoOS] 背景腳本按鈕被點擊');
 });
 ```
