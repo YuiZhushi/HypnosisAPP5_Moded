@@ -140,32 +140,8 @@ export function loadSimulationVariables() {
   deepMergeMutate(mockChatVariables, chatDatabasePatch);
   deepMergeMutate(mockMvuVariables, mvuDatabasePatch as MvuVariables);
 
-  // ==========================================
-  // 載入 sessionStorage 中暫存的調試變數 (Debug Panel)
-  // ==========================================
-  try {
-    const savedMvu = sessionStorage.getItem('__debug_mock_mvu');
-    if (savedMvu) {
-      const parsedMvu = JSON.parse(savedMvu);
-      Object.keys(mockMvuVariables).forEach(key => delete (mockMvuVariables as any)[key]);
-      Object.assign(mockMvuVariables, parsedMvu);
-      console.info('[HypnoOS][mockDatabase] 已成功載入調試暫存的 mockMvuVariables。');
-    }
-  } catch (err) {
-    console.error('[HypnoOS][mockDatabase] 載入調試暫存 mockMvuVariables 失敗:', err);
-  }
-
-  try {
-    const savedChat = sessionStorage.getItem('__debug_mock_chat');
-    if (savedChat) {
-      const parsedChat = JSON.parse(savedChat);
-      Object.keys(mockChatVariables).forEach(key => delete (mockChatVariables as any)[key]);
-      Object.assign(mockChatVariables, parsedChat);
-      console.info('[HypnoOS][mockDatabase] 已成功載入調試暫存的 mockChatVariables。');
-    }
-  } catch (err) {
-    console.error('[HypnoOS][mockDatabase] 載入調試暫存 mockChatVariables 失敗:', err);
-  }
+  // 注意：Debug 面板的修改透過直接修改記憶體中的 mock 物件生效，
+  // 不再使用 sessionStorage 持久化。iframe 重載時自然回到預設狀態。
 
   // 3. 補齊 NPC 的基本空欄位
   Object.keys(mockMvuVariables.chars).forEach(key => {

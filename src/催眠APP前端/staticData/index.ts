@@ -1707,7 +1707,7 @@ export const QUEST_DICTIONARY: Record<string, AchievementOrQuestDef> = {
     isCustom: false,
     completionCondition: {
       type: 'program',
-      condition: [{ target: 'orgasm', operator: '>=', value: 200 }],
+      condition: [{ target: 'arousal', operator: '>=', value: 200 }],
     },
     reward: { pts: 15 },
   },
@@ -1718,7 +1718,7 @@ export const QUEST_DICTIONARY: Record<string, AchievementOrQuestDef> = {
     isCustom: false,
     completionCondition: {
       type: 'program',
-      condition: [{ target: 'orgasm', operator: '>=', value: 300 }],
+      condition: [{ target: 'arousal', operator: '>=', value: 300 }],
     },
     reward: { pts: 25 },
   },
@@ -1729,7 +1729,7 @@ export const QUEST_DICTIONARY: Record<string, AchievementOrQuestDef> = {
     isCustom: false,
     completionCondition: {
       type: 'program',
-      condition: [{ target: 'orgasm', operator: '>=', value: 400 }],
+      condition: [{ target: 'arousal', operator: '>=', value: 400 }],
     },
     reward: { pts: 35 },
   },
@@ -1740,7 +1740,7 @@ export const QUEST_DICTIONARY: Record<string, AchievementOrQuestDef> = {
     isCustom: false,
     completionCondition: {
       type: 'program',
-      condition: [{ target: 'orgasm', operator: '>=', value: 500 }],
+      condition: [{ target: 'arousal', operator: '>=', value: 500 }],
     },
     reward: { pts: 45 },
   },
@@ -1787,7 +1787,6 @@ export const MAP_LOCATION_NODES: MockLocationNode[] = [
     name: '二年B班教室',
     zoneId: 'school_zone',
     description: '放學後的二年B班教室，夕陽將課桌椅拉出長長的光影。靠窗的位置十分安靜。',
-    presentNpcs: [{ name: '月咏深雪', status: '值日生，正在整理講台' }],
   },
   {
     id: 'school_corridor_2f',
@@ -1812,14 +1811,12 @@ export const MAP_LOCATION_NODES: MockLocationNode[] = [
     name: '體育館',
     zoneId: 'school_zone',
     description: '巨大的室內體育館，地板打蠟得反光。此時社團活動剛結束，有種空曠的迴音。',
-    presentNpcs: [{ name: '犬冢夏美', status: '社團自主練習中，滿身汗水' }],
   },
   {
     id: 'school_shower',
     name: '更衣淋浴間',
     zoneId: 'school_zone',
     description: '體育館附設的淋浴間，此時傳來嘩啦啦的水聲與溫熱的蒸汽。',
-    presentNpcs: [{ name: '犬冢夏美', status: '正在淋浴，霧氣騰騰' }],
   },
   {
     id: 'school_warehouse',
@@ -1876,7 +1873,6 @@ export const MAP_LOCATION_NODES: MockLocationNode[] = [
     name: '姐姐臥室',
     zoneId: 'home_zone',
     description: '散發著淡淡櫻花香氣的溫馨房間。床頭放著精緻的玩偶，平時姐姐不允許主角輕易進入。',
-    presentNpcs: [{ name: '西园寺爱丽莎', status: '正坐在書桌前用電腦' }],
   },
   {
     id: 'home_bathroom',
@@ -2012,8 +2008,7 @@ export const MAP_MAP_EDGES: MockMapEdge[] = [
       cost: { timeCostMinutes: 2, energyCost: 1 },
       unlockCondition: {
         type: 'obedience',
-        targetName: '月咏深雪',
-        value: 15,
+        targetName: '月咏深雪:obedience:>=:15',
         description: '需要風紀委員月咏深雪的服從度達到 15 以上才能進入',
       },
     },
@@ -2034,7 +2029,7 @@ export const MAP_MAP_EDGES: MockMapEdge[] = [
       cost: { timeCostMinutes: 3, energyCost: 1 },
       unlockCondition: {
         type: 'item',
-        targetName: '老舊鑰匙',
+        targetName: 'item_old_key:>=:1',
         description: '需要持有體育館管理員的「老舊鑰匙」才能進入',
       },
     },
@@ -2055,7 +2050,7 @@ export const MAP_MAP_EDGES: MockMapEdge[] = [
       cost: { timeCostMinutes: 2, energyCost: 1 },
       unlockCondition: {
         type: 'item',
-        targetName: '學生會鑰匙',
+        targetName: 'item_student_key:>=:1',
         description: '需要持有園藝部的「學生會鑰匙」才能打開溫室門',
       },
     },
@@ -2076,7 +2071,7 @@ export const MAP_MAP_EDGES: MockMapEdge[] = [
       cost: { timeCostMinutes: 2, energyCost: 1 },
       tempConditon: {
         type: 'item',
-        targetName: '實驗室磁卡',
+        targetName: 'item_lab_card:>=:1',
         description: '需要持有理科老師的「實驗室磁卡」才能臨時通行',
       },
     },
@@ -2097,7 +2092,7 @@ export const MAP_MAP_EDGES: MockMapEdge[] = [
       cost: { timeCostMinutes: 1, energyCost: 0 },
       tempConditon: {
         type: 'character',
-        targetName: '犬冢夏美',
+        targetName: '犬冢夏美:obedience:>=:0',
         description: '需要犬冢夏美在淋浴間使用中',
       },
     },
@@ -2170,8 +2165,7 @@ export const MAP_MAP_EDGES: MockMapEdge[] = [
       cost: { timeCostMinutes: 2, energyCost: 0 },
       unlockCondition: {
         type: 'obedience',
-        targetName: '西园寺爱丽莎',
-        value: 20,
+        targetName: '西园寺爱丽莎:obedience:>=:20',
         description: '需要愛麗莎的服從度達到 20 以上才能進入',
       },
     },
@@ -2192,8 +2186,7 @@ export const MAP_MAP_EDGES: MockMapEdge[] = [
       cost: { timeCostMinutes: 1, energyCost: 0 },
       unlockCondition: {
         type: 'obedience',
-        targetName: '西园寺爱丽莎',
-        value: 30,
+        targetName: '西园寺爱丽莎:obedience:>=:30',
         description: '需要愛麗莎的服從度達到 30 以上才能進入',
       },
     },
@@ -2214,7 +2207,7 @@ export const MAP_MAP_EDGES: MockMapEdge[] = [
       cost: { timeCostMinutes: 1, energyCost: 0 },
       tempConditon: {
         type: 'item',
-        targetName: '冰箱食材',
+        targetName: 'item_fridge_food:>=:1',
         description: '需要先從冰箱拿到「冰箱食材」才能進去煮飯',
       },
     },
@@ -2255,7 +2248,7 @@ export const MAP_MAP_EDGES: MockMapEdge[] = [
       cost: { timeCostMinutes: 2, energyCost: 1 },
       tempConditon: {
         type: 'time',
-        targetName: '15:00-18:00',
+        targetName: '[{"type":"daily","range":"15:00-18:00","passable":true}]',
         description: '網球場僅在社團活動時間 15:00-18:00 開放',
       },
     },
@@ -2276,7 +2269,7 @@ export const MAP_MAP_EDGES: MockMapEdge[] = [
       cost: { timeCostMinutes: 3, energyCost: 1 },
       tempConditon: {
         type: 'time',
-        targetName: '1-5 00:00-07:30;1-5 20:00-24:00',
+        targetName: '[{"type":"weekly","range":"1-5 00:00-07:30","passable":true},{"type":"weekly","range":"1-5 20:00-24:00","passable":true}]',
         description: '弓道場僅在週一至週五的深夜與清晨時段 (20:00-07:30) 開放',
       },
     },

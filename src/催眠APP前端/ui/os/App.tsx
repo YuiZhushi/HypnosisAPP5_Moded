@@ -99,6 +99,22 @@ const App = () => {
     void refreshUnlocks();
   }, []);
 
+  // ==========================================
+  // Debug 面板事件監聽：mock 資料更新時重新載入
+  // ==========================================
+  const [debugKey, setDebugKey] = useState(0);
+  useEffect(() => {
+    const handler = () => {
+      // 遞增 key 強制所有子元件重新掛載，讀取最新的 mock 資料
+      setDebugKey(k => k + 1);
+      void refreshUserData();
+      void refreshUnlocks();
+      logger.info('Debug 面板觸發 mock 資料刷新');
+    };
+    window.addEventListener('__debug_mock_updated', handler);
+    return () => window.removeEventListener('__debug_mock_updated', handler);
+  }, []);
+
   const refreshUserData = async () => {
     if (userRefreshInFlightRef.current) return;
     userRefreshInFlightRef.current = true;
@@ -222,8 +238,8 @@ const App = () => {
           </div>
         )}
 
-        {/* Screen Content */}
-        <div className="w-full h-full bg-black overflow-hidden relative">{renderCurrentApp()}</div>
+        {/* Screen Content - key 用於 debug 面板強制重新掛載 */}
+        <div key={debugKey} className="w-full h-full bg-black overflow-hidden relative">{renderCurrentApp()}</div>
 
         {/* Home Indicator (iOS style) - Always visible except in immersive hypnosis */}
         <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1/3 h-1 bg-white/20 rounded-full z-50 pointer-events-none mb-1"></div>

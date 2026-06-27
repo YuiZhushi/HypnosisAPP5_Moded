@@ -23,16 +23,6 @@ export const STAT_ORDER: string[] = [
   '好感度',
   '性欲',
   '快感值',
-  '阴蒂敏感度',
-  '小穴敏感度',
-  '菊穴敏感度',
-  '尿道敏感度',
-  '乳头敏感度',
-  '阴蒂高潮次数',
-  '小穴高潮次数',
-  '菊穴高潮次数',
-  '尿道高潮次数',
-  '乳头高潮次数',
 ];
 
 export const BAR_STATS = new Set(['警戒度', '服从度', '好感度', '性欲', '快感值']);
@@ -146,7 +136,7 @@ export const BodyStatsApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     try {
       const charData = await MockApi.getCharData();
       const rolesSnapshot: RoleMap = {};
-      
+
       for (const [name, char] of Object.entries(charData)) {
         rolesSnapshot[name] = {
           '身份': char.identity,
@@ -155,16 +145,7 @@ export const BodyStatsApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           '好感度': char.affection,
           '性欲': char.lust,
           '快感值': char.arousal,
-          '阴蒂敏感度': char.sensitivity.clitSensitivity,
-          '小穴敏感度': char.sensitivity.vaginaSensitivity,
-          '菊穴敏感度': char.sensitivity.anusSensitivity,
-          '尿道敏感度': char.sensitivity.urethraSensitivity,
-          '乳头敏感度': char.sensitivity.nippleSensitivity,
-          '阴蒂高潮次数': char.orgasm.clitOrgasms,
-          '小穴高潮次数': char.orgasm.vaginaOrgasms,
-          '菊穴高潮次数': char.orgasm.anusOrgasms,
-          '尿道高潮次数': char.orgasm.urethraOrgasms,
-          '乳头高潮次数': char.orgasm.nippleOrgasms,
+          '_bodyParts': char.bodyParts || {},
         };
       }
 
@@ -420,9 +401,19 @@ export const BodyStatsApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 ))}
             </div>
 
-            {sensitivityEntries.length > 0 && <StatGroupCard title="敏感度" entries={sensitivityEntries} />}
-
-            {orgasmCountEntries.length > 0 && <StatGroupCard title="高潮次数" entries={orgasmCountEntries} />}
+            {/* ==========================================
+                身體部位開發狀態 (Body Parts Card Grid)
+                ========================================== */}
+            {roleData && (roleData as any)._bodyParts && (
+              <div className="space-y-3">
+                <div className="text-xs font-bold text-white/80 tracking-wider">身体部位开发状态</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {Object.entries((roleData as any)._bodyParts).map(([partKey, partVal]) => (
+                    <BodyPartCard key={partKey} partKey={partKey} stat={partVal as any} />
+                  ))}
+                </div>
+              </div>
+            )}
 
             {otherScalarEntries.length > 0 && <StatGroupCard title="其他数值" entries={otherScalarEntries} />}
 
@@ -485,6 +476,83 @@ const StatRow: React.FC<{ label: string; value: unknown }> = ({ label, value }) 
       </div>
       <div className="h-2 bg-white/10 rounded-full overflow-hidden">
         <div className={`h-full bg-linear-to-r ${color}`} style={{ width: `${percent}%` }} />
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// 身體部位與評級元件相關邏輯
+// ==========================================
+const PART_NAME_MAP: Record<string, string> = {
+  mouth: '口腔',
+  breastLeft: '左乳房',
+  breastRight: '右乳房',
+  vagina: '阴道',
+  anus: '肛门',
+  urethra: '尿道',
+  clitoris: '阴蒂',
+};
+
+const BodyPartCard: React.FC<{ partKey: string; stat: any }> = ({ partKey, stat }) => {
+  const partName = PART_NAME_MAP[partKey] || partKey;
+  const sensGrade = MockApi.getStatGrade(stat.sensitivity, -100, 100);
+  const sensColor = MockApi.getGradeColor(sensGrade);
+
+  const tightGrade = stat.tightness !== undefined ? MockApi.getStatGrade(stat.tightness, -100, 100) : '';
+  const tightColor = stat.tightness !== undefined ? MockApi.getGradeColor(tightGrade) : '';
+
+  const profGrade = MockApi.getStatGrade(stat.proficiency, 0, 100);
+  const profColor = MockApi.getGradeColor(profGrade);
+
+  return (
+    <div className="p-4 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md hover:border-cyan-500/30 transition-all duration-300">
+      <div className="text-xs font-bold text-white/90 border-b border-white/5 pb-2 mb-3 flex items-center justify-between">
+        <span>{partName}</span>
+        {stat.orgasms > 0 && (
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-pink-500/10 border border-pink-500/20 text-pink-400 font-semibold animate-pulse">
+            高潮 {stat.orgasms} 次
+          </span>
+        )}
+      </div>
+
+      <div className="space-y-3">
+        {/* 敏感度 */}
+        <div className="flex justify-between items-center text-xs">
+          <span className="text-white/60">敏感度</span>
+          <span className="font-semibold tabular-nums">
+            {stat.sensitivity} <span className={`text-[10px] ml-1 px-1.5 py-0.5 rounded bg-white/5 ${sensColor}`}>{sensGrade}</span>
+          </span>
+        </div>
+
+        {/* 鬆緊度 (可選) */}
+        {stat.tightness !== undefined && (
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-white/60">松紧度</span>
+            <span className="font-semibold tabular-nums">
+              {stat.tightness > 0 ? `+${stat.tightness}` : stat.tightness}{' '}
+              <span className={`text-[10px] ml-1 px-1.5 py-0.5 rounded bg-white/5 ${tightColor}`}>{tightGrade}</span>
+            </span>
+          </div>
+        )}
+
+        {/* 熟練度 */}
+        <div className="space-y-1">
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-white/60">熟练度</span>
+            <span className="font-semibold tabular-nums">
+              {stat.proficiency}%{' '}
+              <span className={`text-[10px] ml-1 px-1.5 py-0.5 rounded bg-white/5 ${profColor}`}>{profGrade}</span>
+            </span>
+          </div>
+          {/* 微型進度條 */}
+          <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-linear-to-r from-cyan-500 to-indigo-500 rounded-full transition-all duration-500"
+              style={{ width: `${Math.max(0, Math.min(100, stat.proficiency))}%` }}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

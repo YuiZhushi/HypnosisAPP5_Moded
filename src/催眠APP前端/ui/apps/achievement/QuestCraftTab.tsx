@@ -262,18 +262,41 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
                             <option value="vipTier">VIP 等級</option>
                           </optgroup>
                           <optgroup label="角色狀態">
-                            <option value="sensitivity">總敏感度</option>
-                            <option value="clitSensitivity">陰蒂敏感度</option>
+                            <option value="totalSensitivity">總敏感度</option>
+                            <option value="totalOrgasms">總高潮次數</option>
+                            
+                            <option value="mouthSensitivity">口腔敏感度</option>
+                            <option value="mouthTightness">口腔鬆緊度</option>
+                            <option value="mouthProficiency">口腔熟練度</option>
+                            <option value="mouthOrgasms">口腔高潮次數</option>
+
+                            <option value="breastLeftSensitivity">左乳敏感度</option>
+                            <option value="breastLeftProficiency">左乳熟練度</option>
+                            <option value="breastLeftOrgasms">左乳高潮次數</option>
+
+                            <option value="breastRightSensitivity">右乳敏感度</option>
+                            <option value="breastRightProficiency">右乳熟練度</option>
+                            <option value="breastRightOrgasms">右乳高潮次數</option>
+
                             <option value="vaginaSensitivity">陰道敏感度</option>
-                            <option value="anusSensitivity">肛門敏感度</option>
-                            <option value="urethraSensitivity">尿道敏感度</option>
-                            <option value="nippleSensitivity">乳頭敏感度</option>
-                            <option value="orgasm">總高潮次數</option>
-                            <option value="clitOrgasms">陰蒂高潮次數</option>
+                            <option value="vaginaTightness">陰道鬆緊度</option>
+                            <option value="vaginaProficiency">陰道熟練度</option>
                             <option value="vaginaOrgasms">陰道高潮次數</option>
-                            <option value="anusOrgasms">肛門高潮次數</option>
+
+                            <option value="anusSensitivity">後庭敏感度</option>
+                            <option value="anusTightness">後庭鬆緊度</option>
+                            <option value="anusProficiency">後庭熟練度</option>
+                            <option value="anusOrgasms">後庭高潮次數</option>
+
+                            <option value="urethraSensitivity">尿道敏感度</option>
+                            <option value="urethraTightness">尿道鬆緊度</option>
+                            <option value="urethraProficiency">尿道熟練度</option>
                             <option value="urethraOrgasms">尿道高潮次數</option>
-                            <option value="nippleOrgasms">乳頭高潮次數</option>
+
+                            <option value="clitorisSensitivity">陰蒂敏感度</option>
+                            <option value="clitorisProficiency">陰蒂熟練度</option>
+                            <option value="clitorisOrgasms">陰蒂高潮次數</option>
+
                             <option value="obedience">服從度</option>
                             <option value="alertness">警戒度</option>
                             <option value="lust">淫亂度</option>

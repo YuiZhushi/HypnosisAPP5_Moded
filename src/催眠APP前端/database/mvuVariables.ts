@@ -106,19 +106,14 @@ export const mvuDatabasePatch: Partial<MvuVariables> = {
       obedience: 22,
       lust: 0,
       arousal: 0,
-      sensitivity: {
-        clitSensitivity: 100,
-        vaginaSensitivity: 100,
-        anusSensitivity: 100,
-        urethraSensitivity: 100,
-        nippleSensitivity: 100,
-      },
-      orgasm: {
-        clitOrgasms: 0,
-        vaginaOrgasms: 0,
-        anusOrgasms: 0,
-        urethraOrgasms: 0,
-        nippleOrgasms: 0,
+      bodyParts: {
+        mouth: { sensitivity: 0, tightness: 0, proficiency: 0, orgasms: 0 },
+        breastLeft: { sensitivity: 0, proficiency: 0, orgasms: 0 },
+        breastRight: { sensitivity: 0, proficiency: 0, orgasms: 0 },
+        vagina: { sensitivity: 0, tightness: 0, proficiency: 0, orgasms: 0 },
+        anus: { sensitivity: 0, tightness: 0, proficiency: 0, orgasms: 0 },
+        urethra: { sensitivity: 0, tightness: 0, proficiency: 0, orgasms: 0 },
+        clitoris: { sensitivity: 0, proficiency: 0, orgasms: 0 },
       },
       ownedHypnosisEffects: {
         潛意識引導: { endTime: '2026-05-08 12:00', hypnosisType: 'temporary', description: '舉起左手' },
@@ -128,6 +123,10 @@ export const mvuDatabasePatch: Partial<MvuVariables> = {
         item_eye_mask: { quantity: 1, isEquipped: false, equipSlot: 'eyes', customDescription: '西園寺愛麗莎的專屬粉色眼罩' },
       },
       ownedBodyModifications: {},
+      locationState: {
+        locationId: 'home_sister_room',
+        locationStatus: '正坐在書桌前用電腦',
+      },
     },
     月咏深雪: {
       identity: '風紀委員',
@@ -136,25 +135,24 @@ export const mvuDatabasePatch: Partial<MvuVariables> = {
       obedience: 0,
       lust: 65,
       arousal: 0,
-      sensitivity: {
-        clitSensitivity: 100,
-        vaginaSensitivity: 100,
-        anusSensitivity: 150,
-        urethraSensitivity: 100,
-        nippleSensitivity: 100,
-      },
-      orgasm: {
-        clitOrgasms: 0,
-        vaginaOrgasms: 0,
-        anusOrgasms: 0,
-        urethraOrgasms: 0,
-        nippleOrgasms: 0,
+      bodyParts: {
+        mouth: { sensitivity: 0, tightness: 0, proficiency: 0, orgasms: 0 },
+        breastLeft: { sensitivity: 0, proficiency: 0, orgasms: 0 },
+        breastRight: { sensitivity: 0, proficiency: 0, orgasms: 0 },
+        vagina: { sensitivity: 0, tightness: 0, proficiency: 0, orgasms: 0 },
+        anus: { sensitivity: 50, tightness: 0, proficiency: 0, orgasms: 0 },
+        urethra: { sensitivity: 0, tightness: 0, proficiency: 0, orgasms: 0 },
+        clitoris: { sensitivity: 0, proficiency: 0, orgasms: 0 },
       },
       ownedHypnosisEffects: {
         短期味嗅覺混淆: { endTime: '2026-05-08 15:30', hypnosisType: 'temporary', description: '把水看成酒' },
       },
       inventory: {},
       ownedBodyModifications: {},
+      locationState: {
+        locationId: 'school_classroom_2b',
+        locationStatus: '值日生，正在整理講台',
+      },
     },
     犬冢夏美: {
       identity: '體育生',
@@ -163,19 +161,14 @@ export const mvuDatabasePatch: Partial<MvuVariables> = {
       obedience: 0,
       lust: 0,
       arousal: 0,
-      sensitivity: {
-        clitSensitivity: 100,
-        vaginaSensitivity: 100,
-        anusSensitivity: 100,
-        urethraSensitivity: 100,
-        nippleSensitivity: 150,
-      },
-      orgasm: {
-        clitOrgasms: 0,
-        vaginaOrgasms: 0,
-        anusOrgasms: 0,
-        urethraOrgasms: 0,
-        nippleOrgasms: 0,
+      bodyParts: {
+        mouth: { sensitivity: 0, tightness: 0, proficiency: 0, orgasms: 0 },
+        breastLeft: { sensitivity: 50, proficiency: 0, orgasms: 0 },
+        breastRight: { sensitivity: 50, proficiency: 0, orgasms: 0 },
+        vagina: { sensitivity: 0, tightness: 0, proficiency: 0, orgasms: 0 },
+        anus: { sensitivity: 0, tightness: 0, proficiency: 0, orgasms: 0 },
+        urethra: { sensitivity: 0, tightness: 0, proficiency: 0, orgasms: 0 },
+        clitoris: { sensitivity: 0, proficiency: 0, orgasms: 0 },
       },
       ownedHypnosisEffects: {
         強制睡眠: { endTime: '2026-05-08 18:00', hypnosisType: 'temporary', description: '在教室睡眠' },
@@ -185,6 +178,10 @@ export const mvuDatabasePatch: Partial<MvuVariables> = {
         item_gag: { quantity: 1, isEquipped: true, equipSlot: 'mouth', customDescription: '略微有些磨損的軟膠球口塞' },
       },
       ownedBodyModifications: {},
+      locationState: {
+        locationId: 'school_gym',
+        locationStatus: '社團自主練習中，滿身汗水',
+      },
     },
   },
 };

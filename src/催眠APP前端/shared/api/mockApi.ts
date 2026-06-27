@@ -19,15 +19,6 @@ import {
   mockMvuVariables,
 } from '../../database/mockDatabase';
 
-import {
-  HYPNOSIS_DICTIONARY,
-  HYPNO_MODULE_DICTIONARY,
-  ITEM_DICTIONARY,
-  ACHIEVEMENT_DICTIONARY,
-  QUEST_DICTIONARY,
-  CALENDAR_STATIC_EVENTS,
-} from '../../staticData';
-
 // 模擬網路延遲
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -95,10 +86,10 @@ function getDynamicAchievements(): Record<string, AchievementOrQuestDef> {
         name: `${sensitivityNames[i]} (${charName})`,
         dataType: 'achievement',
         isCustom: false,
-        description: `敏感度達到 ${val}`,
+        description: `總敏感度達到 ${val}`,
         completionCondition: {
           type: 'program',
-          condition: [{ target: 'sensitivity', operator: '>=', value: val, charName }],
+          condition: [{ target: 'totalSensitivity', operator: '>=', value: val, charName }],
         },
         reward: { pts: sensitivityRewards[i] },
       };
@@ -109,10 +100,10 @@ function getDynamicAchievements(): Record<string, AchievementOrQuestDef> {
         name: `${orgasmNames[i]} (${charName})`,
         dataType: 'achievement',
         isCustom: false,
-        description: `高潮次數達到 ${val} 次`,
+        description: `總高潮次數達到 ${val} 次`,
         completionCondition: {
           type: 'program',
-          condition: [{ target: 'orgasm', operator: '>=', value: val, charName }],
+          condition: [{ target: 'totalOrgasms', operator: '>=', value: val, charName }],
         },
         reward: { pts: orgasmRewards[i] },
       };
@@ -163,18 +154,15 @@ function evaluateProgramConditions(conditions: ConditionOnProgram[] | string): b
 
     // 2. 檢查角色屬性 (char data)，將所有角色的該屬性值加入陣列
     const charTargets = [
-      'sensitivity',
-      'clitSensitivity',
-      'vaginaSensitivity',
-      'anusSensitivity',
-      'urethraSensitivity',
-      'nippleSensitivity',
-      'orgasm',
-      'clitOrgasms',
-      'vaginaOrgasms',
-      'anusOrgasms',
-      'urethraOrgasms',
-      'nippleOrgasms',
+      'totalSensitivity',
+      'totalOrgasms',
+      'mouthSensitivity', 'mouthTightness', 'mouthProficiency', 'mouthOrgasms',
+      'breastLeftSensitivity', 'breastLeftProficiency', 'breastLeftOrgasms',
+      'breastRightSensitivity', 'breastRightProficiency', 'breastRightOrgasms',
+      'vaginaSensitivity', 'vaginaTightness', 'vaginaProficiency', 'vaginaOrgasms',
+      'anusSensitivity', 'anusTightness', 'anusProficiency', 'anusOrgasms',
+      'urethraSensitivity', 'urethraTightness', 'urethraProficiency', 'urethraOrgasms',
+      'clitorisSensitivity', 'clitorisProficiency', 'clitorisOrgasms',
       'alertness',
       'affection',
       'obedience',
@@ -186,45 +174,35 @@ function evaluateProgramConditions(conditions: ConditionOnProgram[] | string): b
         if (cond.charName && cond.charName !== charName) continue; // 如果指定了角色，只檢查該角色
 
         const char = mockMvuVariables.chars[charName] as any;
-        const s = char.sensitivity || {};
-        const o = char.orgasm || {};
+        const bp = char.bodyParts || {};
+        const getVal = (part: string, key: string) => {
+          return bp[part]?.[key] ?? 0;
+        };
 
-        if (cond.target === 'sensitivity') {
-          targetValues.push(
-            (s.clitSensitivity || 0) +
-              (s.vaginaSensitivity || 0) +
-              (s.anusSensitivity || 0) +
-              (s.urethraSensitivity || 0) +
-              (s.nippleSensitivity || 0),
-          );
-        } else if (cond.target === 'clitSensitivity') {
-          targetValues.push(s.clitSensitivity || 0);
-        } else if (cond.target === 'vaginaSensitivity') {
-          targetValues.push(s.vaginaSensitivity || 0);
-        } else if (cond.target === 'anusSensitivity') {
-          targetValues.push(s.anusSensitivity || 0);
-        } else if (cond.target === 'urethraSensitivity') {
-          targetValues.push(s.urethraSensitivity || 0);
-        } else if (cond.target === 'nippleSensitivity') {
-          targetValues.push(s.nippleSensitivity || 0);
-        } else if (cond.target === 'orgasm') {
-          targetValues.push(
-            (o.clitOrgasms || 0) +
-              (o.vaginaOrgasms || 0) +
-              (o.anusOrgasms || 0) +
-              (o.urethraOrgasms || 0) +
-              (o.nippleOrgasms || 0),
-          );
-        } else if (cond.target === 'clitOrgasms') {
-          targetValues.push(o.clitOrgasms || 0);
-        } else if (cond.target === 'vaginaOrgasms') {
-          targetValues.push(o.vaginaOrgasms || 0);
-        } else if (cond.target === 'anusOrgasms') {
-          targetValues.push(o.anusOrgasms || 0);
-        } else if (cond.target === 'urethraOrgasms') {
-          targetValues.push(o.urethraOrgasms || 0);
-        } else if (cond.target === 'nippleOrgasms') {
-          targetValues.push(o.nippleOrgasms || 0);
+        if (cond.target === 'totalSensitivity') {
+          let sum = 0;
+          for (const key in bp) {
+            sum += bp[key]?.sensitivity ?? 0;
+          }
+          targetValues.push(sum);
+        } else if (cond.target === 'totalOrgasms') {
+          let sum = 0;
+          for (const key in bp) {
+            sum += bp[key]?.orgasms ?? 0;
+          }
+          targetValues.push(sum);
+        } else if (cond.target.endsWith('Sensitivity')) {
+          const part = cond.target.slice(0, -11);
+          targetValues.push(getVal(part, 'sensitivity'));
+        } else if (cond.target.endsWith('Tightness')) {
+          const part = cond.target.slice(0, -9);
+          targetValues.push(getVal(part, 'tightness'));
+        } else if (cond.target.endsWith('Proficiency')) {
+          const part = cond.target.slice(0, -11);
+          targetValues.push(getVal(part, 'proficiency'));
+        } else if (cond.target.endsWith('Orgasms')) {
+          const part = cond.target.slice(0, -7);
+          targetValues.push(getVal(part, 'orgasms'));
         } else if (cond.target === 'alertness') {
           targetValues.push(char.alertness || 0);
         } else if (cond.target === 'affection') {
@@ -857,6 +835,7 @@ export const MockApi = {
     messages: string[];
     nextState: MockMapState;
   }> {
+    void npcObedience;
     await delay(200);
     if (!mockMvuVariables.user.mapState) {
       throw new Error(
@@ -1041,113 +1020,352 @@ export const MockApi = {
     }
     return JSON.parse(JSON.stringify(state));
   },
+
+  getStatGrade(val: number, min: number = -100, max: number = 100): string {
+    return getStatGrade(val, min, max);
+  },
+
+  getGradeColor(grade: string): string {
+    return getGradeColor(grade);
+  },
 };
 
 // ====== 輔助函式 ======
 
+// ==========================================
+// 通用比較運算子輔助
+// ==========================================
+function compareValue(actual: number, operator: string, expected: number): boolean {
+  switch (operator) {
+    case '>=': return actual >= expected;
+    case '<=': return actual <= expected;
+    case '==': return actual === expected;
+    case '!=': return actual !== expected;
+    case '>': return actual > expected;
+    case '<': return actual < expected;
+    default: return actual >= expected;
+  }
+}
+
+// ==========================================
+// 多物品條件解析器
+// 格式: "itemId1:op:qty1,itemId2:op:qty2" 或舊格式 "老舊鑰匙"
+// ==========================================
+function parseItemConditions(targetName: string): Array<{ itemId: string; operator: string; quantity: number }> {
+  if (!targetName) return [];
+  // 向後相容：如果不含 ':' 則視為舊格式單一物品名稱（需持有 >= 1）
+  if (!targetName.includes(':')) {
+    return [{ itemId: targetName, operator: '>=', quantity: 1 }];
+  }
+  return targetName.split(',').map(part => {
+    const segments = part.trim().split(':').map(s => s.trim());
+    if (segments.length === 3) {
+      // 新格式: itemId:operator:quantity
+      return { itemId: segments[0], operator: segments[1], quantity: Number(segments[2]) };
+    } else if (segments.length === 2) {
+      // 簡寫格式: itemId:quantity (預設 >=)
+      return { itemId: segments[0], operator: '>=', quantity: Number(segments[1]) };
+    }
+    // 單一 itemId (需持有 >= 1)
+    return { itemId: segments[0], operator: '>=', quantity: 1 };
+  });
+}
+
+// ==========================================
+// 多 NPC 條件解析器
+// 格式: "NPC1:attr:op:val,NPC2:attr:op:val" 或舊格式 "月咏深雪" + value
+// ==========================================
+function parseNpcConditions(targetName: string, fallbackValue?: number): Array<{ npcName: string; attribute: string; operator: string; value: number }> {
+  if (!targetName) return [];
+  // 向後相容：如果不含 ':' 則視為舊格式 (單一 NPC 名稱 + obedience >= fallbackValue)
+  if (!targetName.includes(':')) {
+    return [{ npcName: targetName, attribute: 'obedience', operator: '>=', value: fallbackValue ?? 0 }];
+  }
+  return targetName.split(',').map(part => {
+    const segments = part.trim().split(':').map(s => s.trim());
+    if (segments.length === 4) {
+      // 新格式: NPC:attribute:operator:value
+      return { npcName: segments[0], attribute: segments[1], operator: segments[2], value: Number(segments[3]) };
+    } else if (segments.length === 2) {
+      // 簡寫格式: NPC:value (預設 obedience >=)
+      return { npcName: segments[0], attribute: 'obedience', operator: '>=', value: Number(segments[1]) };
+    }
+    return { npcName: segments[0], attribute: 'obedience', operator: '>=', value: 0 };
+  });
+}
+
+// ==========================================
+// 從 NPC chars 資料中取得指定屬性的數值
+// ==========================================
+function getNpcAttributeValue(npcName: string, attribute: string): number {
+  const char = mockMvuVariables.chars[npcName] as any;
+  if (!char) return 0;
+  // 直接屬性 (obedience, affection, alertness, arousal, lust)
+  if (char[attribute] !== undefined) return Number(char[attribute]) || 0;
+
+  // 身體部位屬性支援，如 'mouthSensitivity', 'vaginaTightness', 'clitorisSensitivity' 等
+  const bp = char.bodyParts || {};
+  const getVal = (part: string, key: string) => {
+    return bp[part]?.[key] ?? 0;
+  };
+
+  if (attribute === 'totalSensitivity') {
+    let sum = 0;
+    for (const key in bp) {
+      sum += bp[key]?.sensitivity ?? 0;
+    }
+    return sum;
+  }
+  if (attribute === 'totalOrgasms') {
+    let sum = 0;
+    for (const key in bp) {
+      sum += bp[key]?.orgasms ?? 0;
+    }
+    return sum;
+  }
+
+  if (attribute.endsWith('Sensitivity')) {
+    const part = attribute.slice(0, -11);
+    return getVal(part, 'sensitivity');
+  }
+  if (attribute.endsWith('Tightness')) {
+    const part = attribute.slice(0, -9);
+    return getVal(part, 'tightness');
+  }
+  if (attribute.endsWith('Proficiency')) {
+    const part = attribute.slice(0, -11);
+    return getVal(part, 'proficiency');
+  }
+  if (attribute.endsWith('Orgasms')) {
+    const part = attribute.slice(0, -7);
+    return getVal(part, 'orgasms');
+  }
+
+  return 0;
+}
+
+// ==========================================
+// 從背包取得物品持有數量 (僅限 ID 索引)
+// ==========================================
+function getItemQuantity(itemId: string, items?: string[]): number {
+  void items;
+  const inv = mockMvuVariables.user?.inventory || {};
+  if (inv[itemId]) {
+    return inv[itemId].quantity || 0;
+  }
+  return 0;
+}
+
+// ==========================================
+// 解鎖條件檢測 (支援新舊格式)
+// ==========================================
 function checkUnlockCondition(
   cond: { type: 'obedience' | 'item' | 'always_locked'; targetName?: string; value?: number },
   items: string[],
   npcObedience: Record<string, number>,
 ): boolean {
+  void npcObedience;
+  if (cond.type === 'always_locked') return false;
+
   if (cond.type === 'item') {
-    return cond.targetName ? items.includes(cond.targetName) : false;
+    if (!cond.targetName) return false;
+    const conditions = parseItemConditions(cond.targetName);
+    return conditions.every(ic => {
+      const qty = getItemQuantity(ic.itemId, items);
+      return compareValue(qty, ic.operator, ic.quantity);
+    });
   }
+
   if (cond.type === 'obedience') {
-    if (cond.targetName) {
-      const currentVal = npcObedience[cond.targetName] ?? 0;
-      return currentVal >= (cond.value ?? 999);
-    }
+    if (!cond.targetName) return false;
+    const conditions = parseNpcConditions(cond.targetName, cond.value);
+    return conditions.every(nc => {
+      const actual = getNpcAttributeValue(nc.npcName, nc.attribute);
+      return compareValue(actual, nc.operator, nc.value);
+    });
   }
+
   return false;
 }
 
+// ==========================================
+// 時段判定輔助
+// ==========================================
 function isTimeInPeriod(currentDateTimeStr: string, periodString: string): boolean {
-  let currentMinutes = 12 * 60; // 預設 12:00
-  let currentDayOfWeek = 5; // 預設週五 (2026-05-01 是週五)
+  try {
+    const rules = JSON.parse(periodString);
+    if (!Array.isArray(rules)) return false;
 
-  if (currentDateTimeStr.includes(' ')) {
-    const parts = currentDateTimeStr.split(' ');
-    const datePart = parts[0];
-    const timePart = parts[1];
+    let currentMinutes = 12 * 60; // 預設 12:00
+    let currentDayOfWeek = 5; // 預設週五
+    let currentDayOfMonth = 1; // 預設 1 日
+    let currentDateObj = new Date();
 
-    // 解析星期幾 (用 / 替換 - 防止部分環境解析錯誤)
-    const dateObj = new Date(datePart.replace(/-/g, '/'));
-    if (!isNaN(dateObj.getTime())) {
-      const rawDay = dateObj.getDay(); // 0-6 (0 是週日)
-      currentDayOfWeek = rawDay === 0 ? 7 : rawDay;
-    }
-
-    const [h, m] = timePart.split(':').map(Number);
-    currentMinutes = h * 60 + m;
-  } else if (currentDateTimeStr.includes(':')) {
-    const [h, m] = currentDateTimeStr.split(':').map(Number);
-    currentMinutes = h * 60 + m;
-  }
-
-  // 以分號分隔多個時段
-  const periods = periodString.split(';');
-
-  return periods.some(period => {
-    const trimmed = period.trim();
-    if (!trimmed) return false;
-
-    let weekPart = '';
-    let timePart = trimmed;
-
-    // 檢查是否有空格分隔星期與時間，例如 "1-5 15:00-18:00"
-    if (trimmed.includes(' ')) {
-      const parts = trimmed.split(/\s+/);
-      weekPart = parts[0];
-      timePart = parts[1];
-    }
-
-    // 1. 星期判定
-    if (weekPart) {
-      let isWeekMatched = false;
-      if (weekPart.includes('-')) {
-        const [startW, endW] = weekPart.split('-').map(Number);
-        isWeekMatched = currentDayOfWeek >= startW && currentDayOfWeek <= endW;
-      } else if (weekPart.includes(',')) {
-        const weeks = weekPart.split(',').map(Number);
-        isWeekMatched = weeks.includes(currentDayOfWeek);
-      } else {
-        isWeekMatched = Number(weekPart) === currentDayOfWeek;
+    // 1. 強健的日期解析器 (防禦空格與簡繁體格式)
+    const dateMatch = currentDateTimeStr.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+    if (dateMatch) {
+      const year = Number(dateMatch[1]);
+      const month = Number(dateMatch[2]) - 1;
+      const date = Number(dateMatch[3]);
+      const dateObj = new Date(year, month, date);
+      if (!isNaN(dateObj.getTime())) {
+        currentDateObj = dateObj;
+        const rawDay = dateObj.getDay();
+        currentDayOfWeek = rawDay === 0 ? 7 : rawDay;
+        currentDayOfMonth = dateObj.getDate();
       }
-      if (!isWeekMatched) return false;
     }
 
-    // 2. 時間判定 (支援跨日，例如 20:00-07:30)
-    const [startStr, endStr] = timePart.split('-');
-    if (!startStr || !endStr) return false;
+    // 2. 強健的時間解析器 (支援 12/24 小時制自動換算)
+    const timeMatch = currentDateTimeStr.match(/(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?/);
+    if (timeMatch) {
+      let h = Number(timeMatch[1]);
+      const m = Number(timeMatch[2]);
+      
+      const isPm = currentDateTimeStr.includes('下午') || currentDateTimeStr.toUpperCase().includes('PM');
+      const isAm = currentDateTimeStr.includes('上午') || currentDateTimeStr.toUpperCase().includes('AM');
+      
+      if (isPm || isAm) {
+        if (isPm) {
+          if (h !== 12) h += 12;
+        } else {
+          if (h === 12) h = 0;
+        }
+      }
+      currentMinutes = h * 60 + m;
+    }
 
-    const toMinutes = (tStr: string) => {
-      const [h, m] = tStr.trim().split(':').map(Number);
-      return h * 60 + m;
-    };
+    const matchedResults: boolean[] = [];
 
-    const start = toMinutes(startStr);
-    const end = toMinutes(endStr);
+    for (const rule of rules) {
+      let matched = false;
 
-    if (start <= end) {
-      return currentMinutes >= start && currentMinutes <= end;
+      if (rule.type === 'daily') {
+        matched = checkTimeRange(currentMinutes, rule.range);
+      } else if (rule.type === 'weekly') {
+        const parts = rule.range.split(/\s+/);
+        const weekPart = parts[0];
+        const timePart = parts[1];
+        if (checkWeekMatch(currentDayOfWeek, weekPart)) {
+          matched = checkTimeRange(currentMinutes, timePart);
+        }
+      } else if (rule.type === 'monthly') {
+        const parts = rule.range.split(/\s+/);
+        const monthPart = parts[0];
+        const timePart = parts[1];
+        if (checkMonthMatch(currentDayOfMonth, monthPart)) {
+          matched = checkTimeRange(currentMinutes, timePart);
+        }
+      } else if (rule.type === 'date') {
+        matched = checkDateRange(currentDateObj, rule.range);
+      }
+
+      if (matched) {
+        matchedResults.push(rule.passable);
+      }
+    }
+
+    if (matchedResults.length > 0) {
+      // 當範圍有衝突時，以 true (可通行) 優先
+      return matchedResults.includes(true);
     } else {
-      return currentMinutes >= start || currentMinutes <= end;
+      // 智能預設狀態推導：當前時間未落在任何一項規則區間內
+      // 若規則中包含任何「允許通行 (passable: true)」，說明是限時開放，其他時間預設禁止通行
+      const hasAnyOpen = rules.some(r => r.passable === true);
+      return !hasAnyOpen;
     }
-  });
+  } catch (e) {
+    return false;
+  }
 }
 
+// ==========================================
+// 時間規則細部比對輔助函數
+// ==========================================
+function checkTimeRange(currentMinutes: number, rangeStr: string): boolean {
+  const [startStr, endStr] = rangeStr.split('-');
+  if (!startStr || !endStr) return false;
+
+  const toMinutes = (tStr: string) => {
+    const [h, m] = tStr.trim().split(':').map(Number);
+    return h * 60 + m;
+  };
+
+  const start = toMinutes(startStr);
+  const end = toMinutes(endStr);
+
+  if (start <= end) {
+    return currentMinutes >= start && currentMinutes <= end;
+  } else {
+    return currentMinutes >= start || currentMinutes <= end;
+  }
+}
+
+function checkWeekMatch(currentDayOfWeek: number, weekPart: string): boolean {
+  if (weekPart.includes('-')) {
+    const [startW, endW] = weekPart.split('-').map(Number);
+    return currentDayOfWeek >= startW && currentDayOfWeek <= endW;
+  } else if (weekPart.includes(',')) {
+    const weeks = weekPart.split(',').map(Number);
+    return weeks.includes(currentDayOfWeek);
+  } else {
+    return Number(weekPart) === currentDayOfWeek;
+  }
+}
+
+function checkMonthMatch(currentDayOfMonth: number, monthPart: string): boolean {
+  if (monthPart.includes('-')) {
+    const [startM, endM] = monthPart.split('-').map(Number);
+    return currentDayOfMonth >= startM && currentDayOfMonth <= endM;
+  } else if (monthPart.includes(',')) {
+    const days = monthPart.split(',').map(Number);
+    return days.includes(currentDayOfMonth);
+  } else {
+    return Number(monthPart) === currentDayOfMonth;
+  }
+}
+
+function checkDateRange(currentDateObj: Date, dateRangeStr: string): boolean {
+  const parts = dateRangeStr.split(' - ');
+  if (parts.length !== 2) return false;
+
+  const startStr = parts[0].replace('T', ' ');
+  const endStr = parts[1].replace('T', ' ');
+
+  const currentMs = currentDateObj.getTime();
+  const startMs = new Date(startStr.replace(/-/g, '/')).getTime();
+  const endMs = new Date(endStr.replace(/-/g, '/')).getTime();
+
+  if (isNaN(currentMs) || isNaN(startMs) || isNaN(endMs)) return false;
+  return currentMs >= startMs && currentMs <= endMs;
+}
+
+// ==========================================
+// 臨時條件檢測 (支援新舊格式)
+// ==========================================
 function checkTempCondition(pathInfo: any, toId: string, items: string[]): boolean {
+  void toId;
   const cond = pathInfo.tempConditon;
   if (!cond) return true;
 
   if (cond.type === 'item') {
-    return cond.targetName ? items.includes(cond.targetName) : false;
+    if (!cond.targetName) return false;
+    const conditions = parseItemConditions(cond.targetName);
+    return conditions.every(ic => {
+      const qty = getItemQuantity(ic.itemId, items);
+      return compareValue(qty, ic.operator, ic.quantity);
+    });
   }
+
   if (cond.type === 'character') {
-    const node = mockChatVariables.locations[toId];
-    return node?.presentNpcs?.some(npc => npc.name === cond.targetName) ?? false;
+    if (!cond.targetName) return false;
+    const conditions = parseNpcConditions(cond.targetName, cond.value);
+    return conditions.every(nc => {
+      const actual = getNpcAttributeValue(nc.npcName, nc.attribute);
+      return compareValue(actual, nc.operator, nc.value);
+    });
   }
+
   if (cond.type === 'time') {
     return cond.targetName ? isTimeInPeriod(mockMvuVariables.time, cond.targetName) : false;
   }
@@ -1161,6 +1379,10 @@ function findReachableNodes(startId: string, discovered: string[], items: string
   while (queue.length > 0) {
     const curr = queue.shift()!;
     for (const edge of mockChatVariables.mapEdges) {
+      // 跳過被屏蔽的節點相關連線
+      if ((mockChatVariables.locations[edge.StartNodeId] as any)?._hidden) continue;
+      if ((mockChatVariables.locations[edge.EndNodeId] as any)?._hidden) continue;
+
       // 情況 A：正向 (Start -> End)
       if (edge.StartNodeId === curr && discovered.includes(edge.EndNodeId) && edge.forwardPath) {
         const path = edge.forwardPath;
@@ -1239,6 +1461,10 @@ function findShortestPath(startId: string, endId: string, discovered: string[], 
     }
 
     for (const edge of mockChatVariables.mapEdges) {
+      // 跳過被屏蔽的節點相關連線
+      if ((mockChatVariables.locations[edge.StartNodeId] as any)?._hidden) continue;
+      if ((mockChatVariables.locations[edge.EndNodeId] as any)?._hidden) continue;
+
       // 情況 A：正向 (Start -> End)
       if (edge.StartNodeId === curr && discovered.includes(edge.EndNodeId) && edge.forwardPath) {
         const p = edge.forwardPath;
@@ -1271,3 +1497,42 @@ function findShortestPath(startId: string, endId: string, discovered: string[], 
 
   return [];
 }
+
+// ==========================================
+// 身體屬性評級工具函數
+// ==========================================
+function getStatGrade(val: number, min: number = -100, max: number = 100): string {
+  if (val > max) return 'S';
+  if (val < min) return 'F';
+
+  const range = max - min;
+  if (range <= 0) return 'C';
+
+  const w = range / 5;
+  let level = Math.floor((val - min) / w);
+  if (level > 4) level = 4;
+  if (level < 0) level = 0;
+
+  const grades = ['E', 'D', 'C', 'B', 'A'];
+  const baseGrade = grades[level];
+
+  const base = min + level * w;
+  const sub_w = w / 3;
+  let subLevel = Math.floor((val - base) / sub_w);
+  if (subLevel > 2) subLevel = 2;
+  if (subLevel < 0) subLevel = 0;
+
+  const suffixes = ['-', '', '+'];
+  return baseGrade + suffixes[subLevel];
+}
+
+function getGradeColor(grade: string): string {
+  if (grade.startsWith('S')) return 'text-amber-400 font-bold';
+  if (grade.startsWith('A')) return 'text-fuchsia-400 font-bold';
+  if (grade.startsWith('B')) return 'text-purple-400 font-semibold';
+  if (grade.startsWith('C')) return 'text-blue-400';
+  if (grade.startsWith('D')) return 'text-slate-400';
+  if (grade.startsWith('E')) return 'text-orange-400';
+  return 'text-red-500 font-bold';
+}
+

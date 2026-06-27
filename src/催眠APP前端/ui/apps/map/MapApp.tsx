@@ -300,10 +300,10 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
     // 根據物品名稱找對應的 ID
     const itemId = Object.keys(itemsDict).find(key => itemsDict[key].name === itemName) || itemName;
     const hasItem = userInventory[itemId] && userInventory[itemId].quantity > 0;
-    
+
     // 如果持有則扣除 (設為 0)，未持有則加 1
     await MockApi.updateUserInventoryItem(itemId, hasItem ? -userInventory[itemId].quantity : 1);
-    
+
     const newInv = await MockApi.getUserInventory();
     setUserInventory(newInv);
 
@@ -338,94 +338,245 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
     return { items, npcObedience };
   };
 
-  const isTimeInPeriod = (currentDateTimeStr: string, periodString: string): boolean => {
-    let currentMinutes = 12 * 60; // 預設 12:00
-    let currentDayOfWeek = 5; // 預設週五 (2026-05-01 是週五)
-
-    if (currentDateTimeStr.includes(' ')) {
-      const parts = currentDateTimeStr.split(' ');
-      const datePart = parts[0];
-      const timePart = parts[1];
-
-      // 解析星期幾 (用 / 替換 - 防止部分環境解析錯誤)
-      const dateObj = new Date(datePart.replace(/-/g, '/'));
-      if (!isNaN(dateObj.getTime())) {
-        const rawDay = dateObj.getDay(); // 0-6 (0 是週日)
-        currentDayOfWeek = rawDay === 0 ? 7 : rawDay;
-      }
-
-      const [h, m] = timePart.split(':').map(Number);
-      currentMinutes = h * 60 + m;
-    } else if (currentDateTimeStr.includes(':')) {
-      const [h, m] = currentDateTimeStr.split(':').map(Number);
-      currentMinutes = h * 60 + m;
+  const checkTimeRange = (currentMinutes: number, rangeStr: string): boolean => {
+    const [startStr, endStr] = rangeStr.split('-');
+    if (!startStr || !endStr) return false;
+    const toMinutes = (tStr: string) => {
+      const [h, m] = tStr.trim().split(':').map(Number);
+      return h * 60 + m;
+    };
+    const start = toMinutes(startStr);
+    const end = toMinutes(endStr);
+    if (start <= end) {
+      return currentMinutes >= start && currentMinutes <= end;
+    } else {
+      return currentMinutes >= start || currentMinutes <= end;
     }
-
-    // 以分號分隔多個時段
-    const periods = periodString.split(';');
-
-    return periods.some(period => {
-      const trimmed = period.trim();
-      if (!trimmed) return false;
-
-      let weekPart = '';
-      let timePart = trimmed;
-
-      if (trimmed.includes(' ')) {
-        const parts = trimmed.split(/\s+/);
-        weekPart = parts[0];
-        timePart = parts[1];
-      }
-
-      // 1. 星期判定
-      if (weekPart) {
-        let isWeekMatched = false;
-        if (weekPart.includes('-')) {
-          const [startW, endW] = weekPart.split('-').map(Number);
-          isWeekMatched = currentDayOfWeek >= startW && currentDayOfWeek <= endW;
-        } else if (weekPart.includes(',')) {
-          const weeks = weekPart.split(',').map(Number);
-          isWeekMatched = weeks.includes(currentDayOfWeek);
-        } else {
-          isWeekMatched = Number(weekPart) === currentDayOfWeek;
-        }
-        if (!isWeekMatched) return false;
-      }
-
-      // 2. 時間判定 (支援跨日，例如 20:00-07:30)
-      const [startStr, endStr] = timePart.split('-');
-      if (!startStr || !endStr) return false;
-
-      const toMinutes = (tStr: string) => {
-        const [h, m] = tStr.trim().split(':').map(Number);
-        return h * 60 + m;
-      };
-
-      const start = toMinutes(startStr);
-      const end = toMinutes(endStr);
-
-      if (start <= end) {
-        return currentMinutes >= start && currentMinutes <= end;
-      } else {
-        return currentMinutes >= start || currentMinutes <= end;
-      }
-    });
   };
 
+  const checkWeekMatch = (currentDayOfWeek: number, weekPart: string): boolean => {
+    if (weekPart.includes('-')) {
+      const [startW, endW] = weekPart.split('-').map(Number);
+      return currentDayOfWeek >= startW && currentDayOfWeek <= endW;
+    } else if (weekPart.includes(',')) {
+      const weeks = weekPart.split(',').map(Number);
+      return weeks.includes(currentDayOfWeek);
+    } else {
+      return Number(weekPart) === currentDayOfWeek;
+    }
+  };
+
+  const checkMonthMatch = (currentDayOfMonth: number, monthPart: string): boolean => {
+    if (monthPart.includes('-')) {
+      const [startM, endM] = monthPart.split('-').map(Number);
+      return currentDayOfMonth >= startM && currentDayOfMonth <= endM;
+    } else if (monthPart.includes(',')) {
+      const days = monthPart.split(',').map(Number);
+      return days.includes(currentDayOfMonth);
+    } else {
+      return Number(monthPart) === currentDayOfMonth;
+    }
+  };
+
+  const checkDateRange = (currentDateObj: Date, dateRangeStr: string): boolean => {
+    const parts = dateRangeStr.split(' - ');
+    if (parts.length !== 2) return false;
+    const startStr = parts[0].replace('T', ' ');
+    const endStr = parts[1].replace('T', ' ');
+    const currentMs = currentDateObj.getTime();
+    const startMs = new Date(startStr.replace(/-/g, '/')).getTime();
+    const endMs = new Date(endStr.replace(/-/g, '/')).getTime();
+    if (isNaN(currentMs) || isNaN(startMs) || isNaN(endMs)) return false;
+    return currentMs >= startMs && currentMs <= endMs;
+  };
+
+  const isTimeInPeriod = (currentDateTimeStr: string, periodString: string): boolean => {
+    try {
+      const rules = JSON.parse(periodString);
+      if (!Array.isArray(rules)) return false;
+
+      let currentMinutes = 12 * 60; // 預設 12:00
+      let currentDayOfWeek = 5; // 預設週五 (2026-05-01 是週五)
+      let currentDayOfMonth = 1; // 預設 1 日
+      let currentDateObj = new Date();
+
+      // 1. 強健的日期解析器 (防禦空格與簡繁體格式)
+      const dateMatch = currentDateTimeStr.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+      if (dateMatch) {
+        const year = Number(dateMatch[1]);
+        const month = Number(dateMatch[2]) - 1;
+        const date = Number(dateMatch[3]);
+        const dateObj = new Date(year, month, date);
+        if (!isNaN(dateObj.getTime())) {
+          currentDateObj = dateObj;
+          const rawDay = dateObj.getDay();
+          currentDayOfWeek = rawDay === 0 ? 7 : rawDay;
+          currentDayOfMonth = dateObj.getDate();
+        }
+      }
+
+      // 2. 強健的時間解析器 (支援 12/24 小時制自動換算)
+      const timeMatch = currentDateTimeStr.match(/(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?/);
+      if (timeMatch) {
+        let h = Number(timeMatch[1]);
+        const m = Number(timeMatch[2]);
+        
+        const isPm = currentDateTimeStr.includes('下午') || currentDateTimeStr.toUpperCase().includes('PM');
+        const isAm = currentDateTimeStr.includes('上午') || currentDateTimeStr.toUpperCase().includes('AM');
+        
+        if (isPm || isAm) {
+          if (isPm) {
+            if (h !== 12) h += 12;
+          } else {
+            if (h === 12) h = 0;
+          }
+        }
+        currentMinutes = h * 60 + m;
+      }
+
+      const matchedResults: boolean[] = [];
+
+      for (const rule of rules) {
+        let matched = false;
+
+        if (rule.type === 'daily') {
+          matched = checkTimeRange(currentMinutes, rule.range);
+        } else if (rule.type === 'weekly') {
+          const parts = rule.range.split(/\s+/);
+          const weekPart = parts[0];
+          const timePart = parts[1];
+          if (checkWeekMatch(currentDayOfWeek, weekPart)) {
+            matched = checkTimeRange(currentMinutes, timePart);
+          }
+        } else if (rule.type === 'monthly') {
+          const parts = rule.range.split(/\s+/);
+          const monthPart = parts[0];
+          const timePart = parts[1];
+          if (checkMonthMatch(currentDayOfMonth, monthPart)) {
+            matched = checkTimeRange(currentMinutes, timePart);
+          }
+        } else if (rule.type === 'date') {
+          matched = checkDateRange(currentDateObj, rule.range);
+        }
+
+        if (matched) {
+          matchedResults.push(rule.passable);
+        }
+      }
+
+      if (matchedResults.length > 0) {
+        // 當範圍有衝突時，以 true (可通行) 優先
+        return matchedResults.includes(true);
+      } else {
+        // 智能預設狀態推導：當前時間未落在任何一項規則區間內
+        // 若規則中包含任何「允許通行 (passable: true)」，說明是限時開放，其他時間預設禁止通行
+        const hasAnyOpen = rules.some(r => r.passable === true);
+        return !hasAnyOpen;
+      }
+    } catch (e) {
+      return false;
+    }
+  };
+
+  // ==========================================
+  // 物品數量獲取輔助函數 (僅限 ID 索引)
+  // ==========================================
+  const getItemQuantity = (itemId: string, inv: Record<string, any>) => {
+    if (inv && inv[itemId]) {
+      return inv[itemId].quantity || 0;
+    }
+    return 0;
+  };
+
+  // ==========================================
+  // 通路開放狀態檢測 (支援多物品、多角色條件)
+  // ==========================================
   const checkEdgeOpen = (pathInfo: any, targetNodeId: string) => {
+    void targetNodeId;
     if (!pathInfo) return false;
     if (pathInfo.status === 'open') return true;
     if (pathInfo.status === 'temp_open') {
       const cond = pathInfo.tempConditon;
       if (!cond) return true;
+
       if (cond.type === 'item') {
-        const env = getEnvVariablesHelper(userInventory);
-        return cond.targetName ? env.items.includes(cond.targetName) : false;
+        if (!cond.targetName) return false;
+        // 解析多物品條件
+        const conditions = cond.targetName.split(',').map((part: string) => {
+          const segs = part.trim().split(':').map(s => s.trim());
+          if (segs.length === 3) return { itemId: segs[0], op: segs[1], qty: Number(segs[2]) };
+          if (segs.length === 2) return { itemId: segs[0], op: '>=', qty: Number(segs[1]) };
+          return { itemId: segs[0], op: '>=', qty: 1 };
+        });
+        const res = conditions.every((ic: { itemId: string; op: string; qty: number }) => {
+          const held = getItemQuantity(ic.itemId, userInventory);
+          let passed = false;
+          switch (ic.op) {
+            case '>=': passed = held >= ic.qty; break;
+            case '<=': passed = held <= ic.qty; break;
+            case '==': passed = held === ic.qty; break;
+            case '!=': passed = held !== ic.qty; break;
+            case '>': passed = held > ic.qty; break;
+            case '<': passed = held < ic.qty; break;
+            default: passed = held >= ic.qty;
+          }
+          return passed;
+        });
+        return res;
       }
+
       if (cond.type === 'character') {
-        const node = locations[targetNodeId];
-        return node?.presentNpcs?.some((npc: any) => npc.name === cond.targetName) ?? false;
+        if (!cond.targetName) return false;
+        // 解析多 NPC 條件
+        const npcConditions = cond.targetName.split(',').map((part: string) => {
+          const segs = part.trim().split(':').map(s => s.trim());
+          if (segs.length === 4) return { npcName: segs[0], attr: segs[1], op: segs[2], val: Number(segs[3]) };
+          if (segs.length === 2) return { npcName: segs[0], attr: 'obedience', op: '>=', val: Number(segs[1]) };
+          return { npcName: segs[0], attr: 'obedience', op: '>=', val: 0 };
+        });
+        const res = npcConditions.every((nc: { npcName: string; attr: string; val: number; op: string }) => {
+          const charData = charsData[nc.npcName] as any;
+          if (!charData) {
+            return false;
+          }
+
+          // 完美移植後端安全屬性解析器
+          let actual = 0;
+          if (charData[nc.attr] !== undefined) {
+            actual = Number(charData[nc.attr]) || 0;
+          } else if (charData.bodyParts) {
+            const bp = charData.bodyParts;
+            const attr = nc.attr;
+            if (attr === 'totalSensitivity') {
+              for (const k in bp) actual += bp[k]?.sensitivity ?? 0;
+            } else if (attr === 'totalOrgasms') {
+              for (const k in bp) actual += bp[k]?.orgasms ?? 0;
+            } else if (attr.endsWith('Sensitivity')) {
+              actual = bp[attr.slice(0, -11)]?.sensitivity ?? 0;
+            } else if (attr.endsWith('Tightness')) {
+              actual = bp[attr.slice(0, -9)]?.tightness ?? 0;
+            } else if (attr.endsWith('Proficiency')) {
+              actual = bp[attr.slice(0, -11)]?.proficiency ?? 0;
+            } else if (attr.endsWith('Orgasms')) {
+              actual = bp[attr.slice(0, -7)]?.orgasms ?? 0;
+            }
+          }
+
+          let passed = false;
+          switch (nc.op) {
+            case '>=': passed = actual >= nc.val; break;
+            case '<=': passed = actual <= nc.val; break;
+            case '==': passed = actual === nc.val; break;
+            case '!=': passed = actual !== nc.val; break;
+            case '>': passed = actual > nc.val; break;
+            case '<': passed = actual < nc.val; break;
+            default: passed = actual >= nc.val;
+          }
+          return passed;
+        });
+        return res;
       }
+
       if (cond.type === 'time') {
         return cond.targetName ? isTimeInPeriod(currentDateTimeStr, cond.targetName) : false;
       }
@@ -476,11 +627,11 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
     void init();
   }, []);
 
-  // ====== 自動計算節點位置 ======
+  // ====== 自動計算節點位置 (過濾屏蔽節點) ======
   useEffect(() => {
     if (Object.keys(locations).length === 0) return;
-    const zoneNodes = Object.values(locations).filter(n => n.zoneId === currentZoneId);
-    const zoneEdges = mapEdges.filter(e => e.zoneId === currentZoneId);
+    const zoneNodes = Object.values(locations).filter(n => n.zoneId === currentZoneId && !(n as any)._hidden);
+    const zoneEdges = mapEdges.filter(e => e.zoneId === currentZoneId && !(locations[e.StartNodeId] as any)?._hidden && !(locations[e.EndNodeId] as any)?._hidden);
     const layout = computeDeterministicLayout(zoneNodes, zoneEdges);
     setNodePositions(layout);
   }, [currentZoneId, mapState.currentLocationId, locations, mapEdges]);
@@ -643,20 +794,81 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
     const description =
       path.unlockCondition?.description || path.tempConditon?.description || '此通道目前被阻擋，暫無詳細解鎖說明。';
 
-    // 判定是否滿足解鎖條件
-    const { items, npcObedience } = await getEnvVariables();
+    // 判定是否滿足解鎖條件，直接拉取最新數據防止 React 狀態延遲
+    const [latestInv, latestChars] = await Promise.all([
+      MockApi.getUserInventory(),
+      MockMapApi.getCharData(),
+    ]);
+
     const cond = path.unlockCondition;
-    const isEligible = cond
-      ? cond.type === 'item'
-        ? cond.targetName
-          ? items.includes(cond.targetName)
-          : false
-        : cond.type === 'obedience'
-          ? cond.targetName
-            ? (npcObedience[cond.targetName] ?? 0) >= (cond.value ?? 999)
-            : false
-          : false
-      : false;
+    let isEligible = false;
+
+    if (cond) {
+      if (cond.type === 'item' && cond.targetName) {
+        // 解析多物品條件
+        const conditions = cond.targetName.split(',').map((part: string) => {
+          const segs = part.trim().split(':').map(s => s.trim());
+          if (segs.length === 3) return { itemId: segs[0], op: segs[1], qty: Number(segs[2]) };
+          if (segs.length === 2) return { itemId: segs[0], op: '>=', qty: Number(segs[1]) };
+          return { itemId: segs[0], op: '>=', qty: 1 };
+        });
+        isEligible = conditions.every((ic: { itemId: string; op: string; qty: number }) => {
+          const held = getItemQuantity(ic.itemId, latestInv);
+          switch (ic.op) {
+            case '>=': return held >= ic.qty;
+            case '<=': return held <= ic.qty;
+            case '==': return held === ic.qty;
+            case '!=': return held !== ic.qty;
+            case '>': return held > ic.qty;
+            case '<': return held < ic.qty;
+            default: return held >= ic.qty;
+          }
+        });
+      } else if (cond.type === 'obedience' && cond.targetName) {
+        // 解析多 NPC 條件
+        const npcConditions = cond.targetName.split(',').map((part: string) => {
+          const segs = part.trim().split(':').map(s => s.trim());
+          if (segs.length === 4) return { npcName: segs[0], attr: segs[1], op: segs[2], val: Number(segs[3]) };
+          if (segs.length === 2) return { npcName: segs[0], attr: 'obedience', op: '>=', val: Number(segs[1]) };
+          return { npcName: segs[0], attr: 'obedience', op: '>=', val: 0 };
+        });
+        isEligible = npcConditions.every((nc: { npcName: string; attr: string; val: number; op: string }) => {
+          const charData = latestChars[nc.npcName] as any;
+          if (!charData) return false;
+
+          let actual = 0;
+          if (charData[nc.attr] !== undefined) {
+            actual = Number(charData[nc.attr]) || 0;
+          } else if (charData.bodyParts) {
+            const bp = charData.bodyParts;
+            const attr = nc.attr;
+            if (attr === 'totalSensitivity') {
+              for (const k in bp) actual += bp[k]?.sensitivity ?? 0;
+            } else if (attr === 'totalOrgasms') {
+              for (const k in bp) actual += bp[k]?.orgasms ?? 0;
+            } else if (attr.endsWith('Sensitivity')) {
+              actual = bp[attr.slice(0, -11)]?.sensitivity ?? 0;
+            } else if (attr.endsWith('Tightness')) {
+              actual = bp[attr.slice(0, -9)]?.tightness ?? 0;
+            } else if (attr.endsWith('Proficiency')) {
+              actual = bp[attr.slice(0, -11)]?.proficiency ?? 0;
+            } else if (attr.endsWith('Orgasms')) {
+              actual = bp[attr.slice(0, -7)]?.orgasms ?? 0;
+            }
+          }
+
+          switch (nc.op) {
+            case '>=': return actual >= nc.val;
+            case '<=': return actual <= nc.val;
+            case '==': return actual === nc.val;
+            case '!=': return actual !== nc.val;
+            case '>': return actual > nc.val;
+            case '<': return actual < nc.val;
+            default: return actual >= nc.val;
+          }
+        });
+      }
+    }
 
     setActiveLockDetail({
       edgeId: edge.id,
@@ -698,6 +910,12 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
     let startX = 0;
     let startY = 0;
 
+    // 雙指觸控相關局部變數
+    let initialTouchDist = 0;
+    let initialTouchZoom = 1;
+    let initialTouchCenter = { x: 0, y: 0 };
+    let initialPan = { x: 0, y: 0 };
+
     // --- 拖曳開始 ---
     const startDrag = (clientX: number, clientY: number) => {
       isDragActive = true;
@@ -736,11 +954,43 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 1) {
         startDrag(e.touches[0].clientX, e.touches[0].clientY);
+      } else if (e.touches.length === 2) {
+        isDragActive = false;
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        initialTouchDist = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
+        initialTouchZoom = stateRef.current.zoom;
+
+        const rect = canvas.getBoundingClientRect();
+        initialTouchCenter = {
+          x: (touch1.clientX + touch2.clientX) / 2 - rect.left,
+          y: (touch1.clientY + touch2.clientY) / 2 - rect.top,
+        };
+        initialPan = { ...stateRef.current.pan };
       }
     };
     const onTouchMove = (e: TouchEvent) => {
       if (e.touches.length === 1) {
         doDrag(e.touches[0].clientX, e.touches[0].clientY, e);
+      } else if (e.touches.length === 2 && initialTouchDist > 0) {
+        e.preventDefault();
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const currentDist = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
+
+        const factor = currentDist / initialTouchDist;
+        const targetZoom = Math.max(0.5, Math.min(initialTouchZoom * factor, 3));
+
+        setZoom(targetZoom);
+
+        setPan(() => {
+          const dx = initialTouchCenter.x - initialPan.x;
+          const dy = initialTouchCenter.y - initialPan.y;
+          return {
+            x: initialTouchCenter.x - dx * (targetZoom / initialTouchZoom),
+            y: initialTouchCenter.y - dy * (targetZoom / initialTouchZoom),
+          };
+        });
       }
     };
 
@@ -798,11 +1048,39 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
 
       canvas.removeEventListener('wheel', onWheel);
     };
-  }, []);
+  }, [mapDataLoading, locations]);
 
-  // ====== 取得畫布上節點與線的數據 ======
-  const filteredNodes = Object.values(locations).filter(n => n.zoneId === currentZoneId);
-  const filteredEdges = mapEdges.filter(e => e.zoneId === currentZoneId);
+  // ==========================================
+  // 初始玩家位置自動居中對焦邏輯
+  // ==========================================
+  const hasLocatedInitial = useRef(false);
+
+  useEffect(() => {
+    const currentLocId = mapState.currentLocationId;
+    if (Object.keys(nodePositions).length > 0 && nodePositions[currentLocId] && !hasLocatedInitial.current) {
+      hasLocatedInitial.current = true;
+
+      const nodePos = nodePositions[currentLocId];
+      const targetZoom = 1.2;
+      let width = 420;
+      let height = 600;
+      if (canvasRef.current) {
+        width = canvasRef.current.clientWidth || canvasRef.current.getBoundingClientRect().width || 420;
+        height = canvasRef.current.clientHeight || canvasRef.current.getBoundingClientRect().height || 600;
+      }
+
+      setZoom(targetZoom);
+      setPan({
+        x: width / 2 - nodePos.x * targetZoom,
+        y: height / 2 - nodePos.y * targetZoom,
+      });
+      setSelectedNodeId(currentLocId);
+    }
+  }, [nodePositions, mapState.currentLocationId]);
+
+  // ====== 取得畫布上節點與線的數據 (過濾屏蔽節點與相關連線) ======
+  const filteredNodes = Object.values(locations).filter(n => n.zoneId === currentZoneId && !(n as any)._hidden);
+  const filteredEdges = mapEdges.filter(e => e.zoneId === currentZoneId && !(locations[e.StartNodeId] as any)?._hidden && !(locations[e.EndNodeId] as any)?._hidden);
   const currentZone = Object.values(zones).find(z => z.id === currentZoneId);
   const selectedNode = locations[selectedNodeId ?? ''];
 
@@ -904,8 +1182,8 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <span className="font-bold text-sm tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">
-            GPS 定位系統
+          <span className="font-bold text-xs sm:text-sm tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 whitespace-nowrap shrink-0">
+            GPS 定位
           </span>
         </div>
 
@@ -961,59 +1239,7 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
           </div>
         </div>
 
-        {/* 測試輔助道具面板 */}
-        <div className="flex flex-wrap items-center gap-1 justify-end max-w-[60%]">
-          {[
-            { name: '老舊鑰匙', id: 'item_old_key', icon: '🔑' },
-            { name: '實驗室磁卡', id: 'item_lab_card', icon: '💳' },
-            { name: '學生會鑰匙', id: 'item_student_key', icon: '🔑' },
-            { name: '冰箱食材', id: 'item_fridge_food', icon: '🥩' },
-          ].map(item => {
-            const hasItem = userInventory[item.id] && userInventory[item.id].quantity > 0;
-            return (
-              <button
-                key={item.name}
-                key-id={`mock-item-${item.name}`}
-                onClick={() => toggleMockItem(item.name)}
-                className={`text-[9px] px-2 py-0.5 rounded-full border transition-all ${
-                  hasItem
-                    ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-300'
-                    : 'bg-slate-900 border-slate-800 text-slate-400'
-                }`}
-                title={`切換擁有 ${item.name}`}
-              >
-                {item.icon} {item.name}
-              </button>
-            );
-          })}
-
-          {/* 時間時段測試按鈕組 */}
-          {[
-            { label: '☀️ 日間(週五)', time: '11:28', dateTime: '2026-05-01 11:28:00' },
-            { label: '🌇 社團(週五)', time: '16:00', dateTime: '2026-05-01 16:00:00' },
-            { label: '🌙 平日深夜(週五)', time: '22:00', dateTime: '2026-05-01 22:00:00' },
-            { label: '💤 週末深夜(週六)', time: '22:00', dateTime: '2026-05-02 22:00:00' },
-          ].map(tConfig => {
-            const isCurrent = currentDateTimeStr === tConfig.dateTime;
-            return (
-              <button
-                key={tConfig.label}
-                onClick={async () => {
-                  await MockMapApi.updateSystemTime(tConfig.dateTime);
-                  await loadPlayerResources();
-                }}
-                className={`text-[9px] px-2 py-0.5 rounded-full border transition-all ${
-                  isCurrent
-                    ? 'bg-amber-950/40 border-amber-500/50 text-amber-300'
-                    : 'bg-slate-900 border-slate-800 text-slate-400'
-                }`}
-                title={`設為 ${tConfig.label}`}
-              >
-                {tConfig.label}
-              </button>
-            );
-          })}
-        </div>
+        {/* 測試輔助道具面板已被移除 */}
       </div>
 
       {/* 3. 主版面配置 */}
@@ -1107,7 +1333,7 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
                         if (isLocked) {
                           strokeColor = 'stroke-red-900/50';
                         } else if (isTemp) {
-                          strokeColor = isFOpen ? 'stroke-orange-900/40' : 'stroke-red-900/40';
+                          strokeColor = isFOpen ? 'stroke-amber-500/80' : 'stroke-red-900/40';
                         }
 
                         // 高亮狀態
@@ -1179,7 +1405,7 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
                         if (isLocked) {
                           strokeColor = 'stroke-red-900/50';
                         } else if (isTemp) {
-                          strokeColor = isROpen ? 'stroke-orange-900/40' : 'stroke-red-900/40';
+                          strokeColor = isROpen ? 'stroke-amber-500/80' : 'stroke-red-900/40';
                         }
 
                         // 高亮狀態
@@ -1324,7 +1550,7 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
                     </text>
 
                     {/* 疊加標誌：NPC 在此處 */}
-                    {node.presentNpcs && node.presentNpcs.length > 0 && (
+                    {Object.entries(charsData).some(([_, char]) => (char as any).locationState?.locationId === node.id) && (
                       <g transform="translate(10, -10)">
                         <circle r="6" className="fill-purple-600 stroke-slate-950 stroke-[1.5]" />
                         <User className="w-2.5 h-2.5 text-slate-100 absolute -translate-x-1.2 -translate-y-1.2 pointer-events-none" />
@@ -1624,38 +1850,40 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
               {/* NPC 列表 */}
               <div className="flex flex-col gap-1.5">
                 <span className="text-[9px] text-slate-500 font-bold">在場NPC蹤跡</span>
-                {selectedNode.presentNpcs && selectedNode.presentNpcs.length > 0 ? (
-                  selectedNode.presentNpcs.map(npc => {
-                    const charData = charsData[npc.name];
-                    const obedience = charData ? charData.obedience : 0;
-                    const alertness = charData ? charData.alertness : 0;
-                    return (
-                      <div
-                        key={npc.name}
-                        className="flex items-center gap-2.5 bg-slate-900/60 p-2 rounded-xl border border-slate-850"
-                      >
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-[11px] font-bold">
-                          {npc.name[0]}
-                        </div>
-                        <div className="flex-1 flex flex-col gap-0.5">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-bold text-slate-200">{npc.name}</span>
-                            <span className="text-[8px] text-slate-400 bg-slate-950 px-1 py-0.5 rounded-full font-mono scale-95">
-                              {npc.status}
-                            </span>
+                {Object.entries(charsData).some(([_, char]) => (char as any).locationState?.locationId === selectedNode.id) ? (
+                  Object.entries(charsData)
+                    .filter(([_, char]) => (char as any).locationState?.locationId === selectedNode.id)
+                    .map(([npcName, char]) => {
+                      const obedience = char ? char.obedience : 0;
+                      const alertness = char ? char.alertness : 0;
+                      const status = (char as any).locationState?.locationStatus || '在此處';
+                      return (
+                        <div
+                          key={npcName}
+                          className="flex items-center gap-2.5 bg-slate-900/60 p-2 rounded-xl border border-slate-850"
+                        >
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-[11px] font-bold">
+                            {npcName[0]}
                           </div>
-                          <div className="flex gap-2 text-[8px] text-slate-400">
-                            <span>
-                              服從度: <strong className="text-purple-400">{obedience}</strong>
-                            </span>
-                            <span>
-                              警戒度: <strong className="text-red-400">{alertness}</strong>
-                            </span>
+                          <div className="flex-1 flex flex-col gap-0.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-bold text-slate-200">{npcName}</span>
+                              <span className="text-[8px] text-slate-400 bg-slate-950 px-1 py-0.5 rounded-full font-mono scale-95">
+                                {status}
+                              </span>
+                            </div>
+                            <div className="flex gap-2 text-[8px] text-slate-400">
+                              <span>
+                                服從度: <strong className="text-purple-400">{obedience}</strong>
+                              </span>
+                              <span>
+                                警戒度: <strong className="text-red-400">{alertness}</strong>
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })
+                      );
+                    })
                 ) : (
                   <span className="text-[9px] text-slate-400 italic">此處目前空無一人...</span>
                 )}
@@ -1698,23 +1926,7 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
                 </button>
               )}
 
-              {mapState.currentLocationId !== selectedNode.id && (
-                <button
-                  onClick={async () => {
-                    const targetId = selectedNode.id;
-                    const nextState = await MockMapApi.teleportToLocation(targetId);
-                    setMapState(nextState);
-                    await loadPlayerResources();
-
-                    logger.info(`[測試傳送] 主角已強制移動至：${selectedNode.name}`);
-                    setNotification({ type: 'move', content: `[測試傳送] 已強制將主角傳送至：\n${selectedNode.name}` });
-                    setTimeout(() => setNotification(null), 3000);
-                  }}
-                  className="w-full mt-2 py-1.5 rounded-xl border border-purple-500/30 bg-purple-950/20 text-purple-300 font-semibold text-[10px] flex items-center justify-center gap-1.5 active:scale-95 transition-all hover:bg-purple-950/30 hover:border-purple-500/50"
-                >
-                  <span>[測試] 強制移動至此處</span>
-                </button>
-              )}
+              {/* 強制移動測試按鈕已被移除 */}
             </div>
           </div>
         </div>

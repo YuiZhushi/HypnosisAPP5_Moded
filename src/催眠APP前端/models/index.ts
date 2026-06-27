@@ -93,8 +93,7 @@ export interface MockcharData {
   obedience: number;
   lust: number;
   arousal: number;
-  sensitivity: sensitivityDefs;
-  orgasm: OrgasmDefs;
+  bodyParts: BodyPartsDefs;
   ownedHypnosisEffects: Record<
     string,
     { endTime: string; hypnosisType: 'temporary' | 'permanent' | 'oneTime'; description: string }
@@ -102,6 +101,10 @@ export interface MockcharData {
   // NPC 的背包與裝備，與玩家背包結構對稱
   inventory: Record<string, InventoryItemState>;
   ownedBodyModifications: Record<string, any>;
+  locationState?: {
+    locationId: string;
+    locationStatus: string;
+  };
 }
 
 // ==========================================
@@ -152,7 +155,7 @@ export interface MvuVariables {
     mapState: MockMapState;
     ownedAchievements: Record<string, MockAchievementState>;
     ownedQuests: Record<string, MockQuestState>;
-    
+
     // 玩家背包
     inventory: Record<string, InventoryItemState>;
   };
@@ -163,16 +166,19 @@ export interface MvuVariables {
     obedience: number;
     lust: number;
     arousal: number;
-    sensitivity: sensitivityDefs;
-    orgasm: OrgasmDefs;
+    bodyParts: BodyPartsDefs;
     ownedHypnosisEffects: Record<
       string,
       { endTime: string; hypnosisType: 'temporary' | 'permanent' | 'oneTime'; description: string }
     >;
-    
+
     // 主要 NPC 背包
     inventory: Record<string, InventoryItemState>;
     ownedBodyModifications: Record<string, any>;
+    locationState?: {
+      locationId: string;
+      locationStatus: string;
+    };
   }>;
 }
 
@@ -285,18 +291,15 @@ export interface ConditionOnProgram {
     | 'mcEnergyMax'
     | 'vipTier'
     | 'suspicion'
-    | 'sensitivity'
-    | 'clitSensitivity'
-    | 'vaginaSensitivity'
-    | 'anusSensitivity'
-    | 'urethraSensitivity'
-    | 'nippleSensitivity'
-    | 'orgasm'
-    | 'clitOrgasms'
-    | 'vaginaOrgasms'
-    | 'anusOrgasms'
-    | 'urethraOrgasms'
-    | 'nippleOrgasms'
+    | 'totalSensitivity'
+    | 'totalOrgasms'
+    | 'mouthSensitivity' | 'mouthTightness' | 'mouthProficiency' | 'mouthOrgasms'
+    | 'breastLeftSensitivity' | 'breastLeftProficiency' | 'breastLeftOrgasms'
+    | 'breastRightSensitivity' | 'breastRightProficiency' | 'breastRightOrgasms'
+    | 'vaginaSensitivity' | 'vaginaTightness' | 'vaginaProficiency' | 'vaginaOrgasms'
+    | 'anusSensitivity' | 'anusTightness' | 'anusProficiency' | 'anusOrgasms'
+    | 'urethraSensitivity' | 'urethraTightness' | 'urethraProficiency' | 'urethraOrgasms'
+    | 'clitorisSensitivity' | 'clitorisProficiency' | 'clitorisOrgasms'
     | 'alertness'
     | 'affection'
     | 'obedience'
@@ -354,22 +357,23 @@ export interface MockCalendarData {
 }
 
 // ==========================================
-// 角色屬性微定義
+// 角色屬性微定義 (身體部位管理)
 // ==========================================
-export interface sensitivityDefs {
-  clitSensitivity: number;
-  vaginaSensitivity: number;
-  anusSensitivity: number;
-  urethraSensitivity: number;
-  nippleSensitivity: number;
+export interface BodyPartStat {
+  sensitivity: number;  // 敏感度: 可正可負 (-100 ~ 100，超過 100 或低於 -100 為特殊情況)
+  tightness?: number;   // 鬆緊度: 可選，可正可負 (-100 ~ 100，0為正常，正數為緊緻，負數為鬆弛)
+  proficiency: number;  // 熟練度: (0 ~ 100)
+  orgasms: number;      // 高潮次數: (>= 0)
 }
 
-export interface OrgasmDefs {
-  clitOrgasms: number;
-  vaginaOrgasms: number;
-  anusOrgasms: number;
-  urethraOrgasms: number;
-  nippleOrgasms: number;
+export interface BodyPartsDefs {
+  mouth: BodyPartStat;
+  breastLeft: BodyPartStat;
+  breastRight: BodyPartStat;
+  vagina: BodyPartStat;
+  anus: BodyPartStat;
+  urethra: BodyPartStat;
+  clitoris: BodyPartStat;
 }
 
 // ==========================================
@@ -385,7 +389,6 @@ export interface MockLocationNode {
   name: string;
   zoneId: string;
   description: string;
-  presentNpcs?: MockNpcTrace[];
   hasQuest?: boolean;
 }
 
@@ -399,13 +402,13 @@ export interface PathInfo {
   unlockCondition?: {
     type: 'obedience' | 'item' | 'always_locked';
     targetName?: string;
-    value?: number;
+    // value?: number;
     description: string;
   };
   tempConditon?: {
     type: 'item' | 'time' | 'character';
     targetName?: string;
-    value?: number;
+    // value?: number;
     description: string;
   };
 }
@@ -463,3 +466,5 @@ export interface PromptTemplate {
 export interface AppSettings {
   prompts: PromptTemplate[];
 }
+
+
