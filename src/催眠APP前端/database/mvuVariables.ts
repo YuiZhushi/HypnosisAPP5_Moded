@@ -50,6 +50,8 @@ export const mvuDatabasePatch: Partial<MvuVariables> = {
       item_mc_potion_s: { quantity: 3 },
       item_suspicion_remover: { quantity: 1 },
       item_fridge_food: { quantity: 2 },
+      item_time_battery: { quantity: 1 },
+      item_sus_amulet: { quantity: 1 },
     },
 
     // 地圖當前狀態
@@ -120,9 +122,20 @@ export const mvuDatabasePatch: Partial<MvuVariables> = {
         永久虚假记忆: { endTime: 'permanent', hypnosisType: 'permanent', description: '永遠記得這件事' },
       },
       inventory: {
-        item_eye_mask: { quantity: 1, isEquipped: false, equipSlot: 'eyes', customDescription: '西園寺愛麗莎的專屬粉色眼罩' },
+        item_eye_mask: {
+          quantity: 1,
+          isEquipped: false,
+          equipSlot: 'eyes',
+          customDescription: '西園寺愛麗莎的專屬粉色眼罩',
+        },
+        item_obedience_collar: { quantity: 1, isEquipped: true, equipSlot: 'neck' },
+        item_crystal_heart: { quantity: 1 },
       },
-      ownedBodyModifications: {},
+      ownedBodyModifications: {
+        tail: true,
+        tentacles: true,
+        horns: true,
+      },
       locationState: {
         locationId: 'home_sister_room',
         locationStatus: '正坐在書桌前用電腦',

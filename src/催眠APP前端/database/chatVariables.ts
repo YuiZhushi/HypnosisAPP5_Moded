@@ -196,4 +196,47 @@ export const chatDatabasePatch: Partial<ChatVariables> = {
       description: '測試新的催眠組合',
     },
   },
+  // ==========================================
+  // 自訂身體部位定義
+  // ==========================================
+  bodyParts: {
+    tail: {
+      id: 'tail',
+      name: '尾巴',
+      isCustom: true,
+      hasTightness: true,
+      hasProficiency: true,
+      canOrgasm: true,
+      description: '改造後生長出的敏感尾巴。',
+    },
+    wings: {
+      id: 'wings',
+      name: '翅膀',
+      isCustom: true,
+      hasProficiency: true,
+      canOrgasm: true,
+      description: '改造後生長出的惡魔翅膀。',
+    },
+    tentacles: {
+      id: 'tentacles',
+      name: '觸手',
+      isCustom: true,
+      hasTightness: true,
+      description: '改造後從後背延伸出的滑膩觸手。',
+    },
+    horns: {
+      id: 'horns',
+      name: '角',
+      isCustom: true,
+      description: '改造後在額頭生長出的小巧惡魔角。',
+    },
+    breastExtra: {
+      id: 'breastExtra',
+      name: '額外乳房',
+      isCustom: true,
+      hasSensitivity: true,
+      canOrgasm: true,
+      description: '改造後在腹部生長出的第二對乳房。',
+    },
+  },
 };

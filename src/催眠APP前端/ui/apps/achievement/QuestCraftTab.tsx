@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { MockUserData, AchievementOrQuestDef, ConditionOnProgram } from '../../../models';
+import React, { useState, useEffect } from 'react';
+import { MockUserData, AchievementOrQuestDef, ConditionOnProgram, BodyPartsDef } from '../../../models';
 import { MockApi } from '../../../shared/api/mockApi';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -18,6 +18,22 @@ interface QuestCraftTabProps {
 export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftComplete, charNames }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [bodyPartsDefs, setBodyPartsDefs] = useState<Record<string, BodyPartsDef>>({});
+
+  useEffect(() => {
+    let stopped = false;
+    void (async () => {
+      try {
+        const defs = await MockApi.getBodyPartsDef();
+        if (!stopped) setBodyPartsDefs(defs);
+      } catch (err) {
+        console.error('[QuestCraftTab] 讀取身體部位定義失敗', err);
+      }
+    })();
+    return () => {
+      stopped = true;
+    };
+  }, []);
 
   const [conditionType, setConditionType] = useState<'program' | 'ai'>('program');
   const [aiCondition, setAiCondition] = useState('');
@@ -265,37 +281,50 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
                             <option value="totalSensitivity">總敏感度</option>
                             <option value="totalOrgasms">總高潮次數</option>
                             
-                            <option value="mouthSensitivity">口腔敏感度</option>
-                            <option value="mouthTightness">口腔鬆緊度</option>
-                            <option value="mouthProficiency">口腔熟練度</option>
-                            <option value="mouthOrgasms">口腔高潮次數</option>
+                            {Object.keys(bodyPartsDefs).length > 0 ? (
+                              Object.entries(bodyPartsDefs).map(([id, def]) => (
+                                <React.Fragment key={id}>
+                                  {def.hasSensitivity && <option value={`${id}Sensitivity`}>{def.name}敏感度</option>}
+                                  {def.hasTightness && <option value={`${id}Tightness`}>{def.name}鬆緊度</option>}
+                                  {def.hasProficiency && <option value={`${id}Proficiency`}>{def.name}熟練度</option>}
+                                  {def.canOrgasm && <option value={`${id}Orgasms`}>{def.name}高潮次數</option>}
+                                </React.Fragment>
+                              ))
+                            ) : (
+                              <>
+                                <option value="mouthSensitivity">口腔敏感度</option>
+                                <option value="mouthTightness">口腔鬆緊度</option>
+                                <option value="mouthProficiency">口腔熟練度</option>
+                                <option value="mouthOrgasms">口腔高潮次數</option>
 
-                            <option value="breastLeftSensitivity">左乳敏感度</option>
-                            <option value="breastLeftProficiency">左乳熟練度</option>
-                            <option value="breastLeftOrgasms">左乳高潮次數</option>
+                                <option value="breastLeftSensitivity">左乳敏感度</option>
+                                <option value="breastLeftProficiency">左乳熟練度</option>
+                                <option value="breastLeftOrgasms">左乳高潮次數</option>
 
-                            <option value="breastRightSensitivity">右乳敏感度</option>
-                            <option value="breastRightProficiency">右乳熟練度</option>
-                            <option value="breastRightOrgasms">右乳高潮次數</option>
+                                <option value="breastRightSensitivity">右乳敏感度</option>
+                                <option value="breastRightProficiency">右乳熟練度</option>
+                                <option value="breastRightOrgasms">右乳高潮次數</option>
 
-                            <option value="vaginaSensitivity">陰道敏感度</option>
-                            <option value="vaginaTightness">陰道鬆緊度</option>
-                            <option value="vaginaProficiency">陰道熟練度</option>
-                            <option value="vaginaOrgasms">陰道高潮次數</option>
+                                <option value="vaginaSensitivity">陰道敏感度</option>
+                                <option value="vaginaTightness">陰道鬆緊度</option>
+                                <option value="vaginaProficiency">陰道熟練度</option>
+                                <option value="vaginaOrgasms">陰道高潮次數</option>
 
-                            <option value="anusSensitivity">後庭敏感度</option>
-                            <option value="anusTightness">後庭鬆緊度</option>
-                            <option value="anusProficiency">後庭熟練度</option>
-                            <option value="anusOrgasms">後庭高潮次數</option>
+                                <option value="anusSensitivity">後庭敏感度</option>
+                                <option value="anusTightness">後庭鬆緊度</option>
+                                <option value="anusProficiency">後庭熟練度</option>
+                                <option value="anusOrgasms">後庭高潮次數</option>
 
-                            <option value="urethraSensitivity">尿道敏感度</option>
-                            <option value="urethraTightness">尿道鬆緊度</option>
-                            <option value="urethraProficiency">尿道熟練度</option>
-                            <option value="urethraOrgasms">尿道高潮次數</option>
+                                <option value="urethraSensitivity">尿道敏感度</option>
+                                <option value="urethraTightness">尿道鬆緊度</option>
+                                <option value="urethraProficiency">尿道熟練度</option>
+                                <option value="urethraOrgasms">尿道高潮次數</option>
 
-                            <option value="clitorisSensitivity">陰蒂敏感度</option>
-                            <option value="clitorisProficiency">陰蒂熟練度</option>
-                            <option value="clitorisOrgasms">陰蒂高潮次數</option>
+                                <option value="clitorisSensitivity">陰蒂敏感度</option>
+                                <option value="clitorisProficiency">陰蒂熟練度</option>
+                                <option value="clitorisOrgasms">陰蒂高潮次數</option>
+                              </>
+                            )}
 
                             <option value="obedience">服從度</option>
                             <option value="alertness">警戒度</option>

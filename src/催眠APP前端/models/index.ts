@@ -93,7 +93,7 @@ export interface MockcharData {
   obedience: number;
   lust: number;
   arousal: number;
-  bodyParts: BodyPartsDefs;
+  bodyParts: CharBodyPartsDefs;
   ownedHypnosisEffects: Record<
     string,
     { endTime: string; hypnosisType: 'temporary' | 'permanent' | 'oneTime'; description: string }
@@ -134,6 +134,8 @@ export interface ChatVariables {
   mapEdges: MockMapEdge[];
   // 物品靜態資料庫
   items: Record<string, ItemDef>;
+  // 身體部位定義相關邏輯
+  bodyParts: Record<string, BodyPartsDef>;
 }
 
 export interface MvuVariables {
@@ -166,7 +168,7 @@ export interface MvuVariables {
     obedience: number;
     lust: number;
     arousal: number;
-    bodyParts: BodyPartsDefs;
+    bodyParts: CharBodyPartsDefs;
     ownedHypnosisEffects: Record<
       string,
       { endTime: string; hypnosisType: 'temporary' | 'permanent' | 'oneTime'; description: string }
@@ -209,6 +211,11 @@ export interface CostDict {
 export type ItemType = 'consumable' | 'passive' | 'equipment' | 'material';
 export type ItemRarity = 'common' | 'rare' | 'epic' | 'legendary';
 
+// ==========================================
+// 物品激活屬性相關型別與定義
+// ==========================================
+export type ItemActivationType = 'periodic' | 'conditional' | 'permanent' | 'none';
+
 export interface ItemDef {
   id: string;               // 唯一識別碼 (例如: item_old_key, item_mc_potion_s)
   name: string;             // 物品名稱 (例如: "老舊鑰匙", "低階能量藥水")
@@ -231,6 +238,12 @@ export interface ItemDef {
 
   // 使用效果 (純文字描述，保留 AI 靈活性與被動效果描述)
   effectDescription?: string; // 物品使用效果、被動效果或裝備影響的純文字說明
+
+  // 激活屬性與規則 (擴充欄位)
+  activationType: ItemActivationType;          // 激活類型 (none / periodic / conditional / permanent)
+  activationTimeRule?: string;                // (僅週期性) 時間激活條件規則 (JSON 格式)
+  activationCondition?: ConditionOnProgram[];  // (僅條件性) 屬性變數激活條件
+  activationDescription?: string;             // 激活效果純文字描述
 }
 
 // 背包項目狀態定義 (包含數量、裝備狀態、部位與自訂臨時描述)
@@ -239,6 +252,9 @@ export interface InventoryItemState {
   isEquipped?: boolean;         // (僅裝備) 是否正被玩家或 NPC 裝備/穿戴中
   equipSlot?: string;           // (僅裝備) 裝備部位描述 (如: "head", "eyes", "body", "crotch" 等)
   customDescription?: string;    // 物品可選的附加臨時描述 (例如: "沾著泥土的鑰匙")
+  
+  // 運行時激活狀態 (擴充欄位)
+  isActive?: boolean;           // 該物品當前是否處於激活狀態
 }
 
 export interface HypnosisDef {
@@ -293,18 +309,12 @@ export interface ConditionOnProgram {
     | 'suspicion'
     | 'totalSensitivity'
     | 'totalOrgasms'
-    | 'mouthSensitivity' | 'mouthTightness' | 'mouthProficiency' | 'mouthOrgasms'
-    | 'breastLeftSensitivity' | 'breastLeftProficiency' | 'breastLeftOrgasms'
-    | 'breastRightSensitivity' | 'breastRightProficiency' | 'breastRightOrgasms'
-    | 'vaginaSensitivity' | 'vaginaTightness' | 'vaginaProficiency' | 'vaginaOrgasms'
-    | 'anusSensitivity' | 'anusTightness' | 'anusProficiency' | 'anusOrgasms'
-    | 'urethraSensitivity' | 'urethraTightness' | 'urethraProficiency' | 'urethraOrgasms'
-    | 'clitorisSensitivity' | 'clitorisProficiency' | 'clitorisOrgasms'
     | 'alertness'
     | 'affection'
     | 'obedience'
     | 'lust'
-    | 'arousal';
+    | 'arousal'
+    | string;
   operator: '==' | '!=' | '>=' | '<=' | '>' | '<';
   value: number;
   charName?: string; // 支持特定角色的成就
@@ -359,14 +369,25 @@ export interface MockCalendarData {
 // ==========================================
 // 角色屬性微定義 (身體部位管理)
 // ==========================================
-export interface BodyPartStat {
-  sensitivity: number;  // 敏感度: 可正可負 (-100 ~ 100，超過 100 或低於 -100 為特殊情況)
-  tightness?: number;   // 鬆緊度: 可選，可正可負 (-100 ~ 100，0為正常，正數為緊緻，負數為鬆弛)
-  proficiency: number;  // 熟練度: (0 ~ 100)
-  orgasms: number;      // 高潮次數: (>= 0)
+export interface BodyPartsDef {
+  id: string;          // 唯一識別碼 (如: 'mouth', 'breastLeft', 'tail')
+  name: string;        // 顯示名稱 (如: '口腔', '左乳房', '尾巴')
+  isCustom: boolean;   // 是否為自訂部位
+  hasSensitivity?: boolean;   // 是否有敏感度屬性 (預設為 false)
+  hasTightness?: boolean;     // 是否有鬆緊度屬性 (預設為 false)
+  hasProficiency?: boolean;   // 是否有熟練度屬性 (預設為 false)
+  canOrgasm?: boolean;        // 是否能高潮屬性 (預設為 false)
+  description: string; // 基礎描述
 }
 
-export interface BodyPartsDefs {
+export interface BodyPartStat {
+  sensitivity?: number;  // 敏感度: 可正可負 (-100 ~ 100，超過 100 或低於 -100 為特殊情況)
+  tightness?: number;   // 鬆緊度: 可選，可正可負 (-100 ~ 100，0為正常，正數為緊緻，負數為鬆弛)
+  proficiency?: number;  // 熟練度: (0 ~ 100)
+  orgasms?: number;      // 高潮次數: (>= 0)
+}
+
+export interface CharBodyPartsDefs {
   mouth: BodyPartStat;
   breastLeft: BodyPartStat;
   breastRight: BodyPartStat;
@@ -374,6 +395,7 @@ export interface BodyPartsDefs {
   anus: BodyPartStat;
   urethra: BodyPartStat;
   clitoris: BodyPartStat;
+  [key: string]: BodyPartStat | undefined;
 }
 
 // ==========================================
@@ -400,13 +422,13 @@ export interface PathInfo {
     moneyCost?: number;
   };
   unlockCondition?: {
-    type: 'obedience' | 'item' | 'always_locked';
+    type: 'item' | 'npc_stats' | 'always_locked';
     targetName?: string;
     // value?: number;
     description: string;
   };
   tempConditon?: {
-    type: 'item' | 'time' | 'character';
+    type: 'item' | 'time' | 'npc_stats';
     targetName?: string;
     // value?: number;
     description: string;

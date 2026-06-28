@@ -7,6 +7,7 @@ import {
   MockZone,
   MockLocationNode,
   MockMapEdge,
+  BodyPartsDef,
 } from '../models';
 
 // ==========================================
@@ -1225,6 +1226,7 @@ export const ITEM_DICTIONARY: Record<string, ItemDef> = {
     isSellable: false,
     isPurchasable: false,
     isStackable: false,
+    activationType: 'none',
   },
   item_lab_card: {
     id: 'item_lab_card',
@@ -1235,6 +1237,7 @@ export const ITEM_DICTIONARY: Record<string, ItemDef> = {
     isSellable: false,
     isPurchasable: false,
     isStackable: false,
+    activationType: 'none',
   },
   item_student_key: {
     id: 'item_student_key',
@@ -1245,6 +1248,7 @@ export const ITEM_DICTIONARY: Record<string, ItemDef> = {
     isSellable: false,
     isPurchasable: false,
     isStackable: false,
+    activationType: 'none',
   },
   item_fridge_food: {
     id: 'item_fridge_food',
@@ -1257,6 +1261,7 @@ export const ITEM_DICTIONARY: Record<string, ItemDef> = {
     isPurchasable: true,
     isStackable: true,
     maxStack: 99,
+    activationType: 'none',
   },
 
   // 2. 消耗品 (Consumable)
@@ -1272,6 +1277,7 @@ export const ITEM_DICTIONARY: Record<string, ItemDef> = {
     isStackable: true,
     maxStack: 99,
     effectDescription: '恢復 50 點 MC 能量。',
+    activationType: 'none',
   },
   item_suspicion_remover: {
     id: 'item_suspicion_remover',
@@ -1285,6 +1291,7 @@ export const ITEM_DICTIONARY: Record<string, ItemDef> = {
     isStackable: true,
     maxStack: 10,
     effectDescription: '使主角的可疑度降低 10%。',
+    activationType: 'none',
   },
 
   // 3. 被動加成道具 (Passive)
@@ -1299,6 +1306,8 @@ export const ITEM_DICTIONARY: Record<string, ItemDef> = {
     isPurchasable: true,
     isStackable: false,
     effectDescription: '放在背包即可生效，使商店所有商品售價打 9 折。',
+    activationType: 'permanent',
+    activationDescription: 'VIP尊榮卡：永久激活，使商店所有商品售價打 9 折。',
   },
 
   // 4. 調教與裝備道具 (Equipment)
@@ -1313,6 +1322,7 @@ export const ITEM_DICTIONARY: Record<string, ItemDef> = {
     isPurchasable: true,
     isStackable: false,
     effectDescription: '裝備於眼部。大幅降低警戒度增加速度，並在催眠中增加其服從。',
+    activationType: 'none',
   },
   item_gag: {
     id: 'item_gag',
@@ -1325,6 +1335,68 @@ export const ITEM_DICTIONARY: Record<string, ItemDef> = {
     isPurchasable: true,
     isStackable: false,
     effectDescription: '裝備於口部。限制其發聲，使其難以反抗，提高對話催眠效率。',
+    activationType: 'none',
+  },
+
+  // 5. 擴充激活測試道具
+  item_crystal_heart: {
+    id: 'item_crystal_heart',
+    name: '愛心水晶',
+    description: '散發著溫暖粉色光芒的神秘水晶。只要放在背包裡即永久處於激活狀態，能拉近與女主角們的距離。',
+    type: 'passive',
+    rarity: 'epic',
+    cost: { pts: 30 },
+    isSellable: false,
+    isPurchasable: true,
+    isStackable: false,
+    effectDescription: '放在背包即永久激活，使互動獲得的好感度額外提升 20% (模擬效果)。',
+    activationType: 'permanent',
+    activationDescription: '愛心水晶：永久激活中，提升互動好感度增加效率。',
+  },
+  item_time_battery: {
+    id: 'item_time_battery',
+    name: '時間電池',
+    description: '科技感十足的微型能量電池。每到每日黃昏與夜晚的特定時間段會釋放磁場，為主角補充能量。',
+    type: 'passive',
+    rarity: 'epic',
+    cost: { pts: 40 },
+    isSellable: false,
+    isPurchasable: true,
+    isStackable: false,
+    effectDescription: '每日 18:00 - 22:00 區段自動激活，每次流逝時間若仍在該區段內則持續恢復 MC 精神力。',
+    activationType: 'periodic',
+    activationTimeRule: '[{"type":"daily","range":"18:00-22:00"}]',
+    activationDescription: '時間電池：每日黃昏 (18:00 - 22:00) 自動激活，釋放精神能量。',
+  },
+  item_sus_amulet: {
+    id: 'item_sus_amulet',
+    name: '避嫌護符',
+    description: '帶有淡淡紫光的護身符。當主角行跡過於可疑、引人側目時，會自動激活並隱蔽主角的氣息。',
+    type: 'passive',
+    rarity: 'rare',
+    cost: { money: 3000 },
+    isSellable: true,
+    isPurchasable: true,
+    isStackable: false,
+    effectDescription: '當可疑度大於等於 30% 時自動激活，加快可疑度的自動下降速度 (模擬效果)。',
+    activationType: 'conditional',
+    activationCondition: [{ target: 'suspicion', operator: '>=', value: 30 }],
+    activationDescription: '避嫌護符：當主角可疑度大於等於 30% 時自動激活。',
+  },
+  item_obedience_collar: {
+    id: 'item_obedience_collar',
+    name: '順從項圈',
+    description: '專為角色設計的黑色皮革項圈。只要該角色的服從度達到一定門檻，項圈就會自動激活並發揮束縛力。',
+    type: 'equipment',
+    rarity: 'rare',
+    cost: { money: 4000 },
+    isSellable: true,
+    isPurchasable: true,
+    isStackable: false,
+    effectDescription: '裝備於頸部。當裝備者的服從度大於等於 30% 時自動激活，使其服從增加速度提升。',
+    activationType: 'conditional',
+    activationCondition: [{ target: 'obedience', operator: '>=', value: 30 }],
+    activationDescription: '順從項圈：當角色服從度大於等於 30% 時自動激活，發揮調教束縛效果。',
   },
 };
 
@@ -2007,7 +2079,7 @@ export const MAP_MAP_EDGES: MockMapEdge[] = [
       status: 'locked',
       cost: { timeCostMinutes: 2, energyCost: 1 },
       unlockCondition: {
-        type: 'obedience',
+        type: 'npc_stats',
         targetName: '月咏深雪:obedience:>=:15',
         description: '需要風紀委員月咏深雪的服從度達到 15 以上才能進入',
       },
@@ -2091,7 +2163,7 @@ export const MAP_MAP_EDGES: MockMapEdge[] = [
       status: 'temp_open',
       cost: { timeCostMinutes: 1, energyCost: 0 },
       tempConditon: {
-        type: 'character',
+        type: 'npc_stats',
         targetName: '犬冢夏美:obedience:>=:0',
         description: '需要犬冢夏美在淋浴間使用中',
       },
@@ -2164,7 +2236,7 @@ export const MAP_MAP_EDGES: MockMapEdge[] = [
       status: 'locked',
       cost: { timeCostMinutes: 2, energyCost: 0 },
       unlockCondition: {
-        type: 'obedience',
+        type: 'npc_stats',
         targetName: '西园寺爱丽莎:obedience:>=:20',
         description: '需要愛麗莎的服從度達到 20 以上才能進入',
       },
@@ -2185,7 +2257,7 @@ export const MAP_MAP_EDGES: MockMapEdge[] = [
       status: 'locked',
       cost: { timeCostMinutes: 1, energyCost: 0 },
       unlockCondition: {
-        type: 'obedience',
+        type: 'npc_stats',
         targetName: '西园寺爱丽莎:obedience:>=:30',
         description: '需要愛麗莎的服從度達到 30 以上才能進入',
       },
@@ -2279,3 +2351,80 @@ export const MAP_MAP_EDGES: MockMapEdge[] = [
     },
   },
 ];
+
+// ==========================================
+// 預設身體部位定義 (Static Body Parts)
+// ==========================================
+export const BODY_PARTS_DICTIONARY: Record<string, BodyPartsDef> = {
+  mouth: {
+    id: 'mouth',
+    name: '口腔',
+    isCustom: false,
+    hasSensitivity: true,
+    hasTightness: true,
+    hasProficiency: true,
+    canOrgasm: true,
+    description: '用於說話、進食與親吻的部位。',
+  },
+  breastLeft: {
+    id: 'breastLeft',
+    name: '左乳房',
+    isCustom: false,
+    hasSensitivity: true,
+    hasTightness: false,
+    hasProficiency: true,
+    canOrgasm: true,
+    description: '左側乳房。',
+  },
+  breastRight: {
+    id: 'breastRight',
+    name: '右乳房',
+    isCustom: false,
+    hasSensitivity: true,
+    hasTightness: false,
+    hasProficiency: true,
+    canOrgasm: true,
+    description: '右側乳房。',
+  },
+  vagina: {
+    id: 'vagina',
+    name: '阴道',
+    isCustom: false,
+    hasSensitivity: true,
+    hasTightness: true,
+    hasProficiency: true,
+    canOrgasm: true,
+    description: '女性生殖器官。',
+  },
+  anus: {
+    id: 'anus',
+    name: '肛门',
+    isCustom: false,
+    hasSensitivity: true,
+    hasTightness: true,
+    hasProficiency: true,
+    canOrgasm: true,
+    description: '排泄器官，也是高度敏感的性刺激區。',
+  },
+  urethra: {
+    id: 'urethra',
+    name: '尿道',
+    isCustom: false,
+    hasSensitivity: true,
+    hasTightness: true,
+    hasProficiency: true,
+    canOrgasm: true,
+    description: '排尿管道，對深入刺激十分敏感。',
+  },
+  clitoris: {
+    id: 'clitoris',
+    name: '阴蒂',
+    isCustom: false,
+    hasSensitivity: true,
+    hasTightness: false,
+    hasProficiency: true,
+    canOrgasm: true,
+    description: '最為敏感的性神經聚集地。',
+  },
+};
+

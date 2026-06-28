@@ -14,6 +14,7 @@ import {
 import { MockApi } from '../../../shared/api/mockApi';
 import { waitForMvuReady } from '../../../shared/api/mvuBridge';
 import { logger } from '../../../../催眠APP共用/debug/loggerService';
+import { BodyPartsDef } from '../../../models';
 
 export type RoleMap = Record<string, Record<string, unknown>>;
 
@@ -86,6 +87,7 @@ export const BodyStatsApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [bodyPartsDefs, setBodyPartsDefs] = useState<Record<string, BodyPartsDef>>({});
 
   const [wbStatus, setWbStatus] = useState<'idle' | 'checking' | 'pass' | 'created' | 'error'>('idle');
   const [wbMessage, setWbMessage] = useState('');
@@ -134,6 +136,9 @@ export const BodyStatsApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setLoading(true);
 
     try {
+      const defs = await MockApi.getBodyPartsDef();
+      setBodyPartsDefs(defs);
+      
       const charData = await MockApi.getCharData();
       const rolesSnapshot: RoleMap = {};
 
@@ -409,7 +414,7 @@ export const BodyStatsApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <div className="text-xs font-bold text-white/80 tracking-wider">身体部位开发状态</div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {Object.entries((roleData as any)._bodyParts).map(([partKey, partVal]) => (
-                    <BodyPartCard key={partKey} partKey={partKey} stat={partVal as any} />
+                    <BodyPartCard key={partKey} partKey={partKey} stat={partVal as any} def={bodyPartsDefs[partKey]} />
                   ))}
                 </div>
               </div>
@@ -494,8 +499,8 @@ const PART_NAME_MAP: Record<string, string> = {
   clitoris: '阴蒂',
 };
 
-const BodyPartCard: React.FC<{ partKey: string; stat: any }> = ({ partKey, stat }) => {
-  const partName = PART_NAME_MAP[partKey] || partKey;
+const BodyPartCard: React.FC<{ partKey: string; stat: any; def?: BodyPartsDef }> = ({ partKey, stat, def }) => {
+  const partName = def ? def.name : (PART_NAME_MAP[partKey] || partKey);
   const sensGrade = MockApi.getStatGrade(stat.sensitivity, -100, 100);
   const sensColor = MockApi.getGradeColor(sensGrade);
 

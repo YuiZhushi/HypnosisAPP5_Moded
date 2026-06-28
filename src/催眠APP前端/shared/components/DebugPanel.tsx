@@ -334,6 +334,7 @@ export const DebugPanel: React.FC = () => {
       if (!next[npc].bodyParts) next[npc].bodyParts = {};
       if (!next[npc].bodyParts[part]) next[npc].bodyParts[part] = {};
       next[npc].bodyParts[part][key] = val;
+      return next;
     });
   };
 
@@ -473,19 +474,31 @@ export const DebugPanel: React.FC = () => {
       }
     });
 
-    // 回寫：玩家背包
+    // 回寫：玩家背包 (安全保留原有裝備、自訂描述等狀態)
+    const oldPlayerInv = { ...mockMvuVariables.user?.inventory };
     mockMvuVariables.user.inventory = {};
     Object.entries(localPlayerInv).forEach(([id, qty]) => {
-      if (qty > 0) mockMvuVariables.user.inventory[id] = { quantity: qty };
+      if (qty > 0) {
+        mockMvuVariables.user.inventory[id] = {
+          ...(oldPlayerInv[id] || {}),
+          quantity: qty
+        };
+      }
     });
 
-    // 回寫：NPC 背包
+    // 回寫：NPC 背包 (安全保留原有裝備、自訂描述等狀態)
     Object.entries(localNpcInvMap).forEach(([name, items]) => {
       const char = mockMvuVariables.chars[name] as any;
       if (!char) return;
+      const oldCharInv = { ...char.inventory };
       char.inventory = {};
       Object.entries(items).forEach(([id, qty]) => {
-        if (qty > 0) char.inventory[id] = { quantity: qty };
+        if (qty > 0) {
+          char.inventory[id] = {
+            ...(oldCharInv[id] || {}),
+            quantity: qty
+          };
+        }
       });
     });
 
@@ -501,6 +514,9 @@ export const DebugPanel: React.FC = () => {
 
     // 回寫：地圖連線
     mockChatVariables.mapEdges = JSON.parse(JSON.stringify(localEdges));
+
+    // 刷新背包物品激活狀態
+    MockApi.refreshInventoryItemsActivation();
 
     // 透過事件通知元件刷新，不需要 sessionStorage 或重載
     showSuccess('修改已套用到記憶體中。');
@@ -740,7 +756,7 @@ export const DebugPanel: React.FC = () => {
               className="bg-black border border-purple-500/20 rounded px-1 text-[9px] text-purple-100 focus:outline-none"
             >
               <option value="none">無條件</option>
-              <option value="obedience">角色門檻</option>
+              <option value="npc_stats">角色門檻</option>
               <option value="item">物品门槛</option>
               <option value="always_locked">永久鎖定</option>
             </select>
@@ -758,7 +774,7 @@ export const DebugPanel: React.FC = () => {
           )}
 
           {/* 角色解鎖條件 (多 NPC) */}
-          {unlockType === 'obedience' && (
+          {unlockType === 'npc_stats' && (
             <div className="space-y-1.5 pl-2 border-l border-purple-500/20">
               {parseNpcConditionString(rawUnlockTarget).map((cond, idx, arr) => (
                 <div key={idx} className="bg-black/40 p-2 rounded border border-purple-500/10 space-y-1.5">
@@ -783,31 +799,14 @@ export const DebugPanel: React.FC = () => {
                         <option value="lust">淫癖</option>
                       </optgroup>
                       <optgroup label="部位屬性">
-                        <option value="mouthSensitivity">口腔敏感度</option>
-                        <option value="mouthTightness">口腔鬆緊度</option>
-                        <option value="mouthProficiency">口腔熟練度</option>
-                        <option value="mouthOrgasms">口腔高潮數</option>
-                        <option value="vaginaSensitivity">陰道敏感度</option>
-                        <option value="vaginaTightness">陰道鬆緊度</option>
-                        <option value="vaginaProficiency">陰道熟練度</option>
-                        <option value="vaginaOrgasms">陰道高潮數</option>
-                        <option value="anusSensitivity">後庭敏感度</option>
-                        <option value="anusTightness">後庭鬆緊度</option>
-                        <option value="anusProficiency">後庭熟練度</option>
-                        <option value="anusOrgasms">後庭高潮數</option>
-                        <option value="urethraSensitivity">尿道敏感度</option>
-                        <option value="urethraTightness">尿道鬆緊度</option>
-                        <option value="urethraProficiency">尿道熟練度</option>
-                        <option value="urethraOrgasms">尿道高潮數</option>
-                        <option value="breastLeftSensitivity">左乳敏感度</option>
-                        <option value="breastLeftProficiency">左乳熟練度</option>
-                        <option value="breastLeftOrgasms">左乳高潮數</option>
-                        <option value="breastRightSensitivity">右乳敏感度</option>
-                        <option value="breastRightProficiency">右乳熟練度</option>
-                        <option value="breastRightOrgasms">右乳高潮數</option>
-                        <option value="clitorisSensitivity">陰蒂敏感度</option>
-                        <option value="clitorisProficiency">陰蒂熟練度</option>
-                        <option value="clitorisOrgasms">陰蒂高潮數</option>
+                        {Object.entries(mockChatVariables.bodyParts || {}).map(([id, def]) => (
+                          <React.Fragment key={id}>
+                            {def.hasSensitivity && <option value={`${id}Sensitivity`}>{def.name}敏感度</option>}
+                            {def.hasTightness && <option value={`${id}Tightness`}>{def.name}鬆緊度</option>}
+                            {def.hasProficiency && <option value={`${id}Proficiency`}>{def.name}熟練度</option>}
+                            {def.canOrgasm && <option value={`${id}Orgasms`}>{def.name}高潮數</option>}
+                          </React.Fragment>
+                        ))}
                       </optgroup>
                     </select>
                   </div>
@@ -900,7 +899,7 @@ export const DebugPanel: React.FC = () => {
               className="bg-black border border-purple-500/20 rounded px-1 text-[9px] text-purple-100 focus:outline-none"
             >
               <option value="none">無條件</option>
-              <option value="character">角色門檻</option>
+              <option value="npc_stats">角色門檻</option>
               <option value="item">物品門檻</option>
               <option value="time">時間通行</option>
             </select>
@@ -918,7 +917,7 @@ export const DebugPanel: React.FC = () => {
           )}
 
           {/* 角色門檻條件 */}
-          {tempType === 'character' && (
+          {tempType === 'npc_stats' && (
             <div className="space-y-1.5 pl-2 border-l border-purple-500/20">
               {parseNpcConditionString(rawTempTarget).map((cond, idx, arr) => (
                 <div key={idx} className="bg-black/40 p-2 rounded border border-purple-500/10 space-y-1.5">
@@ -943,31 +942,14 @@ export const DebugPanel: React.FC = () => {
                         <option value="lust">淫癖</option>
                       </optgroup>
                       <optgroup label="部位屬性">
-                        <option value="mouthSensitivity">口腔敏感度</option>
-                        <option value="mouthTightness">口腔鬆緊度</option>
-                        <option value="mouthProficiency">口腔熟練度</option>
-                        <option value="mouthOrgasms">口腔高潮數</option>
-                        <option value="vaginaSensitivity">陰道敏感度</option>
-                        <option value="vaginaTightness">陰道鬆緊度</option>
-                        <option value="vaginaProficiency">陰道熟練度</option>
-                        <option value="vaginaOrgasms">陰道高潮數</option>
-                        <option value="anusSensitivity">後庭敏感度</option>
-                        <option value="anusTightness">後庭鬆緊度</option>
-                        <option value="anusProficiency">後庭熟練度</option>
-                        <option value="anusOrgasms">後庭高潮數</option>
-                        <option value="urethraSensitivity">尿道敏感度</option>
-                        <option value="urethraTightness">尿道鬆緊度</option>
-                        <option value="urethraProficiency">尿道熟練度</option>
-                        <option value="urethraOrgasms">尿道高潮數</option>
-                        <option value="breastLeftSensitivity">左乳敏感度</option>
-                        <option value="breastLeftProficiency">左乳熟練度</option>
-                        <option value="breastLeftOrgasms">左乳高潮數</option>
-                        <option value="breastRightSensitivity">右乳敏感度</option>
-                        <option value="breastRightProficiency">右乳熟練度</option>
-                        <option value="breastRightOrgasms">右乳高潮數</option>
-                        <option value="clitorisSensitivity">陰蒂敏感度</option>
-                        <option value="clitorisProficiency">陰蒂熟練度</option>
-                        <option value="clitorisOrgasms">陰蒂高潮數</option>
+                        {Object.entries(mockChatVariables.bodyParts || {}).map(([id, def]) => (
+                          <React.Fragment key={id}>
+                            {def.hasSensitivity && <option value={`${id}Sensitivity`}>{def.name}敏感度</option>}
+                            {def.hasTightness && <option value={`${id}Tightness`}>{def.name}鬆緊度</option>}
+                            {def.hasProficiency && <option value={`${id}Proficiency`}>{def.name}熟練度</option>}
+                            {def.canOrgasm && <option value={`${id}Orgasms`}>{def.name}高潮數</option>}
+                          </React.Fragment>
+                        ))}
                       </optgroup>
                     </select>
                   </div>
@@ -1298,24 +1280,37 @@ export const DebugPanel: React.FC = () => {
               {Object.entries(allItems).map(([itemId, itemDef]) => {
                 const qty = getPlayerItemQty(itemId);
                 const hasItem = qty > 0;
+                const isActive = hasItem && !!mockMvuVariables.user?.inventory?.[itemId]?.isActive;
                 return (
-                  <div key={itemId} className={`flex items-center gap-1.5 p-1.5 rounded border transition-all ${hasItem ? 'bg-emerald-950/20 border-emerald-500/20' : 'bg-black/10 border-purple-500/10'}`}>
-                    <input type="checkbox" checked={hasItem}
-                      onChange={() => {
-                        if (hasItem) { setPlayerItemQty(itemId, 0); }
-                        else { setPlayerItemQty(itemId, 1); }
-                      }}
-                      className="accent-emerald-500 w-3 h-3" />
-                    <span className="text-[9px] text-gray-200 flex-1 truncate" title={itemDef.description}>
-                      {itemDef.name} <span className="text-gray-500">({itemId})</span>
-                    </span>
-                    {hasItem && (
-                      <div className="flex items-center gap-0.5 shrink-0">
-                        <AdjustBtn label="-1" onClick={() => setPlayerItemQty(itemId, Math.max(0, qty - 1))} color="red" />
-                        <input type="number" value={qty} min={0}
-                          onChange={e => setPlayerItemQty(itemId, Math.max(0, Number(e.target.value)))}
-                          className="w-10 bg-black/40 border border-purple-500/20 rounded px-1 py-0.5 text-[9px] text-purple-100 text-center focus:outline-none" />
-                        <AdjustBtn label="+1" onClick={() => setPlayerItemQty(itemId, qty + 1)} color="emerald" />
+                  <div key={itemId} className={`flex flex-col p-1.5 rounded border transition-all ${hasItem ? 'bg-emerald-950/20 border-emerald-500/20' : 'bg-black/10 border-purple-500/10'}`}>
+                    <div className="flex items-center gap-1.5 w-full">
+                      <input type="checkbox" checked={hasItem}
+                        onChange={() => {
+                          if (hasItem) { setPlayerItemQty(itemId, 0); }
+                          else { setPlayerItemQty(itemId, 1); }
+                        }}
+                        className="accent-emerald-500 w-3 h-3" />
+                      <span className="text-[9px] text-gray-200 flex-1 truncate" title={itemDef.description}>
+                        {itemDef.name} <span className="text-gray-500">({itemId})</span>
+                        {hasItem && itemDef.activationType !== 'none' && (
+                          <span className={`ml-1.5 px-1 py-px rounded text-[8px] font-bold ${isActive ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/20 animate-pulse' : 'bg-gray-900 text-gray-400 border border-gray-700/20'}`}>
+                            {isActive ? '● 激活中' : '○ 未激活'}
+                          </span>
+                        )}
+                      </span>
+                      {hasItem && (
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          <AdjustBtn label="-1" onClick={() => setPlayerItemQty(itemId, Math.max(0, qty - 1))} color="red" />
+                          <input type="number" value={qty} min={0}
+                            onChange={e => setPlayerItemQty(itemId, Math.max(0, Number(e.target.value)))}
+                            className="w-10 bg-black/40 border border-purple-500/20 rounded px-1 py-0.5 text-[9px] text-purple-100 text-center focus:outline-none" />
+                          <AdjustBtn label="+1" onClick={() => setPlayerItemQty(itemId, qty + 1)} color="emerald" />
+                        </div>
+                      )}
+                    </div>
+                    {hasItem && itemDef.activationType !== 'none' && itemDef.activationDescription && (
+                      <div className="text-[8px] text-purple-300 font-normal pl-4.5 mt-0.5 border-l border-purple-500/20 ml-1.5">
+                        效果: {itemDef.activationDescription}
                       </div>
                     )}
                   </div>
@@ -1390,43 +1385,60 @@ export const DebugPanel: React.FC = () => {
               <div className="p-2 bg-purple-950/10 border border-purple-500/10 rounded-lg space-y-2">
                 <div className="text-[10px] font-bold text-purple-300">🧬 身體部位開發狀態</div>
                 <div className="grid grid-cols-1 gap-2 max-h-[220px] overflow-y-auto pr-1 hypno-scrollbar">
-                  {Object.entries(PART_NAME_MAP).map(([partKey, partName]) => {
-                    const partStat = currentNpcStat.bodyParts[partKey] || { sensitivity: 0, proficiency: 0, orgasms: 0 };
-                    const isTightnessSupported = partStat.tightness !== undefined;
-                    const sensGrade = MockApi.getStatGrade(partStat.sensitivity, -100, 100);
+                  {Object.entries(mockChatVariables.bodyParts || {}).map(([partKey, partDef]) => {
+                    const partStat = currentNpcStat.bodyParts[partKey];
+                    if (!partStat) return null;
+
+                    const isSensitivitySupported = partDef ? partDef.hasSensitivity : true;
+                    const isTightnessSupported = partDef ? partDef.hasTightness : partKey.includes('mouth') || partKey.includes('vagina') || partKey.includes('anus') || partKey.includes('urethra');
+                    const isProficiencySupported = partDef ? partDef.hasProficiency : true;
+                    const isOrgasmSupported = partDef ? partDef.canOrgasm : true;
+
+                    const sensitivity = partStat.sensitivity ?? 0;
+                    const tightness = partStat.tightness ?? 0;
+                    const proficiency = partStat.proficiency ?? 0;
+                    const orgasms = partStat.orgasms ?? 0;
+
+                    const sensGrade = MockApi.getStatGrade(sensitivity, -100, 100);
                     const sensGradeColor = MockApi.getGradeColor(sensGrade);
                     
                     return (
                       <div key={partKey} className="p-2 bg-black/40 border border-purple-500/10 rounded-lg space-y-1.5">
                         <div className="text-[9px] font-bold text-white/95 border-b border-white/5 pb-1 flex justify-between">
-                          <span>{partName} ({partKey})</span>
+                          <span>{partDef.name} ({partKey})</span>
                         </div>
                         <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-[9px]">
                           {/* 敏感度 */}
-                          <div className="flex items-center gap-1">
-                            <span className="text-gray-400 w-10 shrink-0">敏感度</span>
-                            <input type="number" value={partStat.sensitivity} onChange={e => updateNpcBodyPartStat(selectedNpc, partKey, 'sensitivity', Number(e.target.value) || 0)} className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center" />
-                            <span className={`text-[8px] font-bold ${sensGradeColor}`}>{sensGrade}</span>
-                          </div>
+                          {isSensitivitySupported && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-gray-400 w-10 shrink-0">敏感度</span>
+                              <input type="number" value={sensitivity} onChange={e => updateNpcBodyPartStat(selectedNpc, partKey, 'sensitivity', Number(e.target.value) || 0)} className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center" />
+                              <span className={`text-[8px] font-bold ${sensGradeColor}`}>{sensGrade}</span>
+                            </div>
+                          )}
                           {/* 鬆緊度 */}
                           {isTightnessSupported && (
                             <div className="flex items-center gap-1">
                               <span className="text-gray-400 w-10 shrink-0">松紧度</span>
-                              <input type="number" value={partStat.tightness} onChange={e => updateNpcBodyPartStat(selectedNpc, partKey, 'tightness', Number(e.target.value) || 0)} className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center" />
-                              <span className={`text-[8px] font-bold ${MockApi.getGradeColor(MockApi.getStatGrade(partStat.tightness, -100, 100))}`}>{MockApi.getStatGrade(partStat.tightness, -100, 100)}</span>
+                              <input type="number" value={tightness} onChange={e => updateNpcBodyPartStat(selectedNpc, partKey, 'tightness', Number(e.target.value) || 0)} className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center" />
+                              <span className={`text-[8px] font-bold ${MockApi.getGradeColor(MockApi.getStatGrade(tightness, -100, 100))}`}>{MockApi.getStatGrade(tightness, -100, 100)}</span>
                             </div>
                           )}
                           {/* 熟練度 */}
-                          <div className="flex items-center gap-1">
-                            <span className="text-gray-400 w-10 shrink-0">熟练度</span>
-                            <input type="number" value={partStat.proficiency} onChange={e => updateNpcBodyPartStat(selectedNpc, partKey, 'proficiency', Number(e.target.value) || 0)} className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center" />
-                            <span className={`text-[8px] font-bold ${MockApi.getGradeColor(MockApi.getStatGrade(partStat.proficiency, 0, 100))}`}>{MockApi.getStatGrade(partStat.proficiency, 0, 100)}</span>
-                          </div>
+                          {isProficiencySupported && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-gray-400 w-10 shrink-0">熟练度</span>
+                              <input type="number" value={proficiency} onChange={e => updateNpcBodyPartStat(selectedNpc, partKey, 'proficiency', Number(e.target.value) || 0)} className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center" />
+                              <span className={`text-[8px] font-bold ${MockApi.getGradeColor(MockApi.getStatGrade(proficiency, 0, 100))}`}>{MockApi.getStatGrade(proficiency, 0, 100)}</span>
+                            </div>
+                          )}
                           {/* 高潮次數 */}
-                          <div className="flex items-center gap-1">
-                            <span className="text-gray-400 w-10 shrink-0">高潮次</span>
-                            <input type="number" value={partStat.orgasms} onChange={e => updateNpcBodyPartStat(selectedNpc, partKey, 'orgasms', Number(e.target.value) || 0)} className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center" />
-                          </div>
+                          {isOrgasmSupported && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-gray-400 w-10 shrink-0">高潮次</span>
+                              <input type="number" value={orgasms} onChange={e => updateNpcBodyPartStat(selectedNpc, partKey, 'orgasms', Number(e.target.value) || 0)} className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center" />
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
@@ -1443,22 +1455,37 @@ export const DebugPanel: React.FC = () => {
                   {Object.entries(allItems).map(([itemId, itemDef]) => {
                     const qty = getNpcItemQty(selectedNpc, itemId);
                     const hasItem = qty > 0;
+                    const isActive = hasItem && !!(mockMvuVariables.chars?.[selectedNpc]?.inventory as any)?.[itemId]?.isActive;
                     return (
-                      <div key={itemId} className={`flex items-center gap-1.5 p-1.5 rounded border transition-all ${hasItem ? 'bg-emerald-950/20 border-emerald-500/20' : 'bg-black/10 border-purple-500/10'}`}>
-                        <input type="checkbox" checked={hasItem}
-                          onChange={() => {
-                            if (hasItem) { setNpcItemQty(selectedNpc, itemId, 0); }
-                            else { setNpcItemQty(selectedNpc, itemId, 1); }
-                          }}
-                          className="accent-emerald-500 w-3 h-3" />
-                        <span className="text-[9px] text-gray-200 flex-1 truncate">{itemDef.name}</span>
-                        {hasItem && (
-                          <div className="flex items-center gap-0.5 shrink-0">
-                            <AdjustBtn label="-1" onClick={() => setNpcItemQty(selectedNpc, itemId, Math.max(0, qty - 1))} color="red" />
-                            <input type="number" value={qty} min={0}
-                              onChange={e => setNpcItemQty(selectedNpc, itemId, Math.max(0, Number(e.target.value)))}
-                              className="w-8 bg-black/40 border border-purple-500/20 rounded px-1 py-0.5 text-[9px] text-purple-100 text-center focus:outline-none" />
-                            <AdjustBtn label="+1" onClick={() => setNpcItemQty(selectedNpc, itemId, qty + 1)} color="emerald" />
+                      <div key={itemId} className={`flex flex-col p-1.5 rounded border transition-all ${hasItem ? 'bg-emerald-950/20 border-emerald-500/20' : 'bg-black/10 border-purple-500/10'}`}>
+                        <div className="flex items-center gap-1.5 w-full">
+                          <input type="checkbox" checked={hasItem}
+                            onChange={() => {
+                              if (hasItem) { setNpcItemQty(selectedNpc, itemId, 0); }
+                              else { setNpcItemQty(selectedNpc, itemId, 1); }
+                            }}
+                            className="accent-emerald-500 w-3 h-3" />
+                          <span className="text-[9px] text-gray-200 flex-1 truncate">
+                            {itemDef.name}
+                            {hasItem && itemDef.activationType !== 'none' && (
+                              <span className={`ml-1.5 px-1 py-px rounded text-[8px] font-bold ${isActive ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/20 animate-pulse' : 'bg-gray-900 text-gray-400 border border-gray-700/20'}`}>
+                                {isActive ? '● 激活中' : '○ 未激活'}
+                              </span>
+                            )}
+                          </span>
+                          {hasItem && (
+                            <div className="flex items-center gap-0.5 shrink-0">
+                              <AdjustBtn label="-1" onClick={() => setNpcItemQty(selectedNpc, itemId, Math.max(0, qty - 1))} color="red" />
+                              <input type="number" value={qty} min={0}
+                                onChange={e => setNpcItemQty(selectedNpc, itemId, Math.max(0, Number(e.target.value)))}
+                                className="w-8 bg-black/40 border border-purple-500/20 rounded px-1 py-0.5 text-[9px] text-purple-100 text-center focus:outline-none" />
+                              <AdjustBtn label="+1" onClick={() => setNpcItemQty(selectedNpc, itemId, qty + 1)} color="emerald" />
+                            </div>
+                          )}
+                        </div>
+                        {hasItem && itemDef.activationType !== 'none' && itemDef.activationDescription && (
+                          <div className="text-[8px] text-purple-300 font-normal pl-4.5 mt-0.5 border-l border-purple-500/20 ml-1.5">
+                            效果: {itemDef.activationDescription}
                           </div>
                         )}
                       </div>

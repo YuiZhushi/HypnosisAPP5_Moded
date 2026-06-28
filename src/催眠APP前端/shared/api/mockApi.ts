@@ -12,6 +12,8 @@ import {
   MockApiSettings,
   CalendarEvent,
   MockMapState,
+  BodyPartsDef,
+  MvuVariables,
 } from '../../models';
 
 import {
@@ -169,7 +171,12 @@ function evaluateProgramConditions(conditions: ConditionOnProgram[] | string): b
       'lust',
       'arousal',
     ];
-    if (charTargets.includes(cond.target)) {
+    const isBodyPartTarget = cond.target.endsWith('Sensitivity') ||
+                             cond.target.endsWith('Tightness') ||
+                             cond.target.endsWith('Proficiency') ||
+                             cond.target.endsWith('Orgasms') ||
+                             charTargets.includes(cond.target);
+    if (isBodyPartTarget) {
       for (const charName in mockMvuVariables.chars) {
         if (cond.charName && cond.charName !== charName) continue; // 如果指定了角色，只檢查該角色
 
@@ -323,6 +330,11 @@ export const MockApi = {
     return mockMvuVariables.chars as any;
   },
 
+  async getBodyPartsDef(): Promise<Record<string, BodyPartsDef>> {
+    await delay(100);
+    return JSON.parse(JSON.stringify(mockChatVariables.bodyParts || {}));
+  },
+
   async getAllHypnoModules(): Promise<Record<string, HypnoModuleDef>> {
     await delay(150);
     return { ...mockChatVariables.hypnoModules };
@@ -348,11 +360,13 @@ export const MockApi = {
 
   async getUserInventory(): Promise<Record<string, InventoryItemState>> {
     await delay(100);
+    refreshInventoryItemsActivation(mockMvuVariables);
     return JSON.parse(JSON.stringify(mockMvuVariables.user.inventory || {}));
   },
 
   async getCharInventory(charName: string): Promise<Record<string, InventoryItemState>> {
     await delay(100);
+    refreshInventoryItemsActivation(mockMvuVariables);
     const char = mockMvuVariables.chars[charName];
     return char ? JSON.parse(JSON.stringify(char.inventory || {})) : {};
   },
@@ -370,6 +384,7 @@ export const MockApi = {
     if (inv[itemId].quantity === 0 && !inv[itemId].isEquipped) {
       delete inv[itemId];
     }
+    refreshInventoryItemsActivation(mockMvuVariables);
   },
 
   async updateCharInventoryItem(charName: string, itemId: string, quantityPatch: number, isEquipped?: boolean, equipSlot?: string, customDesc?: string): Promise<void> {
@@ -388,6 +403,7 @@ export const MockApi = {
     if (inv[itemId].quantity === 0 && !inv[itemId].isEquipped) {
       delete inv[itemId];
     }
+    refreshInventoryItemsActivation(mockMvuVariables);
   },
 
   async updateUserResource(
@@ -415,6 +431,7 @@ export const MockApi = {
     }
 
     Object.assign(user, patch);
+    refreshInventoryItemsActivation(mockMvuVariables);
   },
 
   async updateUserOwnedHypnosis(id: string, enabled: boolean, settings?: any): Promise<void> {
@@ -813,6 +830,27 @@ export const MockApi = {
 
     state.currentLocationId = targetNodeId;
 
+    // ==========================================
+    // 地圖移動時間與能量模擬扣除邏輯
+    // ==========================================
+    if (totalTime > 0) {
+      const dt = new Date(mockMvuVariables.time.replace(/-/g, '/'));
+      if (!isNaN(dt.getTime())) {
+        dt.setMinutes(dt.getMinutes() + totalTime);
+        const y = dt.getFullYear();
+        const mo = String(dt.getMonth() + 1).padStart(2, '0');
+        const d = String(dt.getDate()).padStart(2, '0');
+        const h = String(dt.getHours()).padStart(2, '0');
+        const mi = String(dt.getMinutes()).padStart(2, '0');
+        const s = String(dt.getSeconds()).padStart(2, '0');
+        mockMvuVariables.time = `${y}-${mo}-${d} ${h}:${mi}:${s}`;
+      }
+    }
+    if (totalEnergy > 0) {
+      mockMvuVariables.user.mcEnergy = Math.max(0, mockMvuVariables.user.mcEnergy - totalEnergy);
+    }
+    refreshInventoryItemsActivation(mockMvuVariables);
+
     const pathNames = path.map(id => mockChatVariables.locations[id]?.name ?? id).join(' -> ');
     const entry = `[模擬移動定位] 從「${mockChatVariables.locations[startNodeId]?.name ?? startNodeId}」移動至「${mockChatVariables.locations[targetNodeId]?.name ?? targetNodeId}」，途經路線：${pathNames}。耗時：${totalTime}分鐘，消耗MC能量：${totalEnergy}點。`;
     console.info(`[HypnoOS][MapMock] ${entry}`);
@@ -1028,6 +1066,10 @@ export const MockApi = {
   getGradeColor(grade: string): string {
     return getGradeColor(grade);
   },
+
+  async refreshInventoryItemsActivation(): Promise<void> {
+    refreshInventoryItemsActivation(mockMvuVariables);
+  },
 };
 
 // ====== 輔助函式 ======
@@ -1049,14 +1091,10 @@ function compareValue(actual: number, operator: string, expected: number): boole
 
 // ==========================================
 // 多物品條件解析器
-// 格式: "itemId1:op:qty1,itemId2:op:qty2" 或舊格式 "老舊鑰匙"
+// 格式: "itemId1:op:qty1,itemId2:op:qty2"
 // ==========================================
 function parseItemConditions(targetName: string): Array<{ itemId: string; operator: string; quantity: number }> {
   if (!targetName) return [];
-  // 向後相容：如果不含 ':' 則視為舊格式單一物品名稱（需持有 >= 1）
-  if (!targetName.includes(':')) {
-    return [{ itemId: targetName, operator: '>=', quantity: 1 }];
-  }
   return targetName.split(',').map(part => {
     const segments = part.trim().split(':').map(s => s.trim());
     if (segments.length === 3) {
@@ -1073,14 +1111,10 @@ function parseItemConditions(targetName: string): Array<{ itemId: string; operat
 
 // ==========================================
 // 多 NPC 條件解析器
-// 格式: "NPC1:attr:op:val,NPC2:attr:op:val" 或舊格式 "月咏深雪" + value
+// 格式: "NPC1:attr:op:val,NPC2:attr:op:val"
 // ==========================================
-function parseNpcConditions(targetName: string, fallbackValue?: number): Array<{ npcName: string; attribute: string; operator: string; value: number }> {
+function parseNpcConditions(targetName: string): Array<{ npcName: string; attribute: string; operator: string; value: number }> {
   if (!targetName) return [];
-  // 向後相容：如果不含 ':' 則視為舊格式 (單一 NPC 名稱 + obedience >= fallbackValue)
-  if (!targetName.includes(':')) {
-    return [{ npcName: targetName, attribute: 'obedience', operator: '>=', value: fallbackValue ?? 0 }];
-  }
   return targetName.split(',').map(part => {
     const segments = part.trim().split(':').map(s => s.trim());
     if (segments.length === 4) {
@@ -1160,7 +1194,7 @@ function getItemQuantity(itemId: string, items?: string[]): number {
 // 解鎖條件檢測 (支援新舊格式)
 // ==========================================
 function checkUnlockCondition(
-  cond: { type: 'obedience' | 'item' | 'always_locked'; targetName?: string; value?: number },
+  cond: { type: 'npc_stats' | 'item' | 'always_locked'; targetName?: string; value?: number },
   items: string[],
   npcObedience: Record<string, number>,
 ): boolean {
@@ -1176,9 +1210,9 @@ function checkUnlockCondition(
     });
   }
 
-  if (cond.type === 'obedience') {
+  if (cond.type === 'npc_stats') {
     if (!cond.targetName) return false;
-    const conditions = parseNpcConditions(cond.targetName, cond.value);
+    const conditions = parseNpcConditions(cond.targetName);
     return conditions.every(nc => {
       const actual = getNpcAttributeValue(nc.npcName, nc.attribute);
       return compareValue(actual, nc.operator, nc.value);
@@ -1221,15 +1255,15 @@ function isTimeInPeriod(currentDateTimeStr: string, periodString: string): boole
     if (timeMatch) {
       let h = Number(timeMatch[1]);
       const m = Number(timeMatch[2]);
-      
+
       const isPm = currentDateTimeStr.includes('下午') || currentDateTimeStr.toUpperCase().includes('PM');
       const isAm = currentDateTimeStr.includes('上午') || currentDateTimeStr.toUpperCase().includes('AM');
-      
+
       if (isPm || isAm) {
         if (isPm) {
           if (h !== 12) h += 12;
-        } else {
-          if (h === 12) h = 0;
+        } else if (h === 12) {
+          h = 0;
         }
       }
       currentMinutes = h * 60 + m;
@@ -1357,9 +1391,9 @@ function checkTempCondition(pathInfo: any, toId: string, items: string[]): boole
     });
   }
 
-  if (cond.type === 'character') {
+  if (cond.type === 'npc_stats') {
     if (!cond.targetName) return false;
-    const conditions = parseNpcConditions(cond.targetName, cond.value);
+    const conditions = parseNpcConditions(cond.targetName);
     return conditions.every(nc => {
       const actual = getNpcAttributeValue(nc.npcName, nc.attribute);
       return compareValue(actual, nc.operator, nc.value);
@@ -1535,4 +1569,65 @@ function getGradeColor(grade: string): string {
   if (grade.startsWith('E')) return 'text-orange-400';
   return 'text-red-500 font-bold';
 }
+
+// ==========================================
+// 物品激活狀態重新整理邏輯
+// ==========================================
+export function refreshInventoryItemsActivation(mvu: MvuVariables) {
+  if (!mvu || !mvu.user || !mvu.user.inventory) return;
+
+  const itemsDict = mockChatVariables.items || {};
+
+  // 1. 刷新玩家背包
+  const playerInv = mvu.user.inventory as Record<string, InventoryItemState>;
+  Object.entries(playerInv).forEach(([itemId, state]) => {
+    const def = itemsDict[itemId];
+    if (!def) return;
+    state.isActive = evaluateItemActivation(mvu, def, null);
+  });
+
+  // 2. 刷新所有 NPC 背包
+  const chars = mvu.chars || {};
+  Object.entries(chars).forEach(([charName, char]: [string, any]) => {
+    const charInv = (char.inventory || {}) as Record<string, InventoryItemState>;
+    Object.entries(charInv).forEach(([itemId, state]) => {
+      const def = itemsDict[itemId];
+      if (!def) return;
+      state.isActive = evaluateItemActivation(mvu, def, charName);
+    });
+  });
+}
+
+function evaluateItemActivation(mvu: MvuVariables, def: ItemDef, ownerCharName: string | null): boolean {
+  if (def.activationType === 'none') {
+    return false;
+  }
+  if (def.activationType === 'permanent') {
+    return true;
+  }
+  if (def.activationType === 'periodic') {
+    if (!def.activationTimeRule) return false;
+    return isTimeInPeriod(mvu.time, def.activationTimeRule);
+  }
+  if (def.activationType === 'conditional') {
+    if (!def.activationCondition || def.activationCondition.length === 0) return false;
+
+    // 如果在 NPC 背包中，且條件沒指定 charName，我們自動綁定 ownerCharName
+    const finalConditions = def.activationCondition.map(cond => {
+      if (ownerCharName && !cond.charName) {
+        return { ...cond, charName: ownerCharName };
+      }
+      return cond;
+    });
+
+    return evaluateProgramConditions(finalConditions);
+  }
+  return false;
+}
+
+// ==========================================
+// 初始化時自動刷新一次物品激活狀態
+// ==========================================
+refreshInventoryItemsActivation(mockMvuVariables);
+
 

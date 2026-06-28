@@ -3,6 +3,7 @@ import {
   MvuVariables,
   DevRuntimeVariables,
   MockLocationNode,
+  BodyPartsDef,
 } from '../models';
 
 import {
@@ -15,6 +16,7 @@ import {
   MAP_LOCATION_NODES,
   MAP_MAP_EDGES,
   MAP_ZONES,
+  BODY_PARTS_DICTIONARY,
 } from '../staticData';
 
 import { chatDatabasePatch } from './chatVariables';
@@ -36,6 +38,7 @@ export const mockChatVariables: ChatVariables = {
   locations: {},
   mapEdges: [],
   items: {},
+  bodyParts: {},
 };
 
 export const mockMvuVariables: MvuVariables = {
@@ -97,6 +100,61 @@ function isObject(item: any): boolean {
 }
 
 // ==========================================
+// 身體部位與身體改造同步邏輯
+// ==========================================
+export function syncCharacterBodyParts(char: any, bodyPartsDefs: Record<string, BodyPartsDef>) {
+  if (!char.bodyParts) {
+    char.bodyParts = {};
+  }
+  if (!char.ownedBodyModifications) {
+    char.ownedBodyModifications = {};
+  }
+
+  for (const [id, def] of Object.entries(bodyPartsDefs)) {
+    const shouldExist = !def.isCustom || !!char.ownedBodyModifications[id];
+
+    if (shouldExist) {
+      if (!char.bodyParts[id]) {
+        char.bodyParts[id] = {};
+      }
+      const stat = char.bodyParts[id];
+
+      if (def.hasSensitivity) {
+        if (stat.sensitivity === undefined) stat.sensitivity = 0;
+      } else {
+        delete stat.sensitivity;
+      }
+
+      if (def.hasTightness) {
+        if (stat.tightness === undefined) stat.tightness = 0;
+      } else {
+        delete stat.tightness;
+      }
+
+      if (def.hasProficiency) {
+        if (stat.proficiency === undefined) stat.proficiency = 0;
+      } else {
+        delete stat.proficiency;
+      }
+
+      if (def.canOrgasm) {
+        if (stat.orgasms === undefined) stat.orgasms = 0;
+      } else {
+        delete stat.orgasms;
+      }
+    } else {
+      delete char.bodyParts[id];
+    }
+  }
+
+  for (const id of Object.keys(char.bodyParts)) {
+    if (!bodyPartsDefs[id]) {
+      delete char.bodyParts[id];
+    }
+  }
+}
+
+// ==========================================
 // 載入與覆蓋流程實作 (Load Flow)
 // ==========================================
 export function loadSimulationVariables() {
@@ -111,6 +169,7 @@ export function loadSimulationVariables() {
   mockChatVariables.achievements = { ...ACHIEVEMENT_DICTIONARY };
   mockChatVariables.quests = { ...QUEST_DICTIONARY };
   mockChatVariables.calendarEvents = { ...CALENDAR_STATIC_EVENTS };
+  mockChatVariables.bodyParts = { ...BODY_PARTS_DICTIONARY };
   
   // 地圖靜態資料轉換 (Array -> Record)
   const locRecord: Record<string, MockLocationNode> = {};
@@ -143,7 +202,7 @@ export function loadSimulationVariables() {
   // 注意：Debug 面板的修改透過直接修改記憶體中的 mock 物件生效，
   // 不再使用 sessionStorage 持久化。iframe 重載時自然回到預設狀態。
 
-  // 3. 補齊 NPC 的基本空欄位
+  // 3. 補齊 NPC 的基本空欄位並進行身體部位與改造的同步
   Object.keys(mockMvuVariables.chars).forEach(key => {
     const char = mockMvuVariables.chars[key];
     if (char) {
@@ -153,6 +212,7 @@ export function loadSimulationVariables() {
       if (!char.inventory) {
         char.inventory = {};
       }
+      syncCharacterBodyParts(char, mockChatVariables.bodyParts);
     }
   });
 
