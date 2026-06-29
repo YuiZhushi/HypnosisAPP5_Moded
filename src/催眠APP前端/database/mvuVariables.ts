@@ -131,11 +131,7 @@ export const mvuDatabasePatch: Partial<MvuVariables> = {
         item_obedience_collar: { quantity: 1, isEquipped: true, equipSlot: 'neck' },
         item_crystal_heart: { quantity: 1 },
       },
-      ownedBodyModifications: {
-        tail: true,
-        tentacles: true,
-        horns: true,
-      },
+      ownedBodyModifications: {},
       locationState: {
         locationId: 'home_sister_room',
         locationStatus: '正坐在書桌前用電腦',

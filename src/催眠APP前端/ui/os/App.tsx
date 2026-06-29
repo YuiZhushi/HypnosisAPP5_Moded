@@ -3,6 +3,7 @@ import { StatusBar } from '../../shared/components/StatusBar';
 import { HypnosisApp } from '../apps/hypnosis/HypnosisApp';
 import { AchievementApp } from '../apps/achievement/AchievementApp';
 import { BodyStatsApp } from '../apps/body-stats/BodyStatsApp';
+import { BodyModificationApp } from '../apps/body-modification/BodyModificationApp';
 import CalendarApp from '../apps/calendar/CalendarApp';
 import { HelpApp } from '../apps/help/HelpApp';
 import { WipApp } from '../../shared/components/PageLayout';
@@ -211,6 +212,8 @@ const App = () => {
         return <CharacterBackgroundApp onBack={() => setCurrentApp(AppMode.HOME)} />;
       case AppMode.MAP:
         return <MapApp onBack={() => setCurrentApp(AppMode.HOME)} />;
+      case AppMode.BODY_MODIFICATION:
+        return <BodyModificationApp onBack={() => setCurrentApp(AppMode.HOME)} />;
       case AppMode.WIP:
         return <WipApp name="Unknown App" onBack={() => setCurrentApp(AppMode.HOME)} />;
       case AppMode.HOME:

@@ -3,7 +3,7 @@ import { AppMode } from '../../models';
 import { StatusBar } from '../../shared/components/StatusBar';
 import { HypnoLogoSVG } from '../apps/hypnosis/HypnosisApp';
 import { MockApi } from '../../shared/api/mockApi';
-import { Activity, Calendar, HelpCircle, Trophy, Globe, Settings, PenSquare, Compass } from 'lucide-react';
+import { Activity, Calendar, HelpCircle, Trophy, Globe, Settings, PenSquare, Compass, Wrench } from 'lucide-react';
 import { logger } from '../../../催眠APP共用/debug/loggerService';
 
 interface HomeScreenProps {
@@ -106,6 +106,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       icon: Settings,
       color: 'bg-slate-700',
       mode: AppMode.SETTINGS,
+      disabled: false,
+    },
+    {
+      id: 'body-mod',
+      name: '肉體改造',
+      icon: Wrench,
+      color: 'bg-gradient-to-br from-pink-600 to-purple-800',
+      mode: AppMode.BODY_MODIFICATION,
       disabled: false,
     },
   ];

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Terminal, RefreshCw, X, Database, ShieldAlert, Cpu, Check, Zap, ChevronRight, Clock, Package, Users, MapPin, Eye, GitBranch } from 'lucide-react';
+import { Terminal, RefreshCw, X, Database, ShieldAlert, Cpu, Check, Zap, ChevronRight, Clock, Package, Users, MapPin, Eye, GitBranch, Wrench } from 'lucide-react';
 import { mockMvuVariables, mockChatVariables } from '../../database/mockDatabase';
 import { MockApi } from '../api/mockApi';
 
@@ -24,12 +24,13 @@ function getTavernRealChatVars(): any {
 // ==========================================
 // 子面板類型定義
 // ==========================================
-type ActionSubPanel = 'system' | 'playerInv' | 'npcInv' | 'mapExplore' | 'nodeEdit' | 'edgeEdit';
+type ActionSubPanel = 'system' | 'playerInv' | 'npcInv' | 'bodyMod' | 'mapExplore' | 'nodeEdit' | 'edgeEdit';
 
 const SUB_PANEL_CONFIG: { key: ActionSubPanel; label: string; icon: React.ReactNode }[] = [
   { key: 'system', label: '系統與資源', icon: <Clock size={12} /> },
   { key: 'playerInv', label: '玩家背包', icon: <Package size={12} /> },
   { key: 'npcInv', label: 'NPC設定', icon: <Users size={12} /> },
+  { key: 'bodyMod', label: '身體改造', icon: <Wrench size={12} /> },
   { key: 'mapExplore', label: '地圖探索', icon: <MapPin size={12} /> },
   { key: 'nodeEdit', label: '節點屏蔽', icon: <Eye size={12} /> },
   { key: 'edgeEdit', label: '通路連線', icon: <GitBranch size={12} /> },
@@ -289,6 +290,12 @@ export const DebugPanel: React.FC = () => {
   const [localHiddenNodes, setLocalHiddenNodes] = useState<Record<string, boolean>>({});
   const [localEdges, setLocalEdges] = useState<any[]>([]);
 
+  // ==========================================
+  // 身體改造 Debug 相關邏輯 (State 聲明)
+  // ==========================================
+  const [localBodyMods, setLocalBodyMods] = useState<Record<string, any>>({});
+  const [selectedModId, setSelectedModId] = useState<string>('');
+
   // 系統與資源
   const [editTime, setEditTime] = useState('');
   const [editVip, setEditVip] = useState(0);
@@ -310,9 +317,18 @@ export const DebugPanel: React.FC = () => {
     if (selectedNpc && !localNpcStats[selectedNpc]) {
       const char = mockMvuVariables.chars[selectedNpc];
       if (char) {
+        // 舊資料與多餘資料清理：清除不存在於靜態字典中的身體改造
+        const cleanChar = JSON.parse(JSON.stringify(char));
+        if (cleanChar.ownedBodyModifications) {
+          Object.keys(cleanChar.ownedBodyModifications).forEach(modId => {
+            if (!mockChatVariables.bodyModifications[modId]) {
+              delete cleanChar.ownedBodyModifications[modId];
+            }
+          });
+        }
         setLocalNpcStats(prev => ({
           ...prev,
-          [selectedNpc]: JSON.parse(JSON.stringify(char))
+          [selectedNpc]: cleanChar
         }));
       }
     }
@@ -346,6 +362,118 @@ export const DebugPanel: React.FC = () => {
         next[npc].locationState = { locationId: '', locationStatus: '' };
       }
       next[npc].locationState[field] = val;
+      return next;
+    });
+  };
+
+  // ==========================================
+  // 身體改造 Debug 相關邏輯 (NPC 快照管理)
+  // ==========================================
+  const addNpcBodyMod = (npc: string, modId: string) => {
+    setLocalNpcStats(prev => {
+      const next = { ...prev };
+      if (!next[npc]) next[npc] = JSON.parse(JSON.stringify(mockMvuVariables.chars[npc] || {}));
+      if (!next[npc].ownedBodyModifications) next[npc].ownedBodyModifications = {};
+      
+      next[npc].ownedBodyModifications[modId] = {
+        id: modId,
+        installedVirtualTime: mockMvuVariables.time,
+        isActive: true,
+        selectedTraits: [],
+        adaptation: undefined
+      };
+      
+      const def = localBodyMods[modId];
+      if (def && def.addedBodyPart) {
+        const partId = def.addedBodyPart.id;
+        if (!next[npc].bodyParts) next[npc].bodyParts = {};
+        if (!next[npc].bodyParts[partId]) {
+          next[npc].bodyParts[partId] = {
+            sensitivity: def.addedBodyPart.initialStats?.sensitivity ?? 0,
+            tightness: def.addedBodyPart.initialStats?.tightness ?? 0,
+            proficiency: def.addedBodyPart.initialStats?.proficiency ?? 0,
+            orgasms: def.addedBodyPart.initialStats?.orgasms ?? 0
+          };
+        }
+      }
+      return next;
+    });
+  };
+
+  const removeNpcBodyMod = (npc: string, modId: string) => {
+    setLocalNpcStats(prev => {
+      const next = { ...prev };
+      if (!next[npc] || !next[npc].ownedBodyModifications) return prev;
+      
+      const def = localBodyMods[modId];
+      delete next[npc].ownedBodyModifications[modId];
+      
+      if (def && def.addedBodyPart) {
+        const partId = def.addedBodyPart.id;
+        const defaultParts = ['mouth', 'breastLeft', 'breastRight', 'vagina', 'anus', 'urethra', 'clitoris'];
+        if (!defaultParts.includes(partId)) {
+          let stillNeeded = false;
+          Object.keys(next[npc].ownedBodyModifications).forEach(otherModId => {
+            const otherDef = localBodyMods[otherModId];
+            if (otherDef && otherDef.slots && otherDef.slots.includes(partId)) {
+              stillNeeded = true;
+            }
+          });
+          if (!stillNeeded && next[npc].bodyParts) {
+            delete next[npc].bodyParts[partId];
+          }
+        }
+      }
+      return next;
+    });
+  };
+
+  const updateNpcBodyModProp = (npc: string, modId: string, key: string, val: any) => {
+    setLocalNpcStats(prev => {
+      const next = { ...prev };
+      if (!next[npc] || !next[npc].ownedBodyModifications || !next[npc].ownedBodyModifications[modId]) return prev;
+      
+      if (key === 'adaptation_complete') {
+        if (val) {
+          delete next[npc].ownedBodyModifications[modId].adaptation;
+        } else {
+          const dt = new Date(mockMvuVariables.time.replace(/-/g, '/'));
+          const baseTime = isNaN(dt.getTime()) ? new Date() : dt;
+          baseTime.setHours(baseTime.getHours() + 48);
+          const formatTime = (d: Date) => {
+            const y = d.getFullYear();
+            const mo = String(d.getMonth() + 1).padStart(2, '0');
+            const date = String(d.getDate()).padStart(2, '0');
+            const h = String(d.getHours()).padStart(2, '0');
+            const mi = String(d.getMinutes()).padStart(2, '0');
+            const s = String(d.getSeconds()).padStart(2, '0');
+            return `${y}-${mo}-${date} ${h}:${mi}:${s}`;
+          };
+          next[npc].ownedBodyModifications[modId].adaptation = {
+            endVirtualTime: formatTime(baseTime),
+            extraModifiers: [
+              { targetType: 'global_stat', statName: 'affection', operator: '-', value: 10 }
+            ]
+          };
+        }
+      } else {
+        next[npc].ownedBodyModifications[modId][key] = val;
+      }
+      return next;
+    });
+  };
+
+  const updateModDef = (modId: string, path: string[], val: any) => {
+    setLocalBodyMods(prev => {
+      const next = { ...prev };
+      if (!next[modId]) return prev;
+      next[modId] = JSON.parse(JSON.stringify(next[modId]));
+      let cur = next[modId];
+      for (let i = 0; i < path.length - 1; i++) {
+        if (!cur[path[i]]) cur[path[i]] = {};
+        cur = cur[path[i]];
+      }
+      cur[path[path.length - 1]] = val;
       return next;
     });
   };
@@ -412,6 +540,12 @@ export const DebugPanel: React.FC = () => {
 
       // 快照：地圖連線 (深拷貝)
       setLocalEdges(JSON.parse(JSON.stringify(mockChatVariables.mapEdges || [])));
+
+      // 快照：身體改造定義 (深拷貝)
+      const initialBodyMods = JSON.parse(JSON.stringify(mockChatVariables.bodyModifications || {}));
+      setLocalBodyMods(initialBodyMods);
+      const modIds = Object.keys(initialBodyMods);
+      if (modIds.length > 0 && !selectedModId) setSelectedModId(modIds[0]);
 
       const npcNames = Object.keys(mockMvuVariables.chars || {});
       if (npcNames.length > 0 && !selectedNpc) setSelectedNpc(npcNames[0]);
@@ -514,6 +648,22 @@ export const DebugPanel: React.FC = () => {
 
     // 回寫：地圖連線
     mockChatVariables.mapEdges = JSON.parse(JSON.stringify(localEdges));
+
+    // ==========================================
+    // 身體改造 Debug 相關邏輯 (保存與清理)
+    // ==========================================
+    mockChatVariables.bodyModifications = JSON.parse(JSON.stringify(localBodyMods));
+
+    // 清理 NPC 身上與目前靜態字典定義不符的多餘舊改造資料
+    Object.entries(localNpcStats).forEach(([name, stat]) => {
+      if (stat && stat.ownedBodyModifications) {
+        Object.keys(stat.ownedBodyModifications).forEach(modId => {
+          if (!localBodyMods[modId]) {
+            delete stat.ownedBodyModifications[modId];
+          }
+        });
+      }
+    });
 
     // 刷新背包物品激活狀態
     MockApi.refreshInventoryItemsActivation();
@@ -1495,9 +1645,812 @@ export const DebugPanel: React.FC = () => {
               </div>
             )}
 
+            {/* ==========================================
+            // 身體改造 Debug 相關邏輯 (NPC 改造狀態管理)
+            // ========================================== */}
+            {selectedNpc && currentNpcStat && (
+              <div className="p-2 bg-purple-950/10 border border-purple-500/10 rounded-lg space-y-2">
+                <div className="text-[10px] font-bold text-purple-300">🧬 身體改造狀態管理</div>
+                
+                {/* 新增改造選單 */}
+                <div className="flex items-center gap-1.5 p-1.5 bg-black/40 rounded border border-purple-500/15">
+                  <select 
+                    id="new-mod-select"
+                    className="flex-1 bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-[9px] text-purple-100 focus:outline-none"
+                    defaultValue=""
+                  >
+                    <option value="" disabled>選擇要加裝的身體改造...</option>
+                    {Object.entries(localBodyMods).map(([id, def]: [string, any]) => {
+                      const isInstalled = currentNpcStat.ownedBodyModifications?.[id] !== undefined;
+                      if (isInstalled) return null;
+                      return <option key={id} value={id}>{def.name} ({id})</option>;
+                    })}
+                  </select>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      const sel = document.getElementById('new-mod-select') as HTMLSelectElement;
+                      if (sel && sel.value) {
+                        addNpcBodyMod(selectedNpc, sel.value);
+                        sel.value = ""; // 重設 selection
+                      }
+                    }}
+                    className="px-2 py-0.5 bg-purple-600 hover:bg-purple-500 text-white text-[9px] font-bold rounded border border-purple-500/30 transition-all active:scale-95 shrink-0"
+                  >
+                    新增植入
+                  </button>
+                </div>
+
+                {/* 已有改造列表 */}
+                <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1 hypno-scrollbar">
+                  {!currentNpcStat.ownedBodyModifications || Object.keys(currentNpcStat.ownedBodyModifications).length === 0 ? (
+                    <div className="text-[9px] text-gray-500 italic text-center py-2">目前無 any 已安裝改造。</div>
+                  ) : (
+                    Object.entries(currentNpcStat.ownedBodyModifications).map(([modId, modState]: [string, any]) => {
+                      const def = localBodyMods[modId] || { name: modId, description: '未定義方案' };
+                      const isAdaptCompleted = !modState.adaptation;
+                      return (
+                        <div key={modId} className="p-2 bg-black/30 border border-purple-500/10 rounded-lg space-y-1.5 text-[9px]">
+                          <div className="flex items-center justify-between border-b border-purple-500/5 pb-1">
+                            <span className="font-bold text-purple-200">{def.name}</span>
+                            <button 
+                              type="button" 
+                              onClick={() => removeNpcBodyMod(selectedNpc, modId)}
+                              className="text-[9px] text-red-400 hover:text-red-300 transition-colors font-semibold"
+                            >
+                              移除
+                            </button>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2">
+                            {/* 啟用/關閉 */}
+                            <label className="flex items-center gap-1.5 text-gray-300 cursor-pointer">
+                              <input 
+                                type="checkbox" 
+                                checked={!!modState.isActive}
+                                onChange={(e) => updateNpcBodyModProp(selectedNpc, modId, 'isActive', e.target.checked)}
+                                className="accent-purple-500 w-3 h-3"
+                              />
+                              啟用狀態
+                            </label>
+                            
+                            {/* 適應狀態 */}
+                            <label className="flex items-center gap-1.5 text-gray-300 cursor-pointer">
+                              <input 
+                                type="checkbox" 
+                                checked={isAdaptCompleted}
+                                onChange={(e) => updateNpcBodyModProp(selectedNpc, modId, 'adaptation_complete', e.target.checked)}
+                                className="accent-purple-500 w-3 h-3"
+                              />
+                              已完全適應
+                            </label>
+                          </div>
+
+                          {/* AI 註釋 */}
+                          <div className="flex items-center gap-1">
+                            <span className="text-gray-500 shrink-0">AI 註釋:</span>
+                            <input 
+                              type="text" 
+                              value={modState.customDescription || ''}
+                              onChange={(e) => updateNpcBodyModProp(selectedNpc, modId, 'customDescription', e.target.value)}
+                              placeholder="輸入對 AI 演繹的故事註釋..."
+                              className="flex-1 bg-black/50 border border-purple-500/20 rounded px-1.5 py-0.5 text-[9px] text-purple-100 focus:outline-none focus:border-purple-500/50"
+                            />
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+
+            <button onClick={flushAndSave}
+              className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition-all active:scale-95 mt-2">
+              保存 NPC 設定並重載
+            </button>
+          </div>
+        );
+      }
+
+      // ==========================================
+      // 子面板：身體改造方案定義編輯器 (bodyMod)
+      // ==========================================
+      case 'bodyMod': {
+        const currentModDef = localBodyMods[selectedModId];
+        const allItems = mockChatVariables.items || {};
+
+        // ==========================================
+        // 身體改造 Debug 相關邏輯 (前置條件快捷選項)
+        // ==========================================
+        const presetTargets = [
+          { value: 'money', label: '💵 金幣 (money)' },
+          { value: 'pts', label: '🪙 MC點數 (pts)' },
+          { value: 'mcEnergy', label: '⚡ MC能量 (mcEnergy)' },
+          { value: 'mcEnergyMax', label: '🔋 能量上限 (mcEnergyMax)' },
+          { value: 'vipTier', label: '👑 VIP等級 (vipTier)' },
+          { value: 'suspicion', label: '🚨 可疑度 (suspicion)' },
+          { value: 'obedience', label: '📊 服從度 (obedience)' },
+          { value: 'affection', label: '📊 好感度 (affection)' },
+          { value: 'alertness', label: '📊 警戒度 (alertness)' },
+          { value: 'arousal', label: '📊 快感值 (arousal)' },
+          { value: 'lust', label: '📊 淫癖 (lust)' },
+        ];
+
+        // 動態搜集所有身體部位 (包含預設與執行期動態加裝的部位)
+        const defaultPartKeys = ['mouth', 'breastLeft', 'breastRight', 'vagina', 'anus', 'urethra', 'clitoris', 'womb'];
+        const bodyPartNames: Record<string, string> = {
+          mouth: '嘴部/口腔',
+          breastLeft: '左側乳房',
+          breastRight: '右側乳房',
+          vagina: '陰道通道',
+          anus: '肛門括約肌',
+          urethra: '尿道腺體',
+          clitoris: '陰蒂敏感核',
+          womb: '子宮腔體'
+        };
+
+        const allPartKeysSet = new Set(defaultPartKeys);
+
+        // 1. 從 mock 靜態部位資料庫搜集
+        if (mockChatVariables.bodyParts) {
+          Object.entries(mockChatVariables.bodyParts).forEach(([k, def]: [string, any]) => {
+            allPartKeysSet.add(k);
+            if (def && def.name && !bodyPartNames[k]) {
+              bodyPartNames[k] = def.name;
+            }
+          });
+        }
+
+        // 2. 從所有改造方案定義的 addedBodyPart 中搜集
+        Object.values(localBodyMods).forEach((def: any) => {
+          if (def && def.addedBodyPart && def.addedBodyPart.id) {
+            allPartKeysSet.add(def.addedBodyPart.id);
+            if (def.addedBodyPart.name && !bodyPartNames[def.addedBodyPart.id]) {
+              bodyPartNames[def.addedBodyPart.id] = def.addedBodyPart.name;
+            }
+          }
+        });
+
+        // 3. 從所有 NPC 當前實體化的 bodyParts 中搜集 (涵蓋執行期動態變化)
+        Object.values(localNpcStats).forEach((npc: any) => {
+          if (npc && npc.bodyParts) {
+            Object.keys(npc.bodyParts).forEach(k => {
+              allPartKeysSet.add(k);
+            });
+          }
+        });
+
+        const bodyPartKeys = Array.from(allPartKeysSet);
+        const bodyPartAttrs = [
+          { key: 'sensitivity', name: '敏感度' },
+          { key: 'tightness', name: '鬆緊度' },
+          { key: 'proficiency', name: '熟練度' },
+          { key: 'orgasms', name: '高潮次數' }
+        ];
+
+        const partOptions: { value: string; label: string }[] = [];
+        bodyPartKeys.forEach(part => {
+          const partLabel = bodyPartNames[part] || part;
+          bodyPartAttrs.forEach(attr => {
+            partOptions.push({
+              value: `bodyParts.${part}.${attr.key}`,
+              label: `🧬 ${partLabel} - ${attr.name} (${attr.key})`
+            });
+          });
+        });
+
+        const allTargetOptions = [...presetTargets, ...partOptions];
+        
+        const toggleHasAddedPart = (hasPart: boolean) => {
+          if (hasPart) {
+            updateModDef(selectedModId, ['addedBodyPart'], {
+              id: 'tail',
+              name: '尾巴',
+              hasSensitivity: true,
+              hasTightness: false,
+              hasProficiency: true,
+              canOrgasm: true,
+              description: '手術移植的部位',
+              initialStats: { sensitivity: 20, tightness: 0, proficiency: 10, orgasms: 0 }
+            });
+          } else {
+            setLocalBodyMods(prev => {
+              const next = { ...prev };
+              if (next[selectedModId]) {
+                next[selectedModId] = JSON.parse(JSON.stringify(next[selectedModId]));
+                delete next[selectedModId].addedBodyPart;
+              }
+              return next;
+            });
+          }
+        };
+
+        return (
+          <div className="space-y-3">
+            <div className="text-[10px] font-bold text-purple-300 mb-1">🧬 身體改造方案編輯器</div>
+            
+            {/* 方案選擇 */}
+            <div className="flex gap-1">
+              <select 
+                value={selectedModId} 
+                onChange={e => setSelectedModId(e.target.value)}
+                className="flex-1 bg-black/40 border border-purple-500/20 rounded px-2 py-1 text-[10px] text-purple-100 focus:outline-none"
+              >
+                {Object.entries(localBodyMods).map(([id, def]: [string, any]) => (
+                  <option key={id} value={id}>{def.name} ({id})</option>
+                ))}
+              </select>
+            </div>
+
+            {currentModDef ? (
+              <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1 hypno-scrollbar">
+                
+                {/* 1. 基本資訊 */}
+                <div className="p-2 bg-purple-950/10 border border-purple-500/10 rounded-lg space-y-2">
+                  <div className="text-[9px] font-bold text-purple-300 border-b border-purple-500/5 pb-1">📄 基本資訊</div>
+                  
+                  <div className="flex items-center gap-1.5 text-[9px]">
+                    <span className="text-gray-400 w-16 shrink-0 font-bold">改造名稱</span>
+                    <input 
+                      type="text" 
+                      value={currentModDef.name || ''} 
+                      onChange={e => updateModDef(selectedModId, ['name'], e.target.value)}
+                      className="flex-1 bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-purple-100 focus:outline-none focus:border-purple-500/50"
+                    />
+                  </div>
+
+                  <div className="flex items-start gap-1.5 text-[9px]">
+                    <span className="text-gray-400 w-16 shrink-0 mt-1 font-bold">改造說明</span>
+                    <textarea 
+                      value={currentModDef.description || ''} 
+                      onChange={e => updateModDef(selectedModId, ['description'], e.target.value)}
+                      rows={2}
+                      className="flex-1 bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-purple-100 resize-none focus:outline-none focus:border-purple-500/50 font-sans"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-1.5 text-[9px]">
+                    <span className="text-gray-400 w-16 shrink-0 font-bold">肉體負荷</span>
+                    <input 
+                      type="number" 
+                      value={currentModDef.loadCost || 0} 
+                      onChange={e => updateModDef(selectedModId, ['loadCost'], Number(e.target.value) || 0)}
+                      className="w-16 bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-purple-100 text-center focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="flex items-start gap-1.5 text-[9px]">
+                    <span className="text-gray-400 w-16 shrink-0 mt-1 font-bold">Prompt 注入</span>
+                    <textarea 
+                      value={currentModDef.promptInjection || ''} 
+                      onChange={e => updateModDef(selectedModId, ['promptInjection'], e.target.value)}
+                      rows={3}
+                      className="flex-1 bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-purple-100 resize-none focus:outline-none focus:border-purple-500/50 font-sans"
+                      placeholder="注入 AI 的故事描述文本..."
+                    />
+                  </div>
+                </div>
+
+                {/* 2. 手術花費 */}
+                <div className="p-2 bg-purple-950/10 border border-purple-500/10 rounded-lg space-y-2">
+                  <div className="text-[9px] font-bold text-purple-300 border-b border-purple-500/5 pb-1">💰 手術花費與材料</div>
+                  
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <div className="flex flex-col text-[8px]">
+                      <span className="text-gray-400 mb-0.5">金幣 (¥)</span>
+                      <input 
+                        type="number" 
+                        value={currentModDef.cost?.money || 0} 
+                        onChange={e => updateModDef(selectedModId, ['cost', 'money'], Number(e.target.value) || 0)}
+                        className="w-full bg-black border border-purple-500/20 rounded px-1 py-0.5 text-purple-100 text-center focus:outline-none"
+                      />
+                    </div>
+                    <div className="flex flex-col text-[8px]">
+                      <span className="text-gray-400 mb-0.5">MC點數 (PTS)</span>
+                      <input 
+                        type="number" 
+                        value={currentModDef.cost?.pts || 0} 
+                        onChange={e => updateModDef(selectedModId, ['cost', 'pts'], Number(e.target.value) || 0)}
+                        className="w-full bg-black border border-purple-500/20 rounded px-1 py-0.5 text-purple-100 text-center focus:outline-none"
+                      />
+                    </div>
+                    <div className="flex flex-col text-[8px]">
+                      <span className="text-gray-400 mb-0.5">MC能量 (⚡)</span>
+                      <input 
+                        type="number" 
+                        value={currentModDef.cost?.mcEnergy || 0} 
+                        onChange={e => updateModDef(selectedModId, ['cost', 'mcEnergy'], Number(e.target.value) || 0)}
+                        className="w-full bg-black border border-purple-500/20 rounded px-1 py-0.5 text-purple-100 text-center focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 物品消耗清單 */}
+                  <div className="space-y-1 mt-1.5">
+                    <span className="text-[8px] text-gray-400 block font-semibold">所需物品材料:</span>
+                    {(currentModDef.cost?.requiredItems || []).map((item: any, idx: number) => (
+                      <div key={idx} className="flex gap-1 items-center bg-black/40 p-1 rounded border border-purple-500/10">
+                        <select 
+                          value={item.itemId} 
+                          onChange={e => {
+                            const list = [...(currentModDef.cost.requiredItems || [])];
+                            list[idx].itemId = e.target.value;
+                            updateModDef(selectedModId, ['cost', 'requiredItems'], list);
+                          }}
+                          className="bg-black border border-purple-500/20 rounded px-1 text-[8px] text-purple-100 flex-1 min-w-[70px] focus:outline-none"
+                        >
+                          {Object.entries(allItems).map(([id, def]: [string, any]) => (
+                            <option key={id} value={id}>{def.name}</option>
+                          ))}
+                        </select>
+                        <input 
+                          type="number" 
+                          value={item.quantity} 
+                          onChange={e => {
+                            const list = [...(currentModDef.cost.requiredItems || [])];
+                            list[idx].quantity = Number(e.target.value) || 0;
+                            updateModDef(selectedModId, ['cost', 'requiredItems'], list);
+                          }}
+                          className="w-10 bg-black border border-purple-500/20 rounded text-[8px] text-purple-100 text-center focus:outline-none"
+                        />
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            const list = (currentModDef.cost.requiredItems || []).filter((_: any, i: number) => i !== idx);
+                            updateModDef(selectedModId, ['cost', 'requiredItems'], list);
+                          }}
+                          className="text-[8px] text-red-400 hover:text-red-300 px-1 font-semibold"
+                        >
+                          刪除
+                        </button>
+                      </div>
+                    ))}
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        const firstItem = Object.keys(allItems)[0] || '';
+                        const list = [...(currentModDef.cost?.requiredItems || []), { itemId: firstItem, quantity: 1 }];
+                        updateModDef(selectedModId, ['cost', 'requiredItems'], list);
+                      }}
+                      className="text-[8px] text-purple-400 hover:text-purple-300 underline"
+                    >
+                      + 新增材料消耗
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. 前置條件 */}
+                <div className="p-2 bg-purple-950/10 border border-purple-500/10 rounded-lg space-y-2">
+                  <div className="text-[9px] font-bold text-purple-300 border-b border-purple-500/5 pb-1">🔓 前置條件 (Conditions)</div>
+                  
+                  <div className="space-y-1">
+                    {(currentModDef.conditions || []).map((cond: any, idx: number) => {
+                      const isPreset = allTargetOptions.some(opt => opt.value === cond.target);
+                      const selectValue = isPreset ? cond.target : 'custom';
+                      return (
+                        <div key={idx} className="bg-black/40 p-1.5 rounded border border-purple-500/10 space-y-1">
+                          <div className="flex gap-1 items-center flex-wrap">
+                            <select 
+                              value={selectValue}
+                              onChange={e => {
+                                const val = e.target.value;
+                                const list = [...currentModDef.conditions];
+                                if (val === 'custom') {
+                                  list[idx].target = 'custom_target';
+                                } else {
+                                  list[idx].target = val;
+                                }
+                                updateModDef(selectedModId, ['conditions'], list);
+                              }}
+                              className="bg-black border border-purple-500/20 rounded px-1 text-[8px] text-purple-100 flex-1 min-w-[120px] focus:outline-none"
+                            >
+                              <optgroup label="全域與基礎屬性">
+                                {presetTargets.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                              </optgroup>
+                              <optgroup label="身體部位開發">
+                                {partOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                              </optgroup>
+                              <option value="custom">⚙️ 自定義輸入...</option>
+                            </select>
+                            <select 
+                              value={cond.operator} 
+                              onChange={e => {
+                                const list = [...currentModDef.conditions];
+                                list[idx].operator = e.target.value;
+                                updateModDef(selectedModId, ['conditions'], list);
+                              }}
+                              className="bg-black border border-purple-500/20 rounded px-1 text-[8px] text-purple-100 w-12 focus:outline-none text-center"
+                            >
+                              {['>=', '<=', '==', '!=', '>', '<'].map(op => <option key={op} value={op}>{op}</option>)}
+                            </select>
+                            <input 
+                              type="number" 
+                              value={cond.value} 
+                              onChange={e => {
+                                const list = [...currentModDef.conditions];
+                                list[idx].value = Number(e.target.value) || 0;
+                                updateModDef(selectedModId, ['conditions'], list);
+                              }}
+                              className="w-10 bg-black border border-purple-500/20 rounded text-[8px] text-purple-100 text-center focus:outline-none"
+                            />
+                            <button 
+                              type="button" 
+                              onClick={() => {
+                                const list = currentModDef.conditions.filter((_: any, i: number) => i !== idx);
+                                updateModDef(selectedModId, ['conditions'], list);
+                              }}
+                              className="text-[8px] text-red-400 hover:text-red-300 px-1 font-semibold"
+                            >
+                              刪除
+                            </button>
+                          </div>
+                          {!isPreset && (
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <span className="text-[8px] text-gray-500 shrink-0">自定義目標:</span>
+                              <input 
+                                type="text" 
+                                value={cond.target} 
+                                onChange={e => {
+                                  const list = [...currentModDef.conditions];
+                                  list[idx].target = e.target.value;
+                                  updateModDef(selectedModId, ['conditions'], list);
+                                }}
+                                placeholder="屬性路徑 (如 bodyParts.mouth.sensitivity)"
+                                className="flex-1 bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-[8px] text-purple-100 focus:outline-none"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        const list = [...(currentModDef.conditions || []), { target: 'obedience', operator: '>=', value: 30 }];
+                        updateModDef(selectedModId, ['conditions'], list);
+                      }}
+                      className="text-[8px] text-purple-400 hover:text-purple-300 underline"
+                    >
+                      + 新增前置條件
+                    </button>
+                  </div>
+                </div>
+
+                {/* 4. 常駐影響 */}
+                <div className="p-2 bg-purple-950/10 border border-purple-500/10 rounded-lg space-y-2">
+                  <div className="text-[9px] font-bold text-purple-300 border-b border-purple-500/5 pb-1">⚡ 常駐屬性影響 (Modifiers)</div>
+                  
+                  <div className="space-y-1.5">
+                    {(currentModDef.modifiers || []).map((mod: any, idx: number) => {
+                      const globalAttrOptions = [
+                        { value: 'obedience', label: '服從度 (obedience)' },
+                        { value: 'affection', label: '好感度 (affection)' },
+                        { value: 'alertness', label: '警戒度 (alertness)' },
+                        { value: 'arousal', label: '快感值 (arousal)' },
+                        { value: 'lust', label: '淫癖 (lust)' },
+                        { value: 'suspicion', label: '可疑度 (suspicion)' }
+                      ];
+                      
+                      const partAttrOptions = [
+                        { value: 'sensitivity', label: '敏感度 (sensitivity)' },
+                        { value: 'tightness', label: '鬆緊度 (tightness)' },
+                        { value: 'proficiency', label: '熟練度 (proficiency)' },
+                        { value: 'orgasms', label: '高潮次數 (orgasms)' }
+                      ];
+
+                      const currentAttrOptions = mod.targetType === 'global_stat' ? globalAttrOptions : partAttrOptions;
+                      const isPresetAttr = currentAttrOptions.some(opt => opt.value === mod.statName);
+                      const selectAttrValue = isPresetAttr ? mod.statName : 'custom';
+
+                      const isPresetPart = ['slots', ...bodyPartKeys].includes(mod.bodyPartId || '');
+                      const selectPartValue = isPresetPart ? (mod.bodyPartId || 'slots') : 'custom';
+
+                      return (
+                        <div key={idx} className="bg-black/40 p-1.5 rounded border border-purple-500/10 space-y-1 text-[8px]">
+                          <div className="flex gap-1 items-center flex-wrap">
+                            {/* 影響範圍 */}
+                            <select 
+                              value={mod.targetType} 
+                              onChange={e => {
+                                const list = [...currentModDef.modifiers];
+                                const nextTarget = e.target.value;
+                                list[idx].targetType = nextTarget;
+                                // 切換類型時自動校正預設屬性
+                                list[idx].statName = nextTarget === 'global_stat' ? 'obedience' : 'sensitivity';
+                                if (nextTarget === 'global_stat') {
+                                  delete list[idx].bodyPartId;
+                                } else {
+                                  list[idx].bodyPartId = 'slots';
+                                }
+                                updateModDef(selectedModId, ['modifiers'], list);
+                              }}
+                              className="bg-black border border-purple-500/20 rounded px-1 text-[8px] text-purple-100 focus:outline-none"
+                            >
+                              <option value="global_stat">全域屬性</option>
+                              <option value="body_part_stat">部位屬性</option>
+                            </select>
+
+                            {/* 屬性名稱 */}
+                            <select 
+                              value={selectAttrValue}
+                              onChange={e => {
+                                const val = e.target.value;
+                                const list = [...currentModDef.modifiers];
+                                if (val === 'custom') {
+                                  list[idx].statName = 'custom_stat';
+                                } else {
+                                  list[idx].statName = val;
+                                }
+                                updateModDef(selectedModId, ['modifiers'], list);
+                              }}
+                              className="bg-black border border-purple-500/20 rounded px-1 text-[8px] text-purple-100 focus:outline-none"
+                            >
+                              {currentAttrOptions.map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                              ))}
+                              <option value="custom">⚙️ 自定義...</option>
+                            </select>
+
+                            {!isPresetAttr && (
+                              <input 
+                                type="text" 
+                                value={mod.statName} 
+                                onChange={e => {
+                                  const list = [...currentModDef.modifiers];
+                                  list[idx].statName = e.target.value;
+                                  updateModDef(selectedModId, ['modifiers'], list);
+                                }}
+                                placeholder="自定義屬性"
+                                className="bg-black border border-purple-500/20 rounded px-1 py-0.5 text-[8px] text-purple-100 w-16 focus:outline-none"
+                              />
+                            )}
+
+                            {/* 運算子 */}
+                            <select 
+                              value={mod.operator} 
+                              onChange={e => {
+                                const list = [...currentModDef.modifiers];
+                                list[idx].operator = e.target.value;
+                                updateModDef(selectedModId, ['modifiers'], list);
+                              }}
+                              className="bg-black border border-purple-500/20 rounded px-1 text-[8px] text-purple-100 w-8 text-center font-bold focus:outline-none"
+                            >
+                              {['+', '-', '*'].map(op => <option key={op} value={op}>{op}</option>)}
+                            </select>
+
+                            {/* 調整數值 */}
+                            <input 
+                              type="number" 
+                              value={mod.value} 
+                              onChange={e => {
+                                const list = [...currentModDef.modifiers];
+                                list[idx].value = Number(e.target.value) || 0;
+                                updateModDef(selectedModId, ['modifiers'], list);
+                              }}
+                              className="w-10 bg-black border border-purple-500/20 rounded text-[8px] text-purple-100 text-center focus:outline-none"
+                            />
+
+                            <button 
+                              type="button" 
+                              onClick={() => {
+                                const list = currentModDef.modifiers.filter((_: any, i: number) => i !== idx);
+                                updateModDef(selectedModId, ['modifiers'], list);
+                              }}
+                              className="text-[8px] text-red-400 hover:text-red-300 px-1 ml-auto font-semibold"
+                            >
+                              刪除
+                            </button>
+                          </div>
+
+                          {/* 部位 ID */}
+                          {mod.targetType === 'body_part_stat' && (
+                            <div className="flex gap-1 items-center mt-1 flex-wrap">
+                              <span className="text-gray-500">影響部位:</span>
+                              <select
+                                value={selectPartValue}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  const list = [...currentModDef.modifiers];
+                                  if (val === 'custom') {
+                                    list[idx].bodyPartId = 'custom_part';
+                                  } else {
+                                    list[idx].bodyPartId = val;
+                                  }
+                                  updateModDef(selectedModId, ['modifiers'], list);
+                                }}
+                                className="bg-black border border-purple-500/20 rounded px-1 text-[8px] text-purple-100 focus:outline-none"
+                              >
+                                <option value="slots">slots (佔用部位)</option>
+                                {bodyPartKeys.map(partKey => {
+                                  const label = bodyPartNames[partKey] || partKey;
+                                  return <option key={partKey} value={partKey}>{label} ({partKey})</option>;
+                                })}
+                                <option value="custom">⚙️ 自定義...</option>
+                              </select>
+
+                              {!isPresetPart && (
+                                <input 
+                                  type="text" 
+                                  value={mod.bodyPartId || ''} 
+                                  onChange={e => {
+                                    const list = [...currentModDef.modifiers];
+                                    list[idx].bodyPartId = e.target.value;
+                                    updateModDef(selectedModId, ['modifiers'], list);
+                                  }}
+                                  placeholder="例如 tail"
+                                  className="bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-[8px] text-purple-100 flex-1 min-w-[60px] focus:outline-none"
+                                />
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        const list = [...(currentModDef.modifiers || []), { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'slots', operator: '+', value: 10 }];
+                        updateModDef(selectedModId, ['modifiers'], list);
+                      }}
+                      className="text-[8px] text-purple-400 hover:text-purple-300 underline"
+                    >
+                      + 新增屬性影響
+                    </button>
+                  </div>
+                </div>
+
+                {/* 5. 新增部位加裝 */}
+                <div className="p-2 bg-purple-950/10 border border-purple-500/10 rounded-lg space-y-2">
+                  <div className="text-[9px] font-bold text-purple-300 border-b border-purple-500/5 pb-1 flex justify-between items-center">
+                    <span>🧬 部位加裝設定 (addedBodyPart)</span>
+                    <input 
+                      type="checkbox" 
+                      checked={currentModDef.addedBodyPart !== undefined}
+                      onChange={e => toggleHasAddedPart(e.target.checked)}
+                      className="accent-purple-500 w-3 h-3 cursor-pointer"
+                    />
+                  </div>
+
+                  {currentModDef.addedBodyPart && (
+                    <div className="space-y-2 pl-1 border-l border-purple-500/10 mt-1.5 text-[8px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-gray-400 w-16 shrink-0">部位唯一 ID</span>
+                        <input 
+                          type="text" 
+                          value={currentModDef.addedBodyPart.id || ''} 
+                          onChange={e => updateModDef(selectedModId, ['addedBodyPart', 'id'], e.target.value)}
+                          placeholder="例如 tail"
+                          className="flex-1 bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-purple-100 focus:outline-none focus:border-purple-500/50"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-gray-400 w-16 shrink-0">顯示名稱</span>
+                        <input 
+                          type="text" 
+                          value={currentModDef.addedBodyPart.name || ''} 
+                          onChange={e => updateModDef(selectedModId, ['addedBodyPart', 'name'], e.target.value)}
+                          placeholder="例如 尾巴"
+                          className="flex-1 bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-purple-100 focus:outline-none focus:border-purple-500/50"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-gray-400 w-16 shrink-0">部位描述</span>
+                        <input 
+                          type="text" 
+                          value={currentModDef.addedBodyPart.description || ''} 
+                          onChange={e => updateModDef(selectedModId, ['addedBodyPart', 'description'], e.target.value)}
+                          className="flex-1 bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-purple-100 focus:outline-none focus:border-purple-500/50"
+                        />
+                      </div>
+
+                      {/* 支援的屬性 */}
+                      <div className="space-y-1 bg-black/20 p-1.5 rounded border border-purple-500/5">
+                        <span className="text-gray-400 block font-semibold">功能支援:</span>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <label className="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                            <input 
+                              type="checkbox" 
+                              checked={!!currentModDef.addedBodyPart.hasSensitivity}
+                              onChange={e => updateModDef(selectedModId, ['addedBodyPart', 'hasSensitivity'], e.target.checked)}
+                              className="accent-purple-500 w-3.5 h-3.5"
+                            />
+                            敏感度
+                          </label>
+                          <label className="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                            <input 
+                              type="checkbox" 
+                              checked={!!currentModDef.addedBodyPart.hasTightness}
+                              onChange={e => updateModDef(selectedModId, ['addedBodyPart', 'hasTightness'], e.target.checked)}
+                              className="accent-purple-500 w-3.5 h-3.5"
+                            />
+                            鬆緊度
+                          </label>
+                          <label className="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                            <input 
+                              type="checkbox" 
+                              checked={!!currentModDef.addedBodyPart.hasProficiency}
+                              onChange={e => updateModDef(selectedModId, ['addedBodyPart', 'hasProficiency'], e.target.checked)}
+                              className="accent-purple-500 w-3.5 h-3.5"
+                            />
+                            熟練度
+                          </label>
+                          <label className="flex items-center gap-1.5 cursor-pointer text-gray-300">
+                            <input 
+                              type="checkbox" 
+                              checked={!!currentModDef.addedBodyPart.canOrgasm}
+                              onChange={e => updateModDef(selectedModId, ['addedBodyPart', 'canOrgasm'], e.target.checked)}
+                              className="accent-purple-500 w-3.5 h-3.5"
+                            />
+                            高潮次數
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* 初始值設定 */}
+                      <div className="space-y-1 bg-black/20 p-1.5 rounded border border-purple-500/5">
+                        <span className="text-gray-400 block font-semibold">實體化初始數值:</span>
+                        <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+                          {currentModDef.addedBodyPart.hasSensitivity && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-gray-400 w-12 truncate">初始敏感度</span>
+                              <input 
+                                type="number" 
+                                value={currentModDef.addedBodyPart.initialStats?.sensitivity ?? 0}
+                                onChange={e => updateModDef(selectedModId, ['addedBodyPart', 'initialStats', 'sensitivity'], Number(e.target.value) || 0)}
+                                className="w-10 bg-black border border-purple-500/20 rounded text-center text-purple-100 focus:outline-none"
+                              />
+                            </div>
+                          )}
+                          {currentModDef.addedBodyPart.hasTightness && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-gray-400 w-12 truncate">初始鬆緊度</span>
+                              <input 
+                                type="number" 
+                                value={currentModDef.addedBodyPart.initialStats?.tightness ?? 0}
+                                onChange={e => updateModDef(selectedModId, ['addedBodyPart', 'initialStats', 'tightness'], Number(e.target.value) || 0)}
+                                className="w-10 bg-black border border-purple-500/20 rounded text-center text-purple-100 focus:outline-none"
+                              />
+                            </div>
+                          )}
+                          {currentModDef.addedBodyPart.hasProficiency && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-gray-400 w-12 truncate">初始熟練度</span>
+                              <input 
+                                type="number" 
+                                value={currentModDef.addedBodyPart.initialStats?.proficiency ?? 0}
+                                onChange={e => updateModDef(selectedModId, ['addedBodyPart', 'initialStats', 'proficiency'], Number(e.target.value) || 0)}
+                                className="w-10 bg-black border border-purple-500/20 rounded text-center text-purple-100 focus:outline-none"
+                              />
+                            </div>
+                          )}
+                          {currentModDef.addedBodyPart.canOrgasm && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-gray-400 w-12 truncate">初始高潮數</span>
+                              <input 
+                                type="number" 
+                                value={currentModDef.addedBodyPart.initialStats?.orgasms ?? 0}
+                                onChange={e => updateModDef(selectedModId, ['addedBodyPart', 'initialStats', 'orgasms'], Number(e.target.value) || 0)}
+                                className="w-10 bg-black border border-purple-500/20 rounded text-center text-purple-100 focus:outline-none"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            ) : (
+              <div className="text-[10px] text-gray-500 italic text-center py-4">請選取一個改造項目。</div>
+            )}
+            
             <button onClick={flushAndSave}
               className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition-all active:scale-95">
-              保存 NPC 設定並重載
+              保存改造定義並重載
             </button>
           </div>
         );

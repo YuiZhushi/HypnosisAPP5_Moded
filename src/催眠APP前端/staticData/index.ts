@@ -8,6 +8,7 @@ import {
   MockLocationNode,
   MockMapEdge,
   BodyPartsDef,
+  BodyModificationDef,
 } from '../models';
 
 // ==========================================
@@ -1398,6 +1399,66 @@ export const ITEM_DICTIONARY: Record<string, ItemDef> = {
     activationCondition: [{ target: 'obedience', operator: '>=', value: 30 }],
     activationDescription: '順從項圈：當角色服從度大於等於 30% 時自動激活，發揮調教束縛效果。',
   },
+  item_hypno_serum: {
+    id: 'item_hypno_serum',
+    name: '催眠血清',
+    description: '一種散發著微弱紫光的神秘血清，是進行各種精細肉體改造時必不可少的穩定劑。',
+    type: 'material',
+    rarity: 'rare',
+    cost: { money: 12000 },
+    isSellable: true,
+    isPurchasable: true,
+    isStackable: true,
+    activationType: 'none',
+  },
+  item_cat_tail_implant: {
+    id: 'item_cat_tail_implant',
+    name: '仿生貓尾植入物',
+    description: '具備微弱神經傳導功能的仿生貓尾巴，可用於外科手術以加裝新的身體器官。',
+    type: 'material',
+    rarity: 'epic',
+    cost: { money: 45000 },
+    isSellable: true,
+    isPurchasable: true,
+    isStackable: true,
+    activationType: 'none',
+  },
+  item_slime_essence: {
+    id: 'item_slime_essence',
+    name: '史萊姆核心精華',
+    description: '高純度的史萊姆核心黏液精華，可用於進行全身性流體細胞同化改造。',
+    type: 'material',
+    rarity: 'epic',
+    cost: { money: 35000 },
+    isSellable: true,
+    isPurchasable: true,
+    isStackable: true,
+    activationType: 'none',
+  },
+  item_milk: {
+    id: 'item_milk',
+    name: '催眠母乳',
+    description: 'NPC進行泌乳改造後週期性分泌的乳汁，極具營養與催眠安定價值，可用於調配藥劑或直接出售。',
+    type: 'consumable',
+    rarity: 'rare',
+    cost: { money: 3000 },
+    isSellable: true,
+    isPurchasable: false,
+    isStackable: true,
+    activationType: 'none',
+  },
+  item_fertility_potion: {
+    id: 'item_fertility_potion',
+    name: '受孕特調藥劑',
+    description: '能使女性受孕機率在短時間內提升到極限的特調藥水，但若目標缺少子宮則無法使用。',
+    type: 'consumable',
+    rarity: 'rare',
+    cost: { money: 8000 },
+    isSellable: true,
+    isPurchasable: true,
+    isStackable: true,
+    activationType: 'none',
+  },
 };
 
 // ==========================================
@@ -2427,4 +2488,317 @@ export const BODY_PARTS_DICTIONARY: Record<string, BodyPartsDef> = {
     description: '最為敏感的性神經聚集地。',
   },
 };
+
+// ==========================================
+// 身體改造 APP 靜態字典 (Body Modification App Dictionaries)
+// ==========================================
+export const BODY_MODIFICATIONS_DICTIONARY: Record<string, BodyModificationDef> = {
+  // ==========================================
+  // 可疊加類改造 (stackable)
+  // ==========================================
+
+  mod_breast_milk: {
+    id: 'mod_breast_milk',
+    name: '雙乳泌乳化改造',
+    description: '利用催眠血清重組乳腺細胞，使其在不懷孕的情況下亦能持續分泌催眠母乳。每天可產出母乳。',
+    scope: 'local',
+    category: 'stackable',
+    slots: ['breastLeft', 'breastRight'],
+    cost: {
+      money: 25000,
+      pts: 30,
+      requiredItems: [{ itemId: 'item_hypno_serum', quantity: 2 }],
+    },
+    conditions: [
+      { target: 'obedience', operator: '>=', value: 35 },
+      { target: 'lust', operator: '>=', value: 30 }
+    ],
+    loadCost: 4,
+    modifiers: [
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'slots', operator: '+', value: 20 }
+    ],
+    eventTags: ['lactation'],
+    promptInjection: '乳腺已完成同化改造，具備持續分泌乳汁的能力，即使在未懷孕的狀態下每天也能持續泌乳，乳汁呈乳白色且微帶催眠成分。',
+  },
+
+  mod_cat_tail: {
+    id: 'mod_cat_tail',
+    name: '仿生貓尾加裝術',
+    description: '在尾椎處移植仿生貓尾巴，並與其尾神經叢連接。能藉由情緒擺動，尾巴本身極為敏感。',
+    scope: 'local',
+    category: 'stackable',
+    slots: ['tail'],
+    cost: {
+      money: 50000,
+      pts: 50,
+      requiredItems: [
+        { itemId: 'item_hypno_serum', quantity: 3 },
+        { itemId: 'item_cat_tail_implant', quantity: 1 }
+      ],
+    },
+    conditions: [
+      { target: 'obedience', operator: '>=', value: 45 }
+    ],
+    loadCost: 3,
+    modifiers: [
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'tail', operator: '+', value: 30 }
+    ],
+    addedBodyPart: {
+      id: 'tail',
+      name: '尾巴',
+      hasSensitivity: true,
+      hasTightness: false,
+      hasProficiency: true,
+      canOrgasm: true,
+      description: '手術移植的仿生貓尾巴，與神經相連，可自主擺動並感受快感。',
+      initialStats: { sensitivity: 20, proficiency: 10, orgasms: 0 },
+    },
+    promptInjection: '臀部上方已被手術加裝了一條柔軟的貓尾巴，與脊椎神經叢相連，能夠隨心意自主擺動，尾椎與尾身對撫摸與抓握極其敏感。',
+  },
+
+  mod_womb_removed: {
+    id: 'mod_womb_removed',
+    name: '子宮切除手術',
+    description: '完全移除角色的子宮。該手術為不可逆肉體變更，將徹底使其喪失生育能力。',
+    scope: 'local',
+    category: 'stackable',
+    slots: ['womb'],
+    cost: {
+      money: 15000,
+      pts: 20,
+      requiredItems: [{ itemId: 'item_hypno_serum', quantity: 1 }],
+    },
+    conditions: [
+      { target: 'obedience', operator: '>=', value: 50 }
+    ],
+    loadCost: 2,
+    modifiers: [
+      { targetType: 'global_stat', statName: 'obedience', operator: '+', value: 10 }
+    ],
+    itemRestrictions: [
+      { itemId: 'item_fertility_potion', restrictionType: 'disable', description: '目標角色的子宮已完全被切除，無法使用受孕特調藥劑。' }
+    ],
+    promptInjection: '子宮已被完全切除，腹部殘留微小的手術瘢痕，終身無法懷孕，其生育本能已被永久剝奪。',
+  },
+
+  // ==========================================
+  // 材質類改造 (material) - 互斥
+  // ==========================================
+  mod_slime_body: {
+    id: 'mod_slime_body',
+    name: '全身史萊姆流體化',
+    description: '注入液態核心同化全身細胞，將肉體重組為史萊姆流體質。全身所有部位敏感度顯著提升。',
+    scope: 'global',
+    category: 'material',
+    slots: [],
+    cost: {
+      money: 60000,
+      pts: 60,
+      requiredItems: [
+        { itemId: 'item_hypno_serum', quantity: 4 },
+        { itemId: 'item_slime_essence', quantity: 1 }
+      ],
+    },
+    conditions: [
+      { target: 'obedience', operator: '>=', value: 60 },
+      { target: 'lust', operator: '>=', value: 50 }
+    ],
+    loadCost: 8,
+    modifiers: [
+      { targetType: 'global_stat', statName: 'lust', operator: '+', value: 20 },
+      // 對所有預設部位增加敏感度
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'mouth', operator: '+', value: 25 },
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'breastLeft', operator: '+', value: 25 },
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'breastRight', operator: '+', value: 25 },
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'vagina', operator: '+', value: 25 },
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'anus', operator: '+', value: 25 },
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'urethra', operator: '+', value: 25 },
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'clitoris', operator: '+', value: 25 }
+    ],
+    promptInjection: '全身細胞已同化為史萊姆流體，身體柔軟如水，可以隨意變形或部分流體化，對任何物理觸碰的敏感度提升至極致。',
+  },
+
+  mod_iron_body: {
+    id: 'mod_iron_body',
+    name: '機械金屬化改裝',
+    description: '將肉體部分替換為機械金屬骨骼與人造矽膠皮膚。會常駐降低敏感度，但大幅提升服從度與屈服心態。',
+    scope: 'global',
+    category: 'material',
+    slots: [],
+    cost: {
+      money: 70000,
+      pts: 65,
+      requiredItems: [
+        { itemId: 'item_hypno_serum', quantity: 4 }
+      ],
+    },
+    conditions: [
+      { target: 'obedience', operator: '>=', value: 55 }
+    ],
+    loadCost: 8,
+    modifiers: [
+      { targetType: 'global_stat', statName: 'obedience', operator: '+', value: 15 },
+      // 常駐降低敏感度
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'mouth', operator: '-', value: 10 },
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'breastLeft', operator: '-', value: 10 },
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'breastRight', operator: '-', value: 10 },
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'vagina', operator: '-', value: 10 },
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'anus', operator: '-', value: 10 },
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'urethra', operator: '-', value: 10 },
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'clitoris', operator: '-', value: 10 }
+    ],
+    promptInjection: '肉體骨架與部分皮膚已被替換為冰冷的精密機械零件與金屬義肢，神經信號經過數位過濾，對刺激的痛感與快感均下降，但心中服從指令的本能已固化。',
+  },
+
+  // ==========================================
+  // 形狀類改造 (shape) - 互斥
+  // ==========================================
+  mod_heart_breast: {
+    id: 'mod_heart_breast',
+    name: '桃心型乳房整容術',
+    description: '重塑乳房組織，使其常駐呈現誘人的桃心形輪廓。使乳房敏感度提升。',
+    scope: 'local',
+    category: 'shape',
+    slots: ['breastLeft', 'breastRight'],
+    cost: {
+      money: 18000,
+      pts: 20,
+      requiredItems: [{ itemId: 'item_hypno_serum', quantity: 1 }],
+    },
+    conditions: [
+      { target: 'obedience', operator: '>=', value: 25 }
+    ],
+    loadCost: 3,
+    modifiers: [
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'slots', operator: '+', value: 15 }
+    ],
+    promptInjection: '雙乳經過精細的重塑，呈現出奇異而誘人的【桃心形】輪廓，無論何時都挺翹飽滿，充滿了人工改造的淫靡感。',
+  },
+
+  mod_star_breast: {
+    id: 'mod_star_breast',
+    name: '星星型乳房整容術',
+    description: '重塑乳房組織，使其呈現活潑性感的五角星形狀。使乳房敏感度提升。',
+    scope: 'local',
+    category: 'shape',
+    slots: ['breastLeft', 'breastRight'],
+    cost: {
+      money: 18000,
+      pts: 20,
+      requiredItems: [{ itemId: 'item_hypno_serum', quantity: 1 }],
+    },
+    conditions: [
+      { target: 'obedience', operator: '>=', value: 25 }
+    ],
+    loadCost: 3,
+    modifiers: [
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'slots', operator: '+', value: 15 }
+    ],
+    promptInjection: '雙乳經過手術改造，呈現出獨特的【五角星形】形狀，邊緣輪廓分明，為身體增添了強烈的奴隸改造氣息。',
+  },
+
+  mod_womb_egg: {
+    id: 'mod_womb_egg',
+    name: '子宮寄生卵莢植入術',
+    description: '在子宮內植入活性仿生寄生卵莢，使其持續蠕動並分泌催情液。會常駐且顯著提升性慾與敏感度。',
+    scope: 'local',
+    category: 'stackable',
+    slots: ['womb'],
+    cost: {
+      money: 38000,
+      pts: 40,
+      requiredItems: [{ itemId: 'item_hypno_serum', quantity: 2 }],
+    },
+    conditions: [
+      { target: 'obedience', operator: '>=', value: 40 },
+      { target: 'lust', operator: '>=', value: 40 }
+    ],
+    loadCost: 4,
+    modifiers: [
+      { targetType: 'global_stat', statName: 'lust', operator: '+', value: 15 },
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'womb', operator: '+', value: 35 }
+    ],
+    eventTags: ['estrus'],
+    promptInjection: '子宮內已植入了活體寄生卵莢，卵莢會定期在腹中輕微蠕動，使其小腹常駐有異物感與熱度，並不時分泌出帶有催情氣味的淫水。',
+  },
+
+  mod_breast_enlargement: {
+    id: 'mod_breast_enlargement',
+    name: '重度乳房細胞擴張術',
+    description: '重度擴張乳房組織，使其尺寸急遽膨脹至常規數倍。這會大幅提升乳頭的敏感度，但會帶來沉重的身體負擔。',
+    scope: 'local',
+    category: 'shape',
+    slots: ['breastLeft', 'breastRight'],
+    cost: {
+      money: 42000,
+      pts: 45,
+      requiredItems: [{ itemId: 'item_hypno_serum', quantity: 2 }],
+    },
+    conditions: [
+      { target: 'obedience', operator: '>=', value: 30 }
+    ],
+    loadCost: 6,
+    modifiers: [
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'slots', operator: '+', value: 35 }
+    ],
+    promptInjection: '雙乳經過了極端的細胞擴張改造，尺寸已變得異常豐滿且沉重，胸前呈現出誇張的重度改造成效，乳頭隨時處於充血與敏感狀態。',
+  },
+
+  mod_vagina_sensory_core: {
+    id: 'mod_vagina_sensory_core',
+    name: '陰道感官電極核心安裝',
+    description: '在陰道深處與子宮頸交界安裝感官刺激核心，將神經脈衝放大。會顯著增加陰道敏感度與縮緊能力。',
+    scope: 'local',
+    category: 'material',
+    slots: ['vagina'],
+    cost: {
+      money: 48000,
+      pts: 50,
+      requiredItems: [{ itemId: 'item_hypno_serum', quantity: 3 }],
+    },
+    conditions: [
+      { target: 'obedience', operator: '>=', value: 45 },
+      { target: 'lust', operator: '>=', value: 40 }
+    ],
+    loadCost: 5,
+    modifiers: [
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'vagina', operator: '+', value: 40 },
+      { targetType: 'body_part_stat', statName: 'tightness', bodyPartId: 'vagina', operator: '+', value: 20 }
+    ],
+    promptInjection: '陰道內已被植入了高敏感的電極核心，核心會根據交合的頻率與深度釋放感官電流，使其陰道壁不受控制地劇烈緊縮並產生海嘯般的快感。',
+  },
+
+  mod_horn_implant: {
+    id: 'mod_horn_implant',
+    name: '骨質惡魔角額骨植入',
+    description: '在額骨兩側植入具備微弱熱神經末梢的惡魔雙角，使其直接與顱神經相連。惡魔角本身具備敏感觸覺。',
+    scope: 'local',
+    category: 'stackable',
+    slots: ['horns'],
+    cost: {
+      money: 55000,
+      pts: 50,
+      requiredItems: [{ itemId: 'item_hypno_serum', quantity: 3 }],
+    },
+    conditions: [
+      { target: 'obedience', operator: '>=', value: 50 }
+    ],
+    loadCost: 3,
+    modifiers: [
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'horns', operator: '+', value: 20 }
+    ],
+    addedBodyPart: {
+      id: 'horns',
+      name: '惡魔之角',
+      hasSensitivity: true,
+      hasTightness: false,
+      hasProficiency: true,
+      canOrgasm: true,
+      description: '額骨生長出的骨質惡魔雙角，內部佈滿敏感的神經末梢，觸碰時會傳遞酥麻的感官信號。',
+      initialStats: { sensitivity: 30, proficiency: 5, orgasms: 0 },
+    },
+    promptInjection: '額頭上方已被手術移植了一雙漆黑的骨質惡魔角，直接穿透額骨並與痛覺與觸覺神經相連，撫摸或抓握惡魔角會直接向大腦深處發送酥麻的快感信號。',
+  },
+};
+
 

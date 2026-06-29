@@ -14,6 +14,7 @@ import {
   MockMapState,
   BodyPartsDef,
   MvuVariables,
+  type AttrModifier,
 } from '../../models';
 
 import {
@@ -131,16 +132,189 @@ function getDynamicAchievements(): Record<string, AchievementOrQuestDef> {
 }
 
 // ==========================================
+// 身體改造：NPC 有效屬性計算與輔助函數
+// ==========================================
+function getEffectiveNpcData(npcName: string): MockcharData {
+  const char = mockMvuVariables.chars[npcName];
+  if (!char) {
+    throw new Error(`[MockApi] getEffectiveNpcData: 未找到角色 ${npcName}`);
+  }
+
+  // 深度複製，避免污染 mvuVariables 的基礎狀態
+  const effectiveChar = JSON.parse(JSON.stringify(char)) as MockcharData;
+
+  effectiveChar.ownedBodyModifications = effectiveChar.ownedBodyModifications || {};
+  effectiveChar.bodyParts = effectiveChar.bodyParts || {
+    mouth: { sensitivity: 0, tightness: 0, proficiency: 0, orgasms: 0 },
+    breastLeft: { sensitivity: 0, proficiency: 0, orgasms: 0 },
+    breastRight: { sensitivity: 0, proficiency: 0, orgasms: 0 },
+    vagina: { sensitivity: 0, tightness: 0, proficiency: 0, orgasms: 0 },
+    anus: { sensitivity: 0, tightness: 0, proficiency: 0, orgasms: 0 },
+    urethra: { sensitivity: 0, tightness: 0, proficiency: 0, orgasms: 0 },
+    clitoris: { sensitivity: 0, proficiency: 0, orgasms: 0 },
+  };
+
+  // 1. 動態負荷上限計算：初始負荷上限 14，每多一個實體化的自訂部位則 +2
+  const baseMaxLoad = 14;
+  let customPartsCount = 0;
+  const defaultParts = ['mouth', 'breastLeft', 'breastRight', 'vagina', 'anus', 'urethra', 'clitoris'];
+  for (const partKey in effectiveChar.bodyParts) {
+    if (!defaultParts.includes(partKey)) {
+      customPartsCount++;
+    }
+  }
+  const effectiveMaxLoad = baseMaxLoad + customPartsCount * 2;
+  (effectiveChar as any).maxLoad = effectiveMaxLoad;
+  (effectiveChar as any).currentLoad = 0;
+
+  // 2. 套用啟用的改造 modifiers 與適應期排異反應
+  const currentTime = mockMvuVariables.time;
+
+  for (const modId in effectiveChar.ownedBodyModifications) {
+    const modState = effectiveChar.ownedBodyModifications[modId];
+    if (!modState || !modState.isActive) continue;
+
+    const def = mockChatVariables.bodyModifications[modId];
+    if (!def) continue;
+
+    // 累計負荷
+    (effectiveChar as any).currentLoad += def.loadCost || 0;
+
+    // 檢查適應期
+    let isAdapting = false;
+    if (modState.adaptation && modState.adaptation.endVirtualTime) {
+      const currentMs = new Date(currentTime.replace(/-/g, '/')).getTime();
+      const endMs = new Date(modState.adaptation.endVirtualTime.replace(/-/g, '/')).getTime();
+      if (!isNaN(currentMs) && !isNaN(endMs) && currentMs < endMs) {
+        isAdapting = true;
+      }
+    }
+
+    // 整合常駐 modifiers 與適應期排異 modifiers
+    const modifiersToApply = [...(def.modifiers || [])];
+    if (isAdapting && modState.adaptation && modState.adaptation.extraModifiers) {
+      modifiersToApply.push(...modState.adaptation.extraModifiers);
+    }
+
+    // 套用增減益
+    for (const mod of modifiersToApply) {
+      if (mod.targetType === 'global_stat') {
+        const val = Number((effectiveChar as any)[mod.statName]) || 0;
+        let newVal = val;
+        if (mod.operator === '+') newVal += mod.value;
+        if (mod.operator === '-') newVal -= mod.value;
+        if (mod.operator === '*') newVal *= mod.value;
+        (effectiveChar as any)[mod.statName] = newVal;
+      } else if (mod.targetType === 'body_part_stat') {
+        const applyToPart = (partId: string) => {
+          const bpStat = effectiveChar.bodyParts[partId];
+          if (bpStat) {
+            const val = Number((bpStat as any)[mod.statName]) || 0;
+            let newVal = val;
+            if (mod.operator === '+') newVal += mod.value;
+            if (mod.operator === '-') newVal -= mod.value;
+            if (mod.operator === '*') newVal *= mod.value;
+            (bpStat as any)[mod.statName] = newVal;
+          }
+        };
+
+        if (mod.bodyPartId === 'slots') {
+          for (const slotId of def.slots) {
+            applyToPart(slotId);
+          }
+        } else if (mod.bodyPartId) {
+          applyToPart(mod.bodyPartId);
+        }
+      }
+    }
+  }
+
+  // 3. 邊界數值限制
+  const limit = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
+  effectiveChar.obedience = limit(effectiveChar.obedience, 0, 100);
+  effectiveChar.affection = limit(effectiveChar.affection, 0, 100);
+  effectiveChar.alertness = limit(effectiveChar.alertness, 0, 100);
+  effectiveChar.lust = limit(effectiveChar.lust, 0, 100);
+  effectiveChar.arousal = limit(effectiveChar.arousal, 0, 100);
+
+  for (const partKey in effectiveChar.bodyParts) {
+    const bp = effectiveChar.bodyParts[partKey];
+    if (bp) {
+      if (bp.sensitivity !== undefined) bp.sensitivity = limit(bp.sensitivity, -150, 250);
+      if (bp.tightness !== undefined) bp.tightness = limit(bp.tightness, -150, 250);
+      if (bp.proficiency !== undefined) bp.proficiency = limit(bp.proficiency, 0, 100);
+      if (bp.orgasms !== undefined) bp.orgasms = Math.max(0, bp.orgasms);
+    }
+  }
+
+  return effectiveChar;
+}
+
+function getEffectiveNpcDataSafe(npcName: string): any {
+  try {
+    return getEffectiveNpcData(npcName);
+  } catch (e) {
+    return mockMvuVariables.chars[npcName] || {};
+  }
+}
+
+function processVirtualTimeAdvance(oldTimeStr: string, newTimeStr: string) {
+  const oldDt = new Date(oldTimeStr.replace(/-/g, '/'));
+  const newDt = new Date(newTimeStr.replace(/-/g, '/'));
+  if (isNaN(oldDt.getTime()) || isNaN(newDt.getTime())) return;
+
+  // 1. 檢算每個 NPC 的適應期是否到期
+  for (const charName in mockMvuVariables.chars) {
+    const char = mockMvuVariables.chars[charName];
+    if (char && char.ownedBodyModifications) {
+      for (const modId in char.ownedBodyModifications) {
+        const state = char.ownedBodyModifications[modId];
+        if (state && state.adaptation && state.adaptation.endVirtualTime) {
+          const endDt = new Date(state.adaptation.endVirtualTime.replace(/-/g, '/'));
+          if (!isNaN(endDt.getTime()) && newDt.getTime() >= endDt.getTime()) {
+            delete state.adaptation;
+            console.info(`[HypnoOS][BodyMod] 角色【${charName}】的身體已完全適應改造【${mockChatVariables.bodyModifications[modId]?.name || modId}】，排異反應消失。`);
+          }
+        }
+      }
+    }
+  }
+
+  // 2. 檢算週期性產出：若跨越了「天」(日期改變)
+  const oldDateKey = `${oldDt.getFullYear()}-${oldDt.getMonth() + 1}-${oldDt.getDate()}`;
+  const newDateKey = `${newDt.getFullYear()}-${newDt.getMonth() + 1}-${newDt.getDate()}`;
+  if (oldDateKey !== newDateKey) {
+    const diffDays = Math.max(1, Math.floor((newDt.getTime() - oldDt.getTime()) / (1000 * 60 * 60 * 24)));
+
+    for (const charName in mockMvuVariables.chars) {
+      const char = mockMvuVariables.chars[charName];
+      if (char && char.ownedBodyModifications) {
+        for (const modId in char.ownedBodyModifications) {
+          const state = char.ownedBodyModifications[modId];
+          if (state && state.isActive) {
+            const def = mockChatVariables.bodyModifications[modId];
+            if (def && def.eventTags && def.eventTags.includes('lactation')) {
+              char.inventory = char.inventory || {};
+              char.inventory['item_milk'] = char.inventory['item_milk'] || { quantity: 0 };
+              char.inventory['item_milk'].quantity += diffDays * 1;
+              console.info(`[HypnoOS][BodyMod] 角色【${charName}】泌乳產出：新增了 ${diffDays} 瓶催眠母乳。`);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// ==========================================
 // 內部輔助函數：評估程式條件
 // ==========================================
 function evaluateProgramConditions(conditions: ConditionOnProgram[] | string): boolean {
   if (typeof conditions === 'string') return false; // 模擬後端無法解析純字串條件
 
   for (const cond of conditions) {
-    // 取得所有 target 的值，並檢查是否至少有一個符合條件
     const targetValues: number[] = [];
 
-    // 1. 檢查全域資源 (user data)
     if (cond.target.includes('money')) targetValues.push(mockMvuVariables.user.money);
     if (cond.target.includes('pts')) targetValues.push(mockMvuVariables.user.mcPoints);
     if (cond.target.includes('totalConsumedMc')) targetValues.push(mockMvuVariables.user.totalConsumedMc);
@@ -154,7 +328,6 @@ function evaluateProgramConditions(conditions: ConditionOnProgram[] | string): b
       targetValues.push(effectiveVipTier);
     }
 
-    // 2. 檢查角色屬性 (char data)，將所有角色的該屬性值加入陣列
     const charTargets = [
       'totalSensitivity',
       'totalOrgasms',
@@ -178,9 +351,9 @@ function evaluateProgramConditions(conditions: ConditionOnProgram[] | string): b
                              charTargets.includes(cond.target);
     if (isBodyPartTarget) {
       for (const charName in mockMvuVariables.chars) {
-        if (cond.charName && cond.charName !== charName) continue; // 如果指定了角色，只檢查該角色
+        if (cond.charName && cond.charName !== charName) continue;
 
-        const char = mockMvuVariables.chars[charName] as any;
+        const char = getEffectiveNpcDataSafe(charName);
         const bp = char.bodyParts || {};
         const getVal = (part: string, key: string) => {
           return bp[part]?.[key] ?? 0;
@@ -836,6 +1009,7 @@ export const MockApi = {
     if (totalTime > 0) {
       const dt = new Date(mockMvuVariables.time.replace(/-/g, '/'));
       if (!isNaN(dt.getTime())) {
+        const oldTime = mockMvuVariables.time;
         dt.setMinutes(dt.getMinutes() + totalTime);
         const y = dt.getFullYear();
         const mo = String(dt.getMonth() + 1).padStart(2, '0');
@@ -843,7 +1017,9 @@ export const MockApi = {
         const h = String(dt.getHours()).padStart(2, '0');
         const mi = String(dt.getMinutes()).padStart(2, '0');
         const s = String(dt.getSeconds()).padStart(2, '0');
-        mockMvuVariables.time = `${y}-${mo}-${d} ${h}:${mi}:${s}`;
+        const newTime = `${y}-${mo}-${d} ${h}:${mi}:${s}`;
+        mockMvuVariables.time = newTime;
+        processVirtualTimeAdvance(oldTime, newTime);
       }
     }
     if (totalEnergy > 0) {
@@ -1043,7 +1219,9 @@ export const MockApi = {
 
   async updateSystemTime(newTime: string): Promise<void> {
     await delay(100);
+    const oldTime = mockMvuVariables.time;
     mockMvuVariables.time = newTime;
+    processVirtualTimeAdvance(oldTime, newTime);
   },
 
   async teleportToLocation(targetNodeId: string): Promise<MockMapState> {
@@ -1069,6 +1247,261 @@ export const MockApi = {
 
   async refreshInventoryItemsActivation(): Promise<void> {
     refreshInventoryItemsActivation(mockMvuVariables);
+  },
+
+  // ==========================================
+  // 身體改造 APP 相關 API (Body Modification App APIs)
+  // ==========================================
+  async getAllBodyModifications(): Promise<Record<string, any>> {
+    await delay(100);
+    return JSON.parse(JSON.stringify(mockChatVariables.bodyModifications));
+  },
+
+  async getNpc(npcName: string): Promise<MockcharData> {
+    await delay(100);
+    return getEffectiveNpcData(npcName);
+  },
+
+  async performBodyModification(npcName: string, modId: string): Promise<{ success: boolean; errorMsg?: string }> {
+    await delay(200);
+    const char = mockMvuVariables.chars[npcName];
+    if (!char) return { success: false, errorMsg: '找不到指定角色' };
+
+    const def = mockChatVariables.bodyModifications[modId];
+    if (!def) return { success: false, errorMsg: '找不到此身體改造方案' };
+
+    // 1. 檢查是否已安裝
+    char.ownedBodyModifications = char.ownedBodyModifications || {};
+    if (char.ownedBodyModifications[modId]) {
+      return { success: false, errorMsg: '角色已進行過此項身體改造' };
+    }
+
+    // 2. 檢查互斥 (材質或形狀)
+    if (def.category === 'material' || def.category === 'shape') {
+      const activeMods = Object.keys(char.ownedBodyModifications)
+        .map(id => mockChatVariables.bodyModifications[id])
+        .filter(m => m !== undefined && char.ownedBodyModifications[m.id]?.isActive);
+
+      if (def.scope === 'global') {
+        const hasConflict = activeMods.some(m => m.scope === 'global' && m.category === def.category);
+        if (hasConflict) {
+          return { success: false, errorMsg: `角色已安裝全身【${def.category === 'material' ? '材質' : '形狀'}】類型的改造，無法共存。` };
+        }
+      } else {
+        for (const slotId of def.slots) {
+          const hasConflict = activeMods.some(m => m.slots.includes(slotId) && m.category === def.category);
+          if (hasConflict) {
+            return { success: false, errorMsg: `部位【${slotId}】已安裝同屬【${def.category === 'material' ? '材質' : '形狀'}】類型的改造，無法共存。` };
+          }
+        }
+      }
+    }
+
+    // 3. 負荷上限檢查
+    const defaultParts = ['mouth', 'breastLeft', 'breastRight', 'vagina', 'anus', 'urethra', 'clitoris'];
+    const currentParts = Object.keys(char.bodyParts || {});
+    const customPartsCount = currentParts.filter(p => !defaultParts.includes(p)).length;
+    const maxLoad = 14 + customPartsCount * 2;
+
+    let currentLoad = 0;
+    for (const mId in char.ownedBodyModifications) {
+      const state = char.ownedBodyModifications[mId];
+      if (state && state.isActive) {
+        const mDef = mockChatVariables.bodyModifications[mId];
+        if (mDef) currentLoad += mDef.loadCost || 0;
+      }
+    }
+
+    if (currentLoad + def.loadCost > maxLoad) {
+      return { success: false, errorMsg: `肉體負荷超載！當前負荷：${currentLoad}/${maxLoad}，此改造需要負荷：${def.loadCost}。請先拆除部分改造。` };
+    }
+
+    // 4. 檢查前置條件
+    const evalConditions = (conds: ConditionOnProgram[]) => {
+      const variables = {
+        money: mockMvuVariables.user.money,
+        pts: mockMvuVariables.user.mcPoints,
+        mcEnergy: mockMvuVariables.user.mcEnergy,
+        obedience: char.obedience,
+        lust: char.lust,
+        affection: char.affection,
+        currentLocationId: mockMvuVariables.user.mapState?.currentLocationId || '',
+      };
+      const getVal = (target: string) => {
+        if ((variables as any)[target] !== undefined) return (variables as any)[target];
+        if (target.includes('bodyParts.')) {
+          const parts = target.split('.');
+          const partId = parts[1];
+          const attr = parts[2];
+          return (char.bodyParts?.[partId] as any)?.[attr] ?? 0;
+        }
+        return 0;
+      };
+
+      for (const cond of conds) {
+        const actual = getVal(cond.target);
+        let met = false;
+        switch (cond.operator) {
+          case '==': met = actual === cond.value; break;
+          case '!=': met = actual !== cond.value; break;
+          case '>=': met = actual >= cond.value; break;
+          case '<=': met = actual <= cond.value; break;
+          case '>': met = actual > cond.value; break;
+          case '<': met = actual < cond.value; break;
+        }
+        if (!met) return false;
+      }
+      return true;
+    };
+
+    if (def.conditions && def.conditions.length > 0) {
+      if (!evalConditions(def.conditions)) {
+        return { success: false, errorMsg: '未滿足改造的前置調教與屬性條件！' };
+      }
+    }
+
+    // 5. 資源扣減
+    if (def.cost) {
+      if (def.cost.money && mockMvuVariables.user.money < def.cost.money) {
+        return { success: false, errorMsg: '資金不足，無法支付手術費用。' };
+      }
+      if (def.cost.pts && mockMvuVariables.user.mcPoints < def.cost.pts) {
+        return { success: false, errorMsg: 'MC點數 (PTS) 不足。' };
+      }
+      if (def.cost.mcEnergy && mockMvuVariables.user.mcEnergy < def.cost.mcEnergy) {
+        return { success: false, errorMsg: 'MC能量不足。' };
+      }
+      if (def.cost.requiredItems) {
+        for (const itemCost of def.cost.requiredItems) {
+          const qty = mockMvuVariables.user.inventory[itemCost.itemId]?.quantity || 0;
+          if (qty < itemCost.quantity) {
+            return { success: false, errorMsg: `手術材料不足！缺少【${mockChatVariables.items[itemCost.itemId]?.name || itemCost.itemId}】` };
+          }
+        }
+      }
+
+      if (def.cost.money) mockMvuVariables.user.money -= def.cost.money;
+      if (def.cost.pts) mockMvuVariables.user.mcPoints -= def.cost.pts;
+      if (def.cost.mcEnergy) mockMvuVariables.user.mcEnergy -= def.cost.mcEnergy;
+      if (def.cost.requiredItems) {
+        for (const itemCost of def.cost.requiredItems) {
+          mockMvuVariables.user.inventory[itemCost.itemId].quantity -= itemCost.quantity;
+          if (mockMvuVariables.user.inventory[itemCost.itemId].quantity <= 0) {
+            delete mockMvuVariables.user.inventory[itemCost.itemId];
+          }
+        }
+      }
+    }
+
+    // 6. 設定適應期與啟用狀態
+    const dt = new Date(mockMvuVariables.time.replace(/-/g, '/'));
+    dt.setHours(dt.getHours() + 48);
+    const formatTime = (d: Date) => {
+      const y = d.getFullYear();
+      const mo = String(d.getMonth() + 1).padStart(2, '0');
+      const date = String(d.getDate()).padStart(2, '0');
+      const h = String(d.getHours()).padStart(2, '0');
+      const mi = String(d.getMinutes()).padStart(2, '0');
+      const s = String(d.getSeconds()).padStart(2, '0');
+      return `${y}-${mo}-${date} ${h}:${mi}:${s}`;
+    };
+
+    const extraMods: AttrModifier[] = [
+      { targetType: 'global_stat', statName: 'affection', operator: '-', value: 10 }
+    ];
+
+    char.ownedBodyModifications[modId] = {
+      id: modId,
+      installedVirtualTime: mockMvuVariables.time,
+      isActive: true,
+      selectedTraits: [],
+      adaptation: {
+        endVirtualTime: formatTime(dt),
+        extraModifiers: extraMods,
+      }
+    };
+
+    // 7. 動態實體化部位
+    if (def.addedBodyPart) {
+      char.bodyParts = char.bodyParts || {};
+      const partId = def.addedBodyPart.id;
+      if (!char.bodyParts[partId]) {
+        char.bodyParts[partId] = {
+          sensitivity: def.addedBodyPart.initialStats?.sensitivity ?? 0,
+          tightness: def.addedBodyPart.initialStats?.tightness ?? 0,
+          proficiency: def.addedBodyPart.initialStats?.proficiency ?? 0,
+          orgasms: def.addedBodyPart.initialStats?.orgasms ?? 0,
+        };
+      }
+    }
+
+    return { success: true };
+  },
+
+  async toggleBodyModification(npcName: string, modId: string, enabled: boolean): Promise<{ success: boolean; errorMsg?: string }> {
+    await delay(150);
+    const char = mockMvuVariables.chars[npcName];
+    if (!char || !char.ownedBodyModifications || !char.ownedBodyModifications[modId]) {
+      return { success: false, errorMsg: '角色未安裝該改造，無法切換狀態' };
+    }
+
+    const def = mockChatVariables.bodyModifications[modId];
+    if (!def) return { success: false, errorMsg: '找不到此身體改造方案' };
+
+    if (enabled) {
+      const defaultParts = ['mouth', 'breastLeft', 'breastRight', 'vagina', 'anus', 'urethra', 'clitoris'];
+      const currentParts = Object.keys(char.bodyParts || {});
+      const customPartsCount = currentParts.filter(p => !defaultParts.includes(p)).length;
+      const maxLoad = 14 + customPartsCount * 2;
+
+      let currentLoad = 0;
+      for (const mId in char.ownedBodyModifications) {
+        if (mId === modId) continue;
+        const state = char.ownedBodyModifications[mId];
+        if (state && state.isActive) {
+          const mDef = mockChatVariables.bodyModifications[mId];
+          if (mDef) currentLoad += mDef.loadCost || 0;
+        }
+      }
+
+      if (currentLoad + def.loadCost > maxLoad) {
+        return { success: false, errorMsg: `無法啟用！負荷超載：啟用後負荷將達 ${currentLoad + def.loadCost}/${maxLoad}。` };
+      }
+    }
+
+    char.ownedBodyModifications[modId].isActive = enabled;
+    return { success: true };
+  },
+
+  async removeBodyModification(npcName: string, modId: string): Promise<{ success: boolean; errorMsg?: string }> {
+    await delay(200);
+    const char = mockMvuVariables.chars[npcName];
+    if (!char || !char.ownedBodyModifications || !char.ownedBodyModifications[modId]) {
+      return { success: false, errorMsg: '角色未安裝該改造，無法移除' };
+    }
+
+    const def = mockChatVariables.bodyModifications[modId];
+    if (!def) return { success: false, errorMsg: '找不到此身體改造方案' };
+
+    delete char.ownedBodyModifications[modId];
+
+    if (def.addedBodyPart) {
+      const partId = def.addedBodyPart.id;
+      let isPartNeeded = false;
+      for (const mId in char.ownedBodyModifications) {
+        const mDef = mockChatVariables.bodyModifications[mId];
+        if (mDef && mDef.slots.includes(partId)) {
+          isPartNeeded = true;
+          break;
+        }
+      }
+
+      if (!isPartNeeded && char.bodyParts && char.bodyParts[partId]) {
+        delete char.bodyParts[partId];
+      }
+    }
+
+    return { success: true };
   },
 };
 
@@ -1132,13 +1565,13 @@ function parseNpcConditions(targetName: string): Array<{ npcName: string; attrib
 // 從 NPC chars 資料中取得指定屬性的數值
 // ==========================================
 function getNpcAttributeValue(npcName: string, attribute: string): number {
-  const char = mockMvuVariables.chars[npcName] as any;
+  const char = getEffectiveNpcDataSafe(npcName);
   if (!char) return 0;
   // 直接屬性 (obedience, affection, alertness, arousal, lust)
   if (char[attribute] !== undefined) return Number(char[attribute]) || 0;
 
   // 身體部位屬性支援，如 'mouthSensitivity', 'vaginaTightness', 'clitorisSensitivity' 等
-  const bp = char.bodyParts || {};
+  const bp = (char.bodyParts || {}) as any;
   const getVal = (part: string, key: string) => {
     return bp[part]?.[key] ?? 0;
   };

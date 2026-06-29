@@ -29,6 +29,7 @@ export enum AppMode {
   WIP = 'WIP',
   CHARACTER_EDITOR = 'CHARACTER_EDITOR',
   MAP = 'MAP',
+  BODY_MODIFICATION = 'BODY_MODIFICATION',
 }
 
 export interface MockApiSettings {
@@ -100,7 +101,7 @@ export interface MockcharData {
   >;
   // NPC 的背包與裝備，與玩家背包結構對稱
   inventory: Record<string, InventoryItemState>;
-  ownedBodyModifications: Record<string, any>;
+  ownedBodyModifications: Record<string, NPCBodyModState>;
   locationState?: {
     locationId: string;
     locationStatus: string;
@@ -136,6 +137,8 @@ export interface ChatVariables {
   items: Record<string, ItemDef>;
   // 身體部位定義相關邏輯
   bodyParts: Record<string, BodyPartsDef>;
+  // 身體改造靜態資料庫
+  bodyModifications: Record<string, BodyModificationDef>;
 }
 
 export interface MvuVariables {
@@ -176,7 +179,7 @@ export interface MvuVariables {
 
     // 主要 NPC 背包
     inventory: Record<string, InventoryItemState>;
-    ownedBodyModifications: Record<string, any>;
+    ownedBodyModifications: Record<string, NPCBodyModState>;
     locationState?: {
       locationId: string;
       locationStatus: string;
@@ -252,7 +255,7 @@ export interface InventoryItemState {
   isEquipped?: boolean;         // (僅裝備) 是否正被玩家或 NPC 裝備/穿戴中
   equipSlot?: string;           // (僅裝備) 裝備部位描述 (如: "head", "eyes", "body", "crotch" 等)
   customDescription?: string;    // 物品可選的附加臨時描述 (例如: "沾著泥土的鑰匙")
-  
+
   // 運行時激活狀態 (擴充欄位)
   isActive?: boolean;           // 該物品當前是否處於激活狀態
 }
@@ -314,7 +317,7 @@ export interface ConditionOnProgram {
     | 'obedience'
     | 'lust'
     | 'arousal'
-    | string;
+    | string; // 角色的部位與該部位的屬性名稱
   operator: '==' | '!=' | '>=' | '<=' | '>' | '<';
   value: number;
   charName?: string; // 支持特定角色的成就
@@ -488,5 +491,101 @@ export interface PromptTemplate {
 export interface AppSettings {
   prompts: PromptTemplate[];
 }
+
+// ============================================================================
+// 第三區：身體改造系統 (Body Modification System) 型別與定義
+// ============================================================================
+
+// ==========================================
+// 身體改造範疇與分類
+// ==========================================
+export type BodyModScope = 'global' | 'local';
+
+export type BodyModCategory = 
+  | 'material'    // 材質類改造 (如：史萊姆化、金屬化。同部位同分類互斥)
+  | 'shape'       // 形狀/尺寸類改造 (如：桃心型乳房、乳房擴張。同部位同分類互斥)
+  | 'stackable';  // 可疊加類改造 (如：穿刺類乳環、功能性腺體改造。可無限共存)
+
+// ==========================================
+// 屬性修改器結構
+// ==========================================
+export interface AttrModifier {
+  targetType: 'global_stat' | 'body_part_stat';
+  statName: string;              // 屬性名稱 (例如 'obedience', 'sensitivity', 'tightness' 等)
+  bodyPartId?: string | 'slots'; // 目標部位 (若是 'slots' 則自動套用所有佔用的 slots)
+  operator: '+' | '-' | '*';
+  value: number;
+}
+
+// ==========================================
+// 身體改造定義 (Static Data / 靜態常數庫)
+// ==========================================
+export interface BodyModificationDef {
+  id: string;                    // 方案唯一 ID (如 'mod_breast_milk', 'mod_slime_body')
+  name: string;                  // 改造名稱
+  description: string;           // 改造詳細說明
+  scope: BodyModScope;           // 改造的影響範圍 ('global' 或 'local')
+  category: BodyModCategory;     // 改造的分類 (材質、形狀或可疊加)
+  slots: string[];               // 佔用的部位 IDs (若 scope 為 'global' 則為空陣列)
+  
+  cost: {
+    money?: number;              // 零花錢消耗
+    pts?: number;                // MC點數 (PTS) 消耗
+    mcEnergy?: number;           // MC能量一次性消耗
+    requiredItems?: Array<{ itemId: string; quantity: number }>; // 背包材料消耗
+  };
+  
+  conditions: ConditionOnProgram[]; // 改造前置條件
+
+  loadCost: number;              // 該改造佔用的部位肉體負荷值
+  modifiers: AttrModifier[];     // 啟用後的常駐屬性影響
+  
+  eventTags?: string[];          // 事件標籤 (如 ['lactation', 'estrus']，對接通用事件系統)
+  
+  // 動態新增自訂部位的結構
+  addedBodyPart?: {
+    id: string;                  // 新增部位 ID (如 'tail')
+    name: string;                // 部位顯示名稱
+    hasSensitivity: boolean;     // 是否有敏感度
+    hasTightness?: boolean;      // 是否有鬆緊度
+    hasProficiency?: boolean;    // 是否有熟練度
+    canOrgasm?: boolean;         // 是否能高潮
+    description: string;         // 部位基礎描述
+    initialStats?: {             // 實體化初始值
+      sensitivity?: number;
+      tightness?: number;
+      proficiency?: number;
+      orgasms?: number;
+    };
+  };
+
+  // 物品限制與加成
+  itemRestrictions?: Array<{
+    itemId: string;
+    restrictionType: 'disable' | 'buff' | 'nerf';
+    multiplier?: number;
+    description: string;
+  }>;
+
+  promptInjection?: string;      // 注入 AI Prompt 的故事描述文本
+}
+
+// ==========================================
+// NPC 執行期身體改造狀態 (Runtime / MVU Variables)
+// ==========================================
+export interface NPCBodyModState {
+  id: string;                    // 對應 BodyModificationDef.id
+  installedVirtualTime: string;  // 安裝時的虛擬時間 (格式 "YYYY-MM-DD HH:mm:ss")
+  isActive: boolean;             // 當前是否啟用
+  selectedTraits: string[];      // 此次改造產生的特徵/副作用
+  
+  adaptation?: {
+    endVirtualTime: string;      // 適應期結束的虛擬時間
+    extraModifiers: AttrModifier[]; // 適應期內額外的排異數值影響
+  };
+  
+  customDescription?: string;    // 玩家自訂的改造描述備註 (會注入 prompt)
+}
+
 
 

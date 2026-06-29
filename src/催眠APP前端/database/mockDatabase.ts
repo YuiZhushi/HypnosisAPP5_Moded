@@ -17,6 +17,7 @@ import {
   MAP_MAP_EDGES,
   MAP_ZONES,
   BODY_PARTS_DICTIONARY,
+  BODY_MODIFICATIONS_DICTIONARY,
 } from '../staticData';
 
 import { chatDatabasePatch } from './chatVariables';
@@ -39,6 +40,7 @@ export const mockChatVariables: ChatVariables = {
   mapEdges: [],
   items: {},
   bodyParts: {},
+  bodyModifications: {},
 };
 
 export const mockMvuVariables: MvuVariables = {
@@ -170,6 +172,7 @@ export function loadSimulationVariables() {
   mockChatVariables.quests = { ...QUEST_DICTIONARY };
   mockChatVariables.calendarEvents = { ...CALENDAR_STATIC_EVENTS };
   mockChatVariables.bodyParts = { ...BODY_PARTS_DICTIONARY };
+  mockChatVariables.bodyModifications = { ...BODY_MODIFICATIONS_DICTIONARY };
   
   // 地圖靜態資料轉換 (Array -> Record)
   const locRecord: Record<string, MockLocationNode> = {};
