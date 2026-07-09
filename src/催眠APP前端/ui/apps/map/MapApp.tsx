@@ -15,11 +15,7 @@ import {
   ShieldAlert,
   ChevronDown,
 } from 'lucide-react';
-import {
-  MockLocationNode as LocationNode,
-  MockMapEdge as MapEdge,
-  MockMapState as MapState,
-} from '../../../models';
+import { MockLocationNode as LocationNode, MockMapEdge as MapEdge, MockMapState as MapState } from '../../../models';
 import { MockApi, MockApi as MockMapApi } from '../../../shared/api/mockApi';
 import { logger } from '../../../../催眠APP共用/debug/loggerService';
 
@@ -420,10 +416,10 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
       if (timeMatch) {
         let h = Number(timeMatch[1]);
         const m = Number(timeMatch[2]);
-        
+
         const isPm = currentDateTimeStr.includes('下午') || currentDateTimeStr.toUpperCase().includes('PM');
         const isAm = currentDateTimeStr.includes('上午') || currentDateTimeStr.toUpperCase().includes('AM');
-        
+
         if (isPm || isAm) {
           if (isPm) {
             if (h !== 12) h += 12;
@@ -503,7 +499,10 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
         if (!cond.targetName) return false;
         // 解析多物品條件
         const conditions = cond.targetName.split(',').map((part: string) => {
-          const segs = part.trim().split(':').map(s => s.trim());
+          const segs = part
+            .trim()
+            .split(':')
+            .map(s => s.trim());
           if (segs.length === 3) return { itemId: segs[0], op: segs[1], qty: Number(segs[2]) };
           if (segs.length === 2) return { itemId: segs[0], op: '>=', qty: Number(segs[1]) };
           return { itemId: segs[0], op: '>=', qty: 1 };
@@ -512,13 +511,26 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
           const held = getItemQuantity(ic.itemId, userInventory);
           let passed = false;
           switch (ic.op) {
-            case '>=': passed = held >= ic.qty; break;
-            case '<=': passed = held <= ic.qty; break;
-            case '==': passed = held === ic.qty; break;
-            case '!=': passed = held !== ic.qty; break;
-            case '>': passed = held > ic.qty; break;
-            case '<': passed = held < ic.qty; break;
-            default: passed = held >= ic.qty;
+            case '>=':
+              passed = held >= ic.qty;
+              break;
+            case '<=':
+              passed = held <= ic.qty;
+              break;
+            case '==':
+              passed = held === ic.qty;
+              break;
+            case '!=':
+              passed = held !== ic.qty;
+              break;
+            case '>':
+              passed = held > ic.qty;
+              break;
+            case '<':
+              passed = held < ic.qty;
+              break;
+            default:
+              passed = held >= ic.qty;
           }
           return passed;
         });
@@ -529,7 +541,10 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
         if (!cond.targetName) return false;
         // 解析多 NPC 條件
         const npcConditions = cond.targetName.split(',').map((part: string) => {
-          const segs = part.trim().split(':').map(s => s.trim());
+          const segs = part
+            .trim()
+            .split(':')
+            .map(s => s.trim());
           if (segs.length === 4) return { npcName: segs[0], attr: segs[1], op: segs[2], val: Number(segs[3]) };
           if (segs.length === 2) return { npcName: segs[0], attr: 'obedience', op: '>=', val: Number(segs[1]) };
           return { npcName: segs[0], attr: 'obedience', op: '>=', val: 0 };
@@ -564,13 +579,26 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
 
           let passed = false;
           switch (nc.op) {
-            case '>=': passed = actual >= nc.val; break;
-            case '<=': passed = actual <= nc.val; break;
-            case '==': passed = actual === nc.val; break;
-            case '!=': passed = actual !== nc.val; break;
-            case '>': passed = actual > nc.val; break;
-            case '<': passed = actual < nc.val; break;
-            default: passed = actual >= nc.val;
+            case '>=':
+              passed = actual >= nc.val;
+              break;
+            case '<=':
+              passed = actual <= nc.val;
+              break;
+            case '==':
+              passed = actual === nc.val;
+              break;
+            case '!=':
+              passed = actual !== nc.val;
+              break;
+            case '>':
+              passed = actual > nc.val;
+              break;
+            case '<':
+              passed = actual < nc.val;
+              break;
+            default:
+              passed = actual >= nc.val;
           }
           return passed;
         });
@@ -631,7 +659,12 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
   useEffect(() => {
     if (Object.keys(locations).length === 0) return;
     const zoneNodes = Object.values(locations).filter(n => n.zoneId === currentZoneId && !(n as any)._hidden);
-    const zoneEdges = mapEdges.filter(e => e.zoneId === currentZoneId && !(locations[e.StartNodeId] as any)?._hidden && !(locations[e.EndNodeId] as any)?._hidden);
+    const zoneEdges = mapEdges.filter(
+      e =>
+        e.zoneId === currentZoneId &&
+        !(locations[e.StartNodeId] as any)?._hidden &&
+        !(locations[e.EndNodeId] as any)?._hidden,
+    );
     const layout = computeDeterministicLayout(zoneNodes, zoneEdges);
     setNodePositions(layout);
   }, [currentZoneId, mapState.currentLocationId, locations, mapEdges]);
@@ -795,10 +828,7 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
       path.unlockCondition?.description || path.tempConditon?.description || '此通道目前被阻擋，暫無詳細解鎖說明。';
 
     // 判定是否滿足解鎖條件，直接拉取最新數據防止 React 狀態延遲
-    const [latestInv, latestChars] = await Promise.all([
-      MockApi.getUserInventory(),
-      MockMapApi.getCharData(),
-    ]);
+    const [latestInv, latestChars] = await Promise.all([MockApi.getUserInventory(), MockMapApi.getCharData()]);
 
     const cond = path.unlockCondition;
     let isEligible = false;
@@ -807,7 +837,10 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
       if (cond.type === 'item' && cond.targetName) {
         // 解析多物品條件
         const conditions = cond.targetName.split(',').map((part: string) => {
-          const segs = part.trim().split(':').map(s => s.trim());
+          const segs = part
+            .trim()
+            .split(':')
+            .map(s => s.trim());
           if (segs.length === 3) return { itemId: segs[0], op: segs[1], qty: Number(segs[2]) };
           if (segs.length === 2) return { itemId: segs[0], op: '>=', qty: Number(segs[1]) };
           return { itemId: segs[0], op: '>=', qty: 1 };
@@ -815,19 +848,29 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
         isEligible = conditions.every((ic: { itemId: string; op: string; qty: number }) => {
           const held = getItemQuantity(ic.itemId, latestInv);
           switch (ic.op) {
-            case '>=': return held >= ic.qty;
-            case '<=': return held <= ic.qty;
-            case '==': return held === ic.qty;
-            case '!=': return held !== ic.qty;
-            case '>': return held > ic.qty;
-            case '<': return held < ic.qty;
-            default: return held >= ic.qty;
+            case '>=':
+              return held >= ic.qty;
+            case '<=':
+              return held <= ic.qty;
+            case '==':
+              return held === ic.qty;
+            case '!=':
+              return held !== ic.qty;
+            case '>':
+              return held > ic.qty;
+            case '<':
+              return held < ic.qty;
+            default:
+              return held >= ic.qty;
           }
         });
       } else if (cond.type === 'obedience' && cond.targetName) {
         // 解析多 NPC 條件
         const npcConditions = cond.targetName.split(',').map((part: string) => {
-          const segs = part.trim().split(':').map(s => s.trim());
+          const segs = part
+            .trim()
+            .split(':')
+            .map(s => s.trim());
           if (segs.length === 4) return { npcName: segs[0], attr: segs[1], op: segs[2], val: Number(segs[3]) };
           if (segs.length === 2) return { npcName: segs[0], attr: 'obedience', op: '>=', val: Number(segs[1]) };
           return { npcName: segs[0], attr: 'obedience', op: '>=', val: 0 };
@@ -858,13 +901,20 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
           }
 
           switch (nc.op) {
-            case '>=': return actual >= nc.val;
-            case '<=': return actual <= nc.val;
-            case '==': return actual === nc.val;
-            case '!=': return actual !== nc.val;
-            case '>': return actual > nc.val;
-            case '<': return actual < nc.val;
-            default: return actual >= nc.val;
+            case '>=':
+              return actual >= nc.val;
+            case '<=':
+              return actual <= nc.val;
+            case '==':
+              return actual === nc.val;
+            case '!=':
+              return actual !== nc.val;
+            case '>':
+              return actual > nc.val;
+            case '<':
+              return actual < nc.val;
+            default:
+              return actual >= nc.val;
           }
         });
       }
@@ -1080,7 +1130,12 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
 
   // ====== 取得畫布上節點與線的數據 (過濾屏蔽節點與相關連線) ======
   const filteredNodes = Object.values(locations).filter(n => n.zoneId === currentZoneId && !(n as any)._hidden);
-  const filteredEdges = mapEdges.filter(e => e.zoneId === currentZoneId && !(locations[e.StartNodeId] as any)?._hidden && !(locations[e.EndNodeId] as any)?._hidden);
+  const filteredEdges = mapEdges.filter(
+    e =>
+      e.zoneId === currentZoneId &&
+      !(locations[e.StartNodeId] as any)?._hidden &&
+      !(locations[e.EndNodeId] as any)?._hidden,
+  );
   const currentZone = Object.values(zones).find(z => z.id === currentZoneId);
   const selectedNode = locations[selectedNodeId ?? ''];
 
@@ -1550,7 +1605,9 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
                     </text>
 
                     {/* 疊加標誌：NPC 在此處 */}
-                    {Object.entries(charsData).some(([_, char]) => (char as any).locationState?.locationId === node.id) && (
+                    {Object.entries(charsData).some(
+                      ([_, char]) => (char as any).locationState?.locationId === node.id,
+                    ) && (
                       <g transform="translate(10, -10)">
                         <circle r="6" className="fill-purple-600 stroke-slate-950 stroke-[1.5]" />
                         <User className="w-2.5 h-2.5 text-slate-100 absolute -translate-x-1.2 -translate-y-1.2 pointer-events-none" />
@@ -1850,7 +1907,9 @@ export const MapApp: React.FC<MapAppProps> = ({ onBack }) => {
               {/* NPC 列表 */}
               <div className="flex flex-col gap-1.5">
                 <span className="text-[9px] text-slate-500 font-bold">在場NPC蹤跡</span>
-                {Object.entries(charsData).some(([_, char]) => (char as any).locationState?.locationId === selectedNode.id) ? (
+                {Object.entries(charsData).some(
+                  ([_, char]) => (char as any).locationState?.locationId === selectedNode.id,
+                ) ? (
                   Object.entries(charsData)
                     .filter(([_, char]) => (char as any).locationState?.locationId === selectedNode.id)
                     .map(([npcName, char]) => {

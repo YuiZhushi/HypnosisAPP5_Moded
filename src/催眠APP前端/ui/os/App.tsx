@@ -139,11 +139,11 @@ const App = () => {
       try {
         const [system, user] = await Promise.all([MockApi.getSystemData(), MockApi.getUserInfo()]);
         if (stopped) return;
-        
+
         const dateObj = new Date(system.time);
         const timeText = dateObj.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
         const dateText = dateObj.toLocaleDateString('zh-CN', { weekday: 'long', month: 'long', day: 'numeric' });
-        
+
         setSystemTimeText(timeText);
         setSystemDateText(dateText);
         setBodyStatsUnlocked(user.effectiveVipTier >= 1);
@@ -203,9 +203,7 @@ const App = () => {
       case AppMode.HELP:
         return <HelpApp onBack={() => setCurrentApp(AppMode.HOME)} />;
       case AppMode.ACHIEVEMENTS:
-        return (
-          <AchievementApp onBack={() => setCurrentApp(AppMode.HOME)} />
-        );
+        return <AchievementApp onBack={() => setCurrentApp(AppMode.HOME)} />;
       case AppMode.SETTINGS:
         return <SettingsApp onBack={() => setCurrentApp(AppMode.HOME)} />;
       case AppMode.CHARACTER_EDITOR:
@@ -242,7 +240,9 @@ const App = () => {
         )}
 
         {/* Screen Content - key 用於 debug 面板強制重新掛載 */}
-        <div key={debugKey} className="w-full h-full bg-black overflow-hidden relative">{renderCurrentApp()}</div>
+        <div key={debugKey} className="w-full h-full bg-black overflow-hidden relative">
+          {renderCurrentApp()}
+        </div>
 
         {/* Home Indicator (iOS style) - Always visible except in immersive hypnosis */}
         <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1/3 h-1 bg-white/20 rounded-full z-50 pointer-events-none mb-1"></div>

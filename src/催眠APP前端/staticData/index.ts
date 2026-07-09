@@ -2402,7 +2402,8 @@ export const MAP_MAP_EDGES: MockMapEdge[] = [
       cost: { timeCostMinutes: 3, energyCost: 1 },
       tempConditon: {
         type: 'time',
-        targetName: '[{"type":"weekly","range":"1-5 00:00-07:30","passable":true},{"type":"weekly","range":"1-5 20:00-24:00","passable":true}]',
+        targetName:
+          '[{"type":"weekly","range":"1-5 00:00-07:30","passable":true},{"type":"weekly","range":"1-5 20:00-24:00","passable":true}]',
         description: '弓道場僅在週一至週五的深夜與清晨時段 (20:00-07:30) 開放',
       },
     },
@@ -2511,14 +2512,15 @@ export const BODY_MODIFICATIONS_DICTIONARY: Record<string, BodyModificationDef> 
     },
     conditions: [
       { target: 'obedience', operator: '>=', value: 35 },
-      { target: 'lust', operator: '>=', value: 30 }
+      { target: 'lust', operator: '>=', value: 30 },
     ],
     loadCost: 4,
     modifiers: [
-      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'slots', operator: '+', value: 20 }
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'slots', operator: '+', value: 20 },
     ],
     eventTags: ['lactation'],
-    promptInjection: '乳腺已完成同化改造，具備持續分泌乳汁的能力，即使在未懷孕的狀態下每天也能持續泌乳，乳汁呈乳白色且微帶催眠成分。',
+    promptInjection:
+      '乳腺已完成同化改造，具備持續分泌乳汁的能力，即使在未懷孕的狀態下每天也能持續泌乳，乳汁呈乳白色且微帶催眠成分。',
   },
 
   mod_cat_tail: {
@@ -2533,15 +2535,13 @@ export const BODY_MODIFICATIONS_DICTIONARY: Record<string, BodyModificationDef> 
       pts: 50,
       requiredItems: [
         { itemId: 'item_hypno_serum', quantity: 3 },
-        { itemId: 'item_cat_tail_implant', quantity: 1 }
+        { itemId: 'item_cat_tail_implant', quantity: 1 },
       ],
     },
-    conditions: [
-      { target: 'obedience', operator: '>=', value: 45 }
-    ],
+    conditions: [{ target: 'obedience', operator: '>=', value: 45 }],
     loadCost: 3,
     modifiers: [
-      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'tail', operator: '+', value: 30 }
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'tail', operator: '+', value: 30 },
     ],
     addedBodyPart: {
       id: 'tail',
@@ -2553,7 +2553,8 @@ export const BODY_MODIFICATIONS_DICTIONARY: Record<string, BodyModificationDef> 
       description: '手術移植的仿生貓尾巴，與神經相連，可自主擺動並感受快感。',
       initialStats: { sensitivity: 20, proficiency: 10, orgasms: 0 },
     },
-    promptInjection: '臀部上方已被手術加裝了一條柔軟的貓尾巴，與脊椎神經叢相連，能夠隨心意自主擺動，尾椎與尾身對撫摸與抓握極其敏感。',
+    promptInjection:
+      '臀部上方已被手術加裝了一條柔軟的貓尾巴，與脊椎神經叢相連，能夠隨心意自主擺動，尾椎與尾身對撫摸與抓握極其敏感。',
   },
 
   mod_womb_removed: {
@@ -2568,15 +2569,15 @@ export const BODY_MODIFICATIONS_DICTIONARY: Record<string, BodyModificationDef> 
       pts: 20,
       requiredItems: [{ itemId: 'item_hypno_serum', quantity: 1 }],
     },
-    conditions: [
-      { target: 'obedience', operator: '>=', value: 50 }
-    ],
+    conditions: [{ target: 'obedience', operator: '>=', value: 50 }],
     loadCost: 2,
-    modifiers: [
-      { targetType: 'global_stat', statName: 'obedience', operator: '+', value: 10 }
-    ],
+    modifiers: [{ targetType: 'global_stat', statName: 'obedience', operator: '+', value: 10 }],
     itemRestrictions: [
-      { itemId: 'item_fertility_potion', restrictionType: 'disable', description: '目標角色的子宮已完全被切除，無法使用受孕特調藥劑。' }
+      {
+        itemId: 'item_fertility_potion',
+        restrictionType: 'disable',
+        description: '目標角色的子宮已完全被切除，無法使用受孕特調藥劑。',
+      },
     ],
     promptInjection: '子宮已被完全切除，腹部殘留微小的手術瘢痕，終身無法懷孕，其生育本能已被永久剝奪。',
   },
@@ -2596,12 +2597,12 @@ export const BODY_MODIFICATIONS_DICTIONARY: Record<string, BodyModificationDef> 
       pts: 60,
       requiredItems: [
         { itemId: 'item_hypno_serum', quantity: 4 },
-        { itemId: 'item_slime_essence', quantity: 1 }
+        { itemId: 'item_slime_essence', quantity: 1 },
       ],
     },
     conditions: [
       { target: 'obedience', operator: '>=', value: 60 },
-      { target: 'lust', operator: '>=', value: 50 }
+      { target: 'lust', operator: '>=', value: 50 },
     ],
     loadCost: 8,
     modifiers: [
@@ -2613,9 +2614,10 @@ export const BODY_MODIFICATIONS_DICTIONARY: Record<string, BodyModificationDef> 
       { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'vagina', operator: '+', value: 25 },
       { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'anus', operator: '+', value: 25 },
       { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'urethra', operator: '+', value: 25 },
-      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'clitoris', operator: '+', value: 25 }
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'clitoris', operator: '+', value: 25 },
     ],
-    promptInjection: '全身細胞已同化為史萊姆流體，身體柔軟如水，可以隨意變形或部分流體化，對任何物理觸碰的敏感度提升至極致。',
+    promptInjection:
+      '全身細胞已同化為史萊姆流體，身體柔軟如水，可以隨意變形或部分流體化，對任何物理觸碰的敏感度提升至極致。',
   },
 
   mod_iron_body: {
@@ -2628,13 +2630,9 @@ export const BODY_MODIFICATIONS_DICTIONARY: Record<string, BodyModificationDef> 
     cost: {
       money: 70000,
       pts: 65,
-      requiredItems: [
-        { itemId: 'item_hypno_serum', quantity: 4 }
-      ],
+      requiredItems: [{ itemId: 'item_hypno_serum', quantity: 4 }],
     },
-    conditions: [
-      { target: 'obedience', operator: '>=', value: 55 }
-    ],
+    conditions: [{ target: 'obedience', operator: '>=', value: 55 }],
     loadCost: 8,
     modifiers: [
       { targetType: 'global_stat', statName: 'obedience', operator: '+', value: 15 },
@@ -2645,9 +2643,10 @@ export const BODY_MODIFICATIONS_DICTIONARY: Record<string, BodyModificationDef> 
       { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'vagina', operator: '-', value: 10 },
       { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'anus', operator: '-', value: 10 },
       { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'urethra', operator: '-', value: 10 },
-      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'clitoris', operator: '-', value: 10 }
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'clitoris', operator: '-', value: 10 },
     ],
-    promptInjection: '肉體骨架與部分皮膚已被替換為冰冷的精密機械零件與金屬義肢，神經信號經過數位過濾，對刺激的痛感與快感均下降，但心中服從指令的本能已固化。',
+    promptInjection:
+      '肉體骨架與部分皮膚已被替換為冰冷的精密機械零件與金屬義肢，神經信號經過數位過濾，對刺激的痛感與快感均下降，但心中服從指令的本能已固化。',
   },
 
   // ==========================================
@@ -2665,14 +2664,13 @@ export const BODY_MODIFICATIONS_DICTIONARY: Record<string, BodyModificationDef> 
       pts: 20,
       requiredItems: [{ itemId: 'item_hypno_serum', quantity: 1 }],
     },
-    conditions: [
-      { target: 'obedience', operator: '>=', value: 25 }
-    ],
+    conditions: [{ target: 'obedience', operator: '>=', value: 25 }],
     loadCost: 3,
     modifiers: [
-      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'slots', operator: '+', value: 15 }
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'slots', operator: '+', value: 15 },
     ],
-    promptInjection: '雙乳經過精細的重塑，呈現出奇異而誘人的【桃心形】輪廓，無論何時都挺翹飽滿，充滿了人工改造的淫靡感。',
+    promptInjection:
+      '雙乳經過精細的重塑，呈現出奇異而誘人的【桃心形】輪廓，無論何時都挺翹飽滿，充滿了人工改造的淫靡感。',
   },
 
   mod_star_breast: {
@@ -2687,12 +2685,10 @@ export const BODY_MODIFICATIONS_DICTIONARY: Record<string, BodyModificationDef> 
       pts: 20,
       requiredItems: [{ itemId: 'item_hypno_serum', quantity: 1 }],
     },
-    conditions: [
-      { target: 'obedience', operator: '>=', value: 25 }
-    ],
+    conditions: [{ target: 'obedience', operator: '>=', value: 25 }],
     loadCost: 3,
     modifiers: [
-      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'slots', operator: '+', value: 15 }
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'slots', operator: '+', value: 15 },
     ],
     promptInjection: '雙乳經過手術改造，呈現出獨特的【五角星形】形狀，邊緣輪廓分明，為身體增添了強烈的奴隸改造氣息。',
   },
@@ -2711,15 +2707,16 @@ export const BODY_MODIFICATIONS_DICTIONARY: Record<string, BodyModificationDef> 
     },
     conditions: [
       { target: 'obedience', operator: '>=', value: 40 },
-      { target: 'lust', operator: '>=', value: 40 }
+      { target: 'lust', operator: '>=', value: 40 },
     ],
     loadCost: 4,
     modifiers: [
       { targetType: 'global_stat', statName: 'lust', operator: '+', value: 15 },
-      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'womb', operator: '+', value: 35 }
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'womb', operator: '+', value: 35 },
     ],
     eventTags: ['estrus'],
-    promptInjection: '子宮內已植入了活體寄生卵莢，卵莢會定期在腹中輕微蠕動，使其小腹常駐有異物感與熱度，並不時分泌出帶有催情氣味的淫水。',
+    promptInjection:
+      '子宮內已植入了活體寄生卵莢，卵莢會定期在腹中輕微蠕動，使其小腹常駐有異物感與熱度，並不時分泌出帶有催情氣味的淫水。',
   },
 
   mod_breast_enlargement: {
@@ -2734,14 +2731,13 @@ export const BODY_MODIFICATIONS_DICTIONARY: Record<string, BodyModificationDef> 
       pts: 45,
       requiredItems: [{ itemId: 'item_hypno_serum', quantity: 2 }],
     },
-    conditions: [
-      { target: 'obedience', operator: '>=', value: 30 }
-    ],
+    conditions: [{ target: 'obedience', operator: '>=', value: 30 }],
     loadCost: 6,
     modifiers: [
-      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'slots', operator: '+', value: 35 }
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'slots', operator: '+', value: 35 },
     ],
-    promptInjection: '雙乳經過了極端的細胞擴張改造，尺寸已變得異常豐滿且沉重，胸前呈現出誇張的重度改造成效，乳頭隨時處於充血與敏感狀態。',
+    promptInjection:
+      '雙乳經過了極端的細胞擴張改造，尺寸已變得異常豐滿且沉重，胸前呈現出誇張的重度改造成效，乳頭隨時處於充血與敏感狀態。',
   },
 
   mod_vagina_sensory_core: {
@@ -2758,14 +2754,15 @@ export const BODY_MODIFICATIONS_DICTIONARY: Record<string, BodyModificationDef> 
     },
     conditions: [
       { target: 'obedience', operator: '>=', value: 45 },
-      { target: 'lust', operator: '>=', value: 40 }
+      { target: 'lust', operator: '>=', value: 40 },
     ],
     loadCost: 5,
     modifiers: [
       { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'vagina', operator: '+', value: 40 },
-      { targetType: 'body_part_stat', statName: 'tightness', bodyPartId: 'vagina', operator: '+', value: 20 }
+      { targetType: 'body_part_stat', statName: 'tightness', bodyPartId: 'vagina', operator: '+', value: 20 },
     ],
-    promptInjection: '陰道內已被植入了高敏感的電極核心，核心會根據交合的頻率與深度釋放感官電流，使其陰道壁不受控制地劇烈緊縮並產生海嘯般的快感。',
+    promptInjection:
+      '陰道內已被植入了高敏感的電極核心，核心會根據交合的頻率與深度釋放感官電流，使其陰道壁不受控制地劇烈緊縮並產生海嘯般的快感。',
   },
 
   mod_horn_implant: {
@@ -2780,12 +2777,10 @@ export const BODY_MODIFICATIONS_DICTIONARY: Record<string, BodyModificationDef> 
       pts: 50,
       requiredItems: [{ itemId: 'item_hypno_serum', quantity: 3 }],
     },
-    conditions: [
-      { target: 'obedience', operator: '>=', value: 50 }
-    ],
+    conditions: [{ target: 'obedience', operator: '>=', value: 50 }],
     loadCost: 3,
     modifiers: [
-      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'horns', operator: '+', value: 20 }
+      { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'horns', operator: '+', value: 20 },
     ],
     addedBodyPart: {
       id: 'horns',
@@ -2797,8 +2792,7 @@ export const BODY_MODIFICATIONS_DICTIONARY: Record<string, BodyModificationDef> 
       description: '額骨生長出的骨質惡魔雙角，內部佈滿敏感的神經末梢，觸碰時會傳遞酥麻的感官信號。',
       initialStats: { sensitivity: 30, proficiency: 5, orgasms: 0 },
     },
-    promptInjection: '額頭上方已被手術移植了一雙漆黑的骨質惡魔角，直接穿透額骨並與痛覺與觸覺神經相連，撫摸或抓握惡魔角會直接向大腦深處發送酥麻的快感信號。',
+    promptInjection:
+      '額頭上方已被手術移植了一雙漆黑的骨質惡魔角，直接穿透額骨並與痛覺與觸覺神經相連，撫摸或抓握惡魔角會直接向大腦深處發送酥麻的快感信號。',
   },
 };
-
-

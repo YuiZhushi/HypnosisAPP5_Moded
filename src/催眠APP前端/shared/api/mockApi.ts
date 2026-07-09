@@ -17,10 +17,7 @@ import {
   type AttrModifier,
 } from '../../models';
 
-import {
-  mockChatVariables,
-  mockMvuVariables,
-} from '../../database/mockDatabase';
+import { mockChatVariables, mockMvuVariables } from '../../database/mockDatabase';
 
 // 模擬網路延遲
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -273,7 +270,9 @@ function processVirtualTimeAdvance(oldTimeStr: string, newTimeStr: string) {
           const endDt = new Date(state.adaptation.endVirtualTime.replace(/-/g, '/'));
           if (!isNaN(endDt.getTime()) && newDt.getTime() >= endDt.getTime()) {
             delete state.adaptation;
-            console.info(`[HypnoOS][BodyMod] 角色【${charName}】的身體已完全適應改造【${mockChatVariables.bodyModifications[modId]?.name || modId}】，排異反應消失。`);
+            console.info(
+              `[HypnoOS][BodyMod] 角色【${charName}】的身體已完全適應改造【${mockChatVariables.bodyModifications[modId]?.name || modId}】，排異反應消失。`,
+            );
           }
         }
       }
@@ -323,7 +322,10 @@ function evaluateProgramConditions(conditions: ConditionOnProgram[] | string): b
     if (cond.target.includes('suspicion')) targetValues.push(mockMvuVariables.user.suspicion);
     if (cond.target === 'vipTier') {
       const user = mockMvuVariables.user;
-      const hasVipCard = user.inventory && user.inventory['item_vip_card_passive'] && user.inventory['item_vip_card_passive'].quantity > 0;
+      const hasVipCard =
+        user.inventory &&
+        user.inventory['item_vip_card_passive'] &&
+        user.inventory['item_vip_card_passive'].quantity > 0;
       const effectiveVipTier = hasVipCard ? Math.min(6, user.vipTier + 1) : user.vipTier;
       targetValues.push(effectiveVipTier);
     }
@@ -331,24 +333,43 @@ function evaluateProgramConditions(conditions: ConditionOnProgram[] | string): b
     const charTargets = [
       'totalSensitivity',
       'totalOrgasms',
-      'mouthSensitivity', 'mouthTightness', 'mouthProficiency', 'mouthOrgasms',
-      'breastLeftSensitivity', 'breastLeftProficiency', 'breastLeftOrgasms',
-      'breastRightSensitivity', 'breastRightProficiency', 'breastRightOrgasms',
-      'vaginaSensitivity', 'vaginaTightness', 'vaginaProficiency', 'vaginaOrgasms',
-      'anusSensitivity', 'anusTightness', 'anusProficiency', 'anusOrgasms',
-      'urethraSensitivity', 'urethraTightness', 'urethraProficiency', 'urethraOrgasms',
-      'clitorisSensitivity', 'clitorisProficiency', 'clitorisOrgasms',
+      'mouthSensitivity',
+      'mouthTightness',
+      'mouthProficiency',
+      'mouthOrgasms',
+      'breastLeftSensitivity',
+      'breastLeftProficiency',
+      'breastLeftOrgasms',
+      'breastRightSensitivity',
+      'breastRightProficiency',
+      'breastRightOrgasms',
+      'vaginaSensitivity',
+      'vaginaTightness',
+      'vaginaProficiency',
+      'vaginaOrgasms',
+      'anusSensitivity',
+      'anusTightness',
+      'anusProficiency',
+      'anusOrgasms',
+      'urethraSensitivity',
+      'urethraTightness',
+      'urethraProficiency',
+      'urethraOrgasms',
+      'clitorisSensitivity',
+      'clitorisProficiency',
+      'clitorisOrgasms',
       'alertness',
       'affection',
       'obedience',
       'lust',
       'arousal',
     ];
-    const isBodyPartTarget = cond.target.endsWith('Sensitivity') ||
-                             cond.target.endsWith('Tightness') ||
-                             cond.target.endsWith('Proficiency') ||
-                             cond.target.endsWith('Orgasms') ||
-                             charTargets.includes(cond.target);
+    const isBodyPartTarget =
+      cond.target.endsWith('Sensitivity') ||
+      cond.target.endsWith('Tightness') ||
+      cond.target.endsWith('Proficiency') ||
+      cond.target.endsWith('Orgasms') ||
+      charTargets.includes(cond.target);
     if (isBodyPartTarget) {
       for (const charName in mockMvuVariables.chars) {
         if (cond.charName && cond.charName !== charName) continue;
@@ -485,17 +506,20 @@ export const MockApi = {
   async getUserInfo(): Promise<MockUserData> {
     await delay(200);
     const user = JSON.parse(JSON.stringify(mockMvuVariables.user)) as MockUserData;
-    const hasVipCard = user.inventory && user.inventory['item_vip_card_passive'] && user.inventory['item_vip_card_passive'].quantity > 0;
+    const hasVipCard =
+      user.inventory && user.inventory['item_vip_card_passive'] && user.inventory['item_vip_card_passive'].quantity > 0;
     user.effectiveVipTier = hasVipCard ? Math.min(6, user.vipTier + 1) : user.vipTier;
     return user;
   },
 
   async getSystemData(): Promise<MockSystemData> {
     await delay(100);
-    return JSON.parse(JSON.stringify({
-      time: mockMvuVariables.time,
-      apiSettings: mockChatVariables.apiSettings,
-    }));
+    return JSON.parse(
+      JSON.stringify({
+        time: mockMvuVariables.time,
+        apiSettings: mockChatVariables.apiSettings,
+      }),
+    );
   },
 
   async getCharData(): Promise<Record<string, MockcharData>> {
@@ -560,7 +584,14 @@ export const MockApi = {
     refreshInventoryItemsActivation(mockMvuVariables);
   },
 
-  async updateCharInventoryItem(charName: string, itemId: string, quantityPatch: number, isEquipped?: boolean, equipSlot?: string, customDesc?: string): Promise<void> {
+  async updateCharInventoryItem(
+    charName: string,
+    itemId: string,
+    quantityPatch: number,
+    isEquipped?: boolean,
+    equipSlot?: string,
+    customDesc?: string,
+  ): Promise<void> {
     await delay(200);
     const char = mockMvuVariables.chars[charName];
     if (!char) return;
@@ -609,17 +640,26 @@ export const MockApi = {
 
   async updateUserOwnedHypnosis(id: string, enabled: boolean, settings?: any): Promise<void> {
     await delay(200);
-    mockMvuVariables.user.ownedHypnosis[id] = { enabled, settings: settings || mockMvuVariables.user.ownedHypnosis[id]?.settings };
+    mockMvuVariables.user.ownedHypnosis[id] = {
+      enabled,
+      settings: settings || mockMvuVariables.user.ownedHypnosis[id]?.settings,
+    };
   },
 
   async updateUserOwnedHypnoModules(id: string, enabled: boolean, settings?: any): Promise<void> {
     await delay(200);
-    mockMvuVariables.user.ownedHypnoModules[id] = { enabled, settings: settings || mockMvuVariables.user.ownedHypnoModules[id]?.settings };
+    mockMvuVariables.user.ownedHypnoModules[id] = {
+      enabled,
+      settings: settings || mockMvuVariables.user.ownedHypnoModules[id]?.settings,
+    };
   },
 
   async updateUserOwnedCombos(id: string, enabled: boolean, settings?: any): Promise<void> {
     await delay(200);
-    mockMvuVariables.user.ownedCombos[id] = { enabled, settings: settings || mockMvuVariables.user.ownedCombos[id]?.settings };
+    mockMvuVariables.user.ownedCombos[id] = {
+      enabled,
+      settings: settings || mockMvuVariables.user.ownedCombos[id]?.settings,
+    };
   },
 
   async sendHypnosis(launchData: any[]): Promise<void> {
@@ -809,8 +849,7 @@ export const MockApi = {
 
   async checkCondition(id: string, type: 'achievement' | 'quest'): Promise<boolean> {
     await delay(150);
-    const def =
-      type === 'achievement' ? getFullAchievementDictionary()[id] : mockChatVariables.quests[id];
+    const def = type === 'achievement' ? getFullAchievementDictionary()[id] : mockChatVariables.quests[id];
     if (!def) return false;
     if (def.completionCondition.type === 'ai') {
       return false; // AI 判斷暫不處理
@@ -1285,13 +1324,19 @@ export const MockApi = {
       if (def.scope === 'global') {
         const hasConflict = activeMods.some(m => m.scope === 'global' && m.category === def.category);
         if (hasConflict) {
-          return { success: false, errorMsg: `角色已安裝全身【${def.category === 'material' ? '材質' : '形狀'}】類型的改造，無法共存。` };
+          return {
+            success: false,
+            errorMsg: `角色已安裝全身【${def.category === 'material' ? '材質' : '形狀'}】類型的改造，無法共存。`,
+          };
         }
       } else {
         for (const slotId of def.slots) {
           const hasConflict = activeMods.some(m => m.slots.includes(slotId) && m.category === def.category);
           if (hasConflict) {
-            return { success: false, errorMsg: `部位【${slotId}】已安裝同屬【${def.category === 'material' ? '材質' : '形狀'}】類型的改造，無法共存。` };
+            return {
+              success: false,
+              errorMsg: `部位【${slotId}】已安裝同屬【${def.category === 'material' ? '材質' : '形狀'}】類型的改造，無法共存。`,
+            };
           }
         }
       }
@@ -1313,7 +1358,10 @@ export const MockApi = {
     }
 
     if (currentLoad + def.loadCost > maxLoad) {
-      return { success: false, errorMsg: `肉體負荷超載！當前負荷：${currentLoad}/${maxLoad}，此改造需要負荷：${def.loadCost}。請先拆除部分改造。` };
+      return {
+        success: false,
+        errorMsg: `肉體負荷超載！當前負荷：${currentLoad}/${maxLoad}，此改造需要負荷：${def.loadCost}。請先拆除部分改造。`,
+      };
     }
 
     // 4. 檢查前置條件
@@ -1342,12 +1390,24 @@ export const MockApi = {
         const actual = getVal(cond.target);
         let met = false;
         switch (cond.operator) {
-          case '==': met = actual === cond.value; break;
-          case '!=': met = actual !== cond.value; break;
-          case '>=': met = actual >= cond.value; break;
-          case '<=': met = actual <= cond.value; break;
-          case '>': met = actual > cond.value; break;
-          case '<': met = actual < cond.value; break;
+          case '==':
+            met = actual === cond.value;
+            break;
+          case '!=':
+            met = actual !== cond.value;
+            break;
+          case '>=':
+            met = actual >= cond.value;
+            break;
+          case '<=':
+            met = actual <= cond.value;
+            break;
+          case '>':
+            met = actual > cond.value;
+            break;
+          case '<':
+            met = actual < cond.value;
+            break;
         }
         if (!met) return false;
       }
@@ -1375,7 +1435,10 @@ export const MockApi = {
         for (const itemCost of def.cost.requiredItems) {
           const qty = mockMvuVariables.user.inventory[itemCost.itemId]?.quantity || 0;
           if (qty < itemCost.quantity) {
-            return { success: false, errorMsg: `手術材料不足！缺少【${mockChatVariables.items[itemCost.itemId]?.name || itemCost.itemId}】` };
+            return {
+              success: false,
+              errorMsg: `手術材料不足！缺少【${mockChatVariables.items[itemCost.itemId]?.name || itemCost.itemId}】`,
+            };
           }
         }
       }
@@ -1406,9 +1469,7 @@ export const MockApi = {
       return `${y}-${mo}-${date} ${h}:${mi}:${s}`;
     };
 
-    const extraMods: AttrModifier[] = [
-      { targetType: 'global_stat', statName: 'affection', operator: '-', value: 10 }
-    ];
+    const extraMods: AttrModifier[] = [{ targetType: 'global_stat', statName: 'affection', operator: '-', value: 10 }];
 
     char.ownedBodyModifications[modId] = {
       id: modId,
@@ -1418,7 +1479,7 @@ export const MockApi = {
       adaptation: {
         endVirtualTime: formatTime(dt),
         extraModifiers: extraMods,
-      }
+      },
     };
 
     // 7. 動態實體化部位
@@ -1438,7 +1499,11 @@ export const MockApi = {
     return { success: true };
   },
 
-  async toggleBodyModification(npcName: string, modId: string, enabled: boolean): Promise<{ success: boolean; errorMsg?: string }> {
+  async toggleBodyModification(
+    npcName: string,
+    modId: string,
+    enabled: boolean,
+  ): Promise<{ success: boolean; errorMsg?: string }> {
     await delay(150);
     const char = mockMvuVariables.chars[npcName];
     if (!char || !char.ownedBodyModifications || !char.ownedBodyModifications[modId]) {
@@ -1465,7 +1530,10 @@ export const MockApi = {
       }
 
       if (currentLoad + def.loadCost > maxLoad) {
-        return { success: false, errorMsg: `無法啟用！負荷超載：啟用後負荷將達 ${currentLoad + def.loadCost}/${maxLoad}。` };
+        return {
+          success: false,
+          errorMsg: `無法啟用！負荷超載：啟用後負荷將達 ${currentLoad + def.loadCost}/${maxLoad}。`,
+        };
       }
     }
 
@@ -1512,13 +1580,20 @@ export const MockApi = {
 // ==========================================
 function compareValue(actual: number, operator: string, expected: number): boolean {
   switch (operator) {
-    case '>=': return actual >= expected;
-    case '<=': return actual <= expected;
-    case '==': return actual === expected;
-    case '!=': return actual !== expected;
-    case '>': return actual > expected;
-    case '<': return actual < expected;
-    default: return actual >= expected;
+    case '>=':
+      return actual >= expected;
+    case '<=':
+      return actual <= expected;
+    case '==':
+      return actual === expected;
+    case '!=':
+      return actual !== expected;
+    case '>':
+      return actual > expected;
+    case '<':
+      return actual < expected;
+    default:
+      return actual >= expected;
   }
 }
 
@@ -1529,7 +1604,10 @@ function compareValue(actual: number, operator: string, expected: number): boole
 function parseItemConditions(targetName: string): Array<{ itemId: string; operator: string; quantity: number }> {
   if (!targetName) return [];
   return targetName.split(',').map(part => {
-    const segments = part.trim().split(':').map(s => s.trim());
+    const segments = part
+      .trim()
+      .split(':')
+      .map(s => s.trim());
     if (segments.length === 3) {
       // 新格式: itemId:operator:quantity
       return { itemId: segments[0], operator: segments[1], quantity: Number(segments[2]) };
@@ -1546,10 +1624,15 @@ function parseItemConditions(targetName: string): Array<{ itemId: string; operat
 // 多 NPC 條件解析器
 // 格式: "NPC1:attr:op:val,NPC2:attr:op:val"
 // ==========================================
-function parseNpcConditions(targetName: string): Array<{ npcName: string; attribute: string; operator: string; value: number }> {
+function parseNpcConditions(
+  targetName: string,
+): Array<{ npcName: string; attribute: string; operator: string; value: number }> {
   if (!targetName) return [];
   return targetName.split(',').map(part => {
-    const segments = part.trim().split(':').map(s => s.trim());
+    const segments = part
+      .trim()
+      .split(':')
+      .map(s => s.trim());
     if (segments.length === 4) {
       // 新格式: NPC:attribute:operator:value
       return { npcName: segments[0], attribute: segments[1], operator: segments[2], value: Number(segments[3]) };
@@ -2062,5 +2145,3 @@ function evaluateItemActivation(mvu: MvuVariables, def: ItemDef, ownerCharName: 
 // 初始化時自動刷新一次物品激活狀態
 // ==========================================
 refreshInventoryItemsActivation(mockMvuVariables);
-
-

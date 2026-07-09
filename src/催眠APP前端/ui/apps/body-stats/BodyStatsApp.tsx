@@ -1,15 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Activity,
-  AlertTriangle,
-  ArrowLeft,
-  BookOpen,
-  ChevronDown,
-  ChevronUp,
-  Lock,
-  Search,
-  User,
-} from 'lucide-react';
+import { Activity, AlertTriangle, ArrowLeft, BookOpen, ChevronDown, ChevronUp, Lock, Search, User } from 'lucide-react';
 
 import { MockApi } from '../../../shared/api/mockApi';
 import { waitForMvuReady } from '../../../shared/api/mvuBridge';
@@ -18,13 +8,7 @@ import { BodyPartsDef } from '../../../models';
 
 export type RoleMap = Record<string, Record<string, unknown>>;
 
-export const STAT_ORDER: string[] = [
-  '警戒度',
-  '服从度',
-  '好感度',
-  '性欲',
-  '快感值',
-];
+export const STAT_ORDER: string[] = ['警戒度', '服从度', '好感度', '性欲', '快感值'];
 
 export const BAR_STATS = new Set(['警戒度', '服从度', '好感度', '性欲', '快感值']);
 
@@ -96,7 +80,10 @@ export const BodyStatsApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const selectorRef = useRef<HTMLDivElement | null>(null);
 
   const roleNames = useMemo(
-    () => Object.keys(roles).filter(Boolean).sort((a, b) => a.localeCompare(b, 'zh-CN')),
+    () =>
+      Object.keys(roles)
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b, 'zh-CN')),
     [roles],
   );
   const filteredRoleNames = useMemo(() => {
@@ -105,7 +92,7 @@ export const BodyStatsApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     return roleNames.filter(name => name.includes(q));
   }, [roleNames, search]);
 
-  const roleData = useMemo(() => (selectedRole ? roles[selectedRole] ?? null : null), [roles, selectedRole]);
+  const roleData = useMemo(() => (selectedRole ? (roles[selectedRole] ?? null) : null), [roles, selectedRole]);
 
   const orderedStatEntries = useMemo(() => {
     if (!roleData || typeof roleData !== 'object') return [];
@@ -138,24 +125,26 @@ export const BodyStatsApp: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     try {
       const defs = await MockApi.getBodyPartsDef();
       setBodyPartsDefs(defs);
-      
+
       const charData = await MockApi.getCharData();
       const rolesSnapshot: RoleMap = {};
 
       for (const [name, char] of Object.entries(charData)) {
         rolesSnapshot[name] = {
-          '身份': char.identity,
-          '警戒度': char.alertness,
-          '服从度': char.obedience,
-          '好感度': char.affection,
-          '性欲': char.lust,
-          '快感值': char.arousal,
-          '_bodyParts': char.bodyParts || {},
+          身份: char.identity,
+          警戒度: char.alertness,
+          服从度: char.obedience,
+          好感度: char.affection,
+          性欲: char.lust,
+          快感值: char.arousal,
+          _bodyParts: char.bodyParts || {},
         };
       }
 
       setRoles(rolesSnapshot);
-      const nextNames = Object.keys(rolesSnapshot).filter(Boolean).sort((a, b) => a.localeCompare(b, 'zh-CN'));
+      const nextNames = Object.keys(rolesSnapshot)
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b, 'zh-CN'));
       setSelectedRole(prev => {
         if (prev && nextNames.includes(prev)) return prev;
         return nextNames[0] ?? null;
@@ -500,7 +489,7 @@ const PART_NAME_MAP: Record<string, string> = {
 };
 
 const BodyPartCard: React.FC<{ partKey: string; stat: any; def?: BodyPartsDef }> = ({ partKey, stat, def }) => {
-  const partName = def ? def.name : (PART_NAME_MAP[partKey] || partKey);
+  const partName = def ? def.name : PART_NAME_MAP[partKey] || partKey;
   const sensGrade = MockApi.getStatGrade(stat.sensitivity, -100, 100);
   const sensColor = MockApi.getGradeColor(sensGrade);
 
@@ -526,7 +515,8 @@ const BodyPartCard: React.FC<{ partKey: string; stat: any; def?: BodyPartsDef }>
         <div className="flex justify-between items-center text-xs">
           <span className="text-white/60">敏感度</span>
           <span className="font-semibold tabular-nums">
-            {stat.sensitivity} <span className={`text-[10px] ml-1 px-1.5 py-0.5 rounded bg-white/5 ${sensColor}`}>{sensGrade}</span>
+            {stat.sensitivity}{' '}
+            <span className={`text-[10px] ml-1 px-1.5 py-0.5 rounded bg-white/5 ${sensColor}`}>{sensGrade}</span>
           </span>
         </div>
 

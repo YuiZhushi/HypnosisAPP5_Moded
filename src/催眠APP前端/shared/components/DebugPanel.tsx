@@ -1,5 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Terminal, RefreshCw, X, Database, ShieldAlert, Cpu, Check, Zap, ChevronRight, Clock, Package, Users, MapPin, Eye, GitBranch, Wrench } from 'lucide-react';
+import {
+  Terminal,
+  RefreshCw,
+  X,
+  Database,
+  ShieldAlert,
+  Cpu,
+  Check,
+  Zap,
+  ChevronRight,
+  Clock,
+  Package,
+  Users,
+  MapPin,
+  Eye,
+  GitBranch,
+  Wrench,
+} from 'lucide-react';
 import { mockMvuVariables, mockChatVariables } from '../../database/mockDatabase';
 import { MockApi } from '../api/mockApi';
 
@@ -142,13 +159,21 @@ const PART_NAME_MAP: Record<string, string> = {
 // ==========================================
 // 微調按鈕元件
 // ==========================================
-const AdjustBtn: React.FC<{ label: string; onClick: () => void; color?: string }> = ({ label, onClick, color = 'purple' }) => (
+const AdjustBtn: React.FC<{ label: string; onClick: () => void; color?: string }> = ({
+  label,
+  onClick,
+  color = 'purple',
+}) => (
   <button
     onClick={onClick}
     className={`px-1.5 py-0.5 text-[9px] font-bold rounded border transition-all active:scale-95
-      ${color === 'red' ? 'bg-red-950/30 border-red-500/20 text-red-300 hover:bg-red-900/40' :
-        color === 'emerald' ? 'bg-emerald-950/30 border-emerald-500/20 text-emerald-300 hover:bg-emerald-900/40' :
-          'bg-purple-950/30 border-purple-500/20 text-purple-300 hover:bg-purple-900/40'}`}
+      ${
+        color === 'red'
+          ? 'bg-red-950/30 border-red-500/20 text-red-300 hover:bg-red-900/40'
+          : color === 'emerald'
+            ? 'bg-emerald-950/30 border-emerald-500/20 text-emerald-300 hover:bg-emerald-900/40'
+            : 'bg-purple-950/30 border-purple-500/20 text-purple-300 hover:bg-purple-900/40'
+      }`}
   >
     {label}
   </button>
@@ -198,8 +223,8 @@ export const DebugPanel: React.FC = () => {
     setIsDragging(true);
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    const currentX = panelPos?.x ?? (window.innerWidth - 520 - 16);
-    const currentY = panelPos?.y ?? (window.innerHeight - 680 - 64);
+    const currentX = panelPos?.x ?? window.innerWidth - 520 - 16;
+    const currentY = panelPos?.y ?? window.innerHeight - 680 - 64;
     dragOffset.current = { x: clientX - currentX, y: clientY - currentY };
   };
 
@@ -258,8 +283,6 @@ export const DebugPanel: React.FC = () => {
       window.removeEventListener('mouseup', handleUp);
     };
   }, [isResizing]);
-
-
 
   // ==========================================
   // 編輯文字區的 State
@@ -328,7 +351,7 @@ export const DebugPanel: React.FC = () => {
         }
         setLocalNpcStats(prev => ({
           ...prev,
-          [selectedNpc]: cleanChar
+          [selectedNpc]: cleanChar,
         }));
       }
     }
@@ -374,15 +397,15 @@ export const DebugPanel: React.FC = () => {
       const next = { ...prev };
       if (!next[npc]) next[npc] = JSON.parse(JSON.stringify(mockMvuVariables.chars[npc] || {}));
       if (!next[npc].ownedBodyModifications) next[npc].ownedBodyModifications = {};
-      
+
       next[npc].ownedBodyModifications[modId] = {
         id: modId,
         installedVirtualTime: mockMvuVariables.time,
         isActive: true,
         selectedTraits: [],
-        adaptation: undefined
+        adaptation: undefined,
       };
-      
+
       const def = localBodyMods[modId];
       if (def && def.addedBodyPart) {
         const partId = def.addedBodyPart.id;
@@ -392,7 +415,7 @@ export const DebugPanel: React.FC = () => {
             sensitivity: def.addedBodyPart.initialStats?.sensitivity ?? 0,
             tightness: def.addedBodyPart.initialStats?.tightness ?? 0,
             proficiency: def.addedBodyPart.initialStats?.proficiency ?? 0,
-            orgasms: def.addedBodyPart.initialStats?.orgasms ?? 0
+            orgasms: def.addedBodyPart.initialStats?.orgasms ?? 0,
           };
         }
       }
@@ -404,10 +427,10 @@ export const DebugPanel: React.FC = () => {
     setLocalNpcStats(prev => {
       const next = { ...prev };
       if (!next[npc] || !next[npc].ownedBodyModifications) return prev;
-      
+
       const def = localBodyMods[modId];
       delete next[npc].ownedBodyModifications[modId];
-      
+
       if (def && def.addedBodyPart) {
         const partId = def.addedBodyPart.id;
         const defaultParts = ['mouth', 'breastLeft', 'breastRight', 'vagina', 'anus', 'urethra', 'clitoris'];
@@ -432,7 +455,7 @@ export const DebugPanel: React.FC = () => {
     setLocalNpcStats(prev => {
       const next = { ...prev };
       if (!next[npc] || !next[npc].ownedBodyModifications || !next[npc].ownedBodyModifications[modId]) return prev;
-      
+
       if (key === 'adaptation_complete') {
         if (val) {
           delete next[npc].ownedBodyModifications[modId].adaptation;
@@ -451,9 +474,7 @@ export const DebugPanel: React.FC = () => {
           };
           next[npc].ownedBodyModifications[modId].adaptation = {
             endVirtualTime: formatTime(baseTime),
-            extraModifiers: [
-              { targetType: 'global_stat', statName: 'affection', operator: '-', value: 10 }
-            ]
+            extraModifiers: [{ targetType: 'global_stat', statName: 'affection', operator: '-', value: 10 }],
           };
         }
       } else {
@@ -615,7 +636,7 @@ export const DebugPanel: React.FC = () => {
       if (qty > 0) {
         mockMvuVariables.user.inventory[id] = {
           ...(oldPlayerInv[id] || {}),
-          quantity: qty
+          quantity: qty,
         };
       }
     });
@@ -630,7 +651,7 @@ export const DebugPanel: React.FC = () => {
         if (qty > 0) {
           char.inventory[id] = {
             ...(oldCharInv[id] || {}),
-            quantity: qty
+            quantity: qty,
           };
         }
       });
@@ -794,7 +815,7 @@ export const DebugPanel: React.FC = () => {
   // ==========================================
   const updatePathInfoField = (edgeId: string, direction: 'forward' | 'reverse', field: string, value: any) => {
     setLocalEdges(prev => {
-      const next = prev.map(e => e.id === edgeId ? JSON.parse(JSON.stringify(e)) : e);
+      const next = prev.map(e => (e.id === edgeId ? JSON.parse(JSON.stringify(e)) : e));
       const edge = next.find((e: any) => e.id === edgeId);
       if (!edge) return prev;
       const pathInfo = direction === 'forward' ? edge.forwardPath : edge.ReversePath;
@@ -811,17 +832,13 @@ export const DebugPanel: React.FC = () => {
         } else {
           pathInfo.unlockCondition.type = value;
         }
-      }
-      else if (field === 'unlockTargetName') {
+      } else if (field === 'unlockTargetName') {
         if (pathInfo.unlockCondition) pathInfo.unlockCondition.targetName = value;
-      }
-      else if (field === 'unlockValue') {
+      } else if (field === 'unlockValue') {
         if (pathInfo.unlockCondition) pathInfo.unlockCondition.value = Number(value);
-      }
-      else if (field === 'unlockDesc') {
+      } else if (field === 'unlockDesc') {
         if (pathInfo.unlockCondition) pathInfo.unlockCondition.description = value;
-      }
-      else if (field === 'tempType') {
+      } else if (field === 'tempType') {
         if (value === 'none') {
           delete pathInfo.tempConditon;
         } else if (!pathInfo.tempConditon) {
@@ -829,14 +846,11 @@ export const DebugPanel: React.FC = () => {
         } else {
           pathInfo.tempConditon.type = value;
         }
-      }
-      else if (field === 'tempTargetName') {
+      } else if (field === 'tempTargetName') {
         if (pathInfo.tempConditon) pathInfo.tempConditon.targetName = value;
-      }
-      else if (field === 'tempValue') {
+      } else if (field === 'tempValue') {
         if (pathInfo.tempConditon) pathInfo.tempConditon.value = Number(value);
-      }
-      else if (field === 'tempDesc') {
+      } else if (field === 'tempDesc') {
         if (pathInfo.tempConditon) pathInfo.tempConditon.description = value;
       }
       return next;
@@ -882,15 +896,21 @@ export const DebugPanel: React.FC = () => {
         <div className="grid grid-cols-2 gap-2 bg-black/20 p-1.5 rounded border border-purple-500/5">
           <div className="flex items-center justify-between text-[9px]">
             <span className="text-gray-400">時間(分)</span>
-            <input type="number" value={pathInfo.cost?.timeCostMinutes || 0}
+            <input
+              type="number"
+              value={pathInfo.cost?.timeCostMinutes || 0}
               onChange={e => updatePathInfoField(edgeId, direction, 'timeCost', e.target.value)}
-              className="w-12 bg-black border border-purple-500/20 rounded px-1 text-[9px] text-purple-100 text-center" />
+              className="w-12 bg-black border border-purple-500/20 rounded px-1 text-[9px] text-purple-100 text-center"
+            />
           </div>
           <div className="flex items-center justify-between text-[9px]">
             <span className="text-gray-400">能量</span>
-            <input type="number" value={pathInfo.cost?.energyCost || 0}
+            <input
+              type="number"
+              value={pathInfo.cost?.energyCost || 0}
               onChange={e => updatePathInfoField(edgeId, direction, 'energyCost', e.target.value)}
-              className="w-12 bg-black border border-purple-500/20 rounded px-1 text-[9px] text-purple-100 text-center" />
+              className="w-12 bg-black border border-purple-500/20 rounded px-1 text-[9px] text-purple-100 text-center"
+            />
           </div>
         </div>
 
@@ -916,10 +936,13 @@ export const DebugPanel: React.FC = () => {
           {unlockType !== 'none' && unlockType !== 'always_locked' && (
             <div className="flex items-center gap-1.5 text-[9px]">
               <span className="text-gray-500 w-10 shrink-0">條件描述</span>
-              <input type="text" value={pathInfo.unlockCondition?.description || ''}
+              <input
+                type="text"
+                value={pathInfo.unlockCondition?.description || ''}
                 onChange={e => updatePathInfoField(edgeId, direction, 'unlockDesc', e.target.value)}
                 placeholder="解鎖條件的介面描述"
-                className="flex-1 bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-[9px] text-purple-100 focus:outline-none" />
+                className="flex-1 bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-[9px] text-purple-100 focus:outline-none"
+              />
             </div>
           )}
 
@@ -929,18 +952,30 @@ export const DebugPanel: React.FC = () => {
               {parseNpcConditionString(rawUnlockTarget).map((cond, idx, arr) => (
                 <div key={idx} className="bg-black/40 p-2 rounded border border-purple-500/10 space-y-1.5">
                   <div className="flex gap-1 items-center">
-                    <select value={cond.npcName} onChange={e => {
-                      const next = [...arr];
-                      next[idx].npcName = e.target.value;
-                      updatePathInfoField(edgeId, direction, 'unlockTargetName', serializeNpcConditions(next));
-                    }} className="bg-black border border-purple-500/20 rounded px-1 text-[9px] text-purple-100 flex-1">
-                      {npcNames.map(n => <option key={n} value={n}>{n}</option>)}
+                    <select
+                      value={cond.npcName}
+                      onChange={e => {
+                        const next = [...arr];
+                        next[idx].npcName = e.target.value;
+                        updatePathInfoField(edgeId, direction, 'unlockTargetName', serializeNpcConditions(next));
+                      }}
+                      className="bg-black border border-purple-500/20 rounded px-1 text-[9px] text-purple-100 flex-1"
+                    >
+                      {npcNames.map(n => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
                     </select>
-                    <select value={cond.attribute} onChange={e => {
-                      const next = [...arr];
-                      next[idx].attribute = e.target.value;
-                      updatePathInfoField(edgeId, direction, 'unlockTargetName', serializeNpcConditions(next));
-                    }} className="bg-black border border-purple-500/20 rounded px-1 text-[9px] text-purple-100 flex-1">
+                    <select
+                      value={cond.attribute}
+                      onChange={e => {
+                        const next = [...arr];
+                        next[idx].attribute = e.target.value;
+                        updatePathInfoField(edgeId, direction, 'unlockTargetName', serializeNpcConditions(next));
+                      }}
+                      className="bg-black border border-purple-500/20 rounded px-1 text-[9px] text-purple-100 flex-1"
+                    >
                       <optgroup label="基礎屬性">
                         <option value="obedience">服從度</option>
                         <option value="affection">好感度</option>
@@ -966,11 +1001,16 @@ export const DebugPanel: React.FC = () => {
                         const isSel = cond.operator === op;
                         const opLabel = op === '>=' ? '≥' : op === '<=' ? '≤' : op === '==' ? '=' : op;
                         return (
-                          <button key={op} type="button" onClick={() => {
-                            const next = [...arr];
-                            next[idx].operator = op;
-                            updatePathInfoField(edgeId, direction, 'unlockTargetName', serializeNpcConditions(next));
-                          }} className={`px-1 py-0.5 text-[9px] rounded border ${isSel ? 'bg-purple-600 border-purple-500 text-white' : 'bg-black border-purple-500/20 text-purple-300 hover:bg-white/5'}`}>
+                          <button
+                            key={op}
+                            type="button"
+                            onClick={() => {
+                              const next = [...arr];
+                              next[idx].operator = op;
+                              updatePathInfoField(edgeId, direction, 'unlockTargetName', serializeNpcConditions(next));
+                            }}
+                            className={`px-1 py-0.5 text-[9px] rounded border ${isSel ? 'bg-purple-600 border-purple-500 text-white' : 'bg-black border-purple-500/20 text-purple-300 hover:bg-white/5'}`}
+                          >
                             {opLabel}
                           </button>
                         );
@@ -978,23 +1018,43 @@ export const DebugPanel: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-1">
                       <span className="text-gray-500 text-[8px]">目標值</span>
-                      <input type="number" value={cond.value} onChange={e => {
-                        const next = [...arr];
-                        next[idx].value = Number(e.target.value) || 0;
-                        updatePathInfoField(edgeId, direction, 'unlockTargetName', serializeNpcConditions(next));
-                      }} className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center" />
+                      <input
+                        type="number"
+                        value={cond.value}
+                        onChange={e => {
+                          const next = [...arr];
+                          next[idx].value = Number(e.target.value) || 0;
+                          updatePathInfoField(edgeId, direction, 'unlockTargetName', serializeNpcConditions(next));
+                        }}
+                        className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center"
+                      />
                     </div>
-                    <button type="button" onClick={() => {
-                      const next = arr.filter((_, i) => i !== idx);
-                      updatePathInfoField(edgeId, direction, 'unlockTargetName', serializeNpcConditions(next));
-                    }} className="text-[9px] text-red-400 hover:text-red-300">刪除</button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = arr.filter((_, i) => i !== idx);
+                        updatePathInfoField(edgeId, direction, 'unlockTargetName', serializeNpcConditions(next));
+                      }}
+                      className="text-[9px] text-red-400 hover:text-red-300"
+                    >
+                      刪除
+                    </button>
                   </div>
                 </div>
               ))}
-              <button type="button" onClick={() => {
-                const next = [...parseNpcConditionString(rawUnlockTarget), { npcName: npcNames[0] || '', attribute: 'obedience', operator: '>=', value: 0 }];
-                updatePathInfoField(edgeId, direction, 'unlockTargetName', serializeNpcConditions(next));
-              }} className="text-[9px] text-purple-400 hover:text-purple-300 underline">+ 新增角色解鎖條件</button>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = [
+                    ...parseNpcConditionString(rawUnlockTarget),
+                    { npcName: npcNames[0] || '', attribute: 'obedience', operator: '>=', value: 0 },
+                  ];
+                  updatePathInfoField(edgeId, direction, 'unlockTargetName', serializeNpcConditions(next));
+                }}
+                className="text-[9px] text-purple-400 hover:text-purple-300 underline"
+              >
+                + 新增角色解鎖條件
+              </button>
             </div>
           )}
 
@@ -1002,37 +1062,76 @@ export const DebugPanel: React.FC = () => {
           {unlockType === 'item' && (
             <div className="space-y-1.5 pl-2 border-l border-purple-500/20">
               {parseItemConditionString(rawUnlockTarget).map((ic, idx, arr) => (
-                <div key={idx} className="flex gap-1 items-center bg-black/40 p-1.5 rounded border border-purple-500/10">
-                  <select value={ic.itemId} onChange={e => {
-                    const next = [...arr];
-                    next[idx].itemId = e.target.value;
-                    updatePathInfoField(edgeId, direction, 'unlockTargetName', serializeItemConditions(next));
-                  }} className="bg-black border border-purple-500/20 rounded px-1 text-[9px] text-purple-100 flex-1 min-w-[70px]">
-                    {Object.entries(allItems).map(([id, def]) => <option key={id} value={id}>{(def as any).name}</option>)}
+                <div
+                  key={idx}
+                  className="flex gap-1 items-center bg-black/40 p-1.5 rounded border border-purple-500/10"
+                >
+                  <select
+                    value={ic.itemId}
+                    onChange={e => {
+                      const next = [...arr];
+                      next[idx].itemId = e.target.value;
+                      updatePathInfoField(edgeId, direction, 'unlockTargetName', serializeItemConditions(next));
+                    }}
+                    className="bg-black border border-purple-500/20 rounded px-1 text-[9px] text-purple-100 flex-1 min-w-[70px]"
+                  >
+                    {Object.entries(allItems).map(([id, def]) => (
+                      <option key={id} value={id}>
+                        {(def as any).name}
+                      </option>
+                    ))}
                   </select>
-                  <select value={ic.operator} onChange={e => {
-                    const next = [...arr];
-                    next[idx].operator = e.target.value;
-                    updatePathInfoField(edgeId, direction, 'unlockTargetName', serializeItemConditions(next));
-                  }} className="bg-black border border-purple-500/20 rounded px-1 text-[9px] text-purple-100 w-10">
-                    {['>=', '<=', '==', '>', '<'].map(op => <option key={op} value={op}>{op === '>=' ? '≥' : op === '<=' ? '≤' : op === '==' ? '=' : op}</option>)}
+                  <select
+                    value={ic.operator}
+                    onChange={e => {
+                      const next = [...arr];
+                      next[idx].operator = e.target.value;
+                      updatePathInfoField(edgeId, direction, 'unlockTargetName', serializeItemConditions(next));
+                    }}
+                    className="bg-black border border-purple-500/20 rounded px-1 text-[9px] text-purple-100 w-10"
+                  >
+                    {['>=', '<=', '==', '>', '<'].map(op => (
+                      <option key={op} value={op}>
+                        {op === '>=' ? '≥' : op === '<=' ? '≤' : op === '==' ? '=' : op}
+                      </option>
+                    ))}
                   </select>
-                  <input type="number" value={ic.quantity} onChange={e => {
-                    const next = [...arr];
-                    next[idx].quantity = Number(e.target.value) || 0;
-                    updatePathInfoField(edgeId, direction, 'unlockTargetName', serializeItemConditions(next));
-                  }} className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center" />
-                  <button type="button" onClick={() => {
-                    const next = arr.filter((_, i) => i !== idx);
-                    updatePathInfoField(edgeId, direction, 'unlockTargetName', serializeItemConditions(next));
-                  }} className="text-[9px] text-red-400 hover:text-red-300 ml-1">刪</button>
+                  <input
+                    type="number"
+                    value={ic.quantity}
+                    onChange={e => {
+                      const next = [...arr];
+                      next[idx].quantity = Number(e.target.value) || 0;
+                      updatePathInfoField(edgeId, direction, 'unlockTargetName', serializeItemConditions(next));
+                    }}
+                    className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = arr.filter((_, i) => i !== idx);
+                      updatePathInfoField(edgeId, direction, 'unlockTargetName', serializeItemConditions(next));
+                    }}
+                    className="text-[9px] text-red-400 hover:text-red-300 ml-1"
+                  >
+                    刪
+                  </button>
                 </div>
               ))}
-              <button type="button" onClick={() => {
-                const firstItem = Object.keys(allItems)[0] || '';
-                const next = [...parseItemConditionString(rawUnlockTarget), { itemId: firstItem, operator: '>=', quantity: 0 }];
-                updatePathInfoField(edgeId, direction, 'unlockTargetName', serializeItemConditions(next));
-              }} className="text-[9px] text-purple-400 hover:text-purple-300 underline">+ 新增物品解鎖條件</button>
+              <button
+                type="button"
+                onClick={() => {
+                  const firstItem = Object.keys(allItems)[0] || '';
+                  const next = [
+                    ...parseItemConditionString(rawUnlockTarget),
+                    { itemId: firstItem, operator: '>=', quantity: 0 },
+                  ];
+                  updatePathInfoField(edgeId, direction, 'unlockTargetName', serializeItemConditions(next));
+                }}
+                className="text-[9px] text-purple-400 hover:text-purple-300 underline"
+              >
+                + 新增物品解鎖條件
+              </button>
             </div>
           )}
         </div>
@@ -1059,10 +1158,13 @@ export const DebugPanel: React.FC = () => {
           {tempType !== 'none' && (
             <div className="flex items-center gap-1.5 text-[9px]">
               <span className="text-gray-500 w-10 shrink-0">條件描述</span>
-              <input type="text" value={pathInfo.tempConditon?.description || ''}
+              <input
+                type="text"
+                value={pathInfo.tempConditon?.description || ''}
                 onChange={e => updatePathInfoField(edgeId, direction, 'tempDesc', e.target.value)}
                 placeholder="通行條件描述"
-                className="flex-1 bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-[9px] text-purple-100 focus:outline-none" />
+                className="flex-1 bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-[9px] text-purple-100 focus:outline-none"
+              />
             </div>
           )}
 
@@ -1072,18 +1174,30 @@ export const DebugPanel: React.FC = () => {
               {parseNpcConditionString(rawTempTarget).map((cond, idx, arr) => (
                 <div key={idx} className="bg-black/40 p-2 rounded border border-purple-500/10 space-y-1.5">
                   <div className="flex gap-1 items-center">
-                    <select value={cond.npcName} onChange={e => {
-                      const next = [...arr];
-                      next[idx].npcName = e.target.value;
-                      updatePathInfoField(edgeId, direction, 'tempTargetName', serializeNpcConditions(next));
-                    }} className="bg-black border border-purple-500/20 rounded px-1 text-[9px] text-purple-100 flex-1">
-                      {npcNames.map(n => <option key={n} value={n}>{n}</option>)}
+                    <select
+                      value={cond.npcName}
+                      onChange={e => {
+                        const next = [...arr];
+                        next[idx].npcName = e.target.value;
+                        updatePathInfoField(edgeId, direction, 'tempTargetName', serializeNpcConditions(next));
+                      }}
+                      className="bg-black border border-purple-500/20 rounded px-1 text-[9px] text-purple-100 flex-1"
+                    >
+                      {npcNames.map(n => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
                     </select>
-                    <select value={cond.attribute} onChange={e => {
-                      const next = [...arr];
-                      next[idx].attribute = e.target.value;
-                      updatePathInfoField(edgeId, direction, 'tempTargetName', serializeNpcConditions(next));
-                    }} className="bg-black border border-purple-500/20 rounded px-1 text-[9px] text-purple-100 flex-1">
+                    <select
+                      value={cond.attribute}
+                      onChange={e => {
+                        const next = [...arr];
+                        next[idx].attribute = e.target.value;
+                        updatePathInfoField(edgeId, direction, 'tempTargetName', serializeNpcConditions(next));
+                      }}
+                      className="bg-black border border-purple-500/20 rounded px-1 text-[9px] text-purple-100 flex-1"
+                    >
                       <optgroup label="基礎屬性">
                         <option value="obedience">服從度</option>
                         <option value="affection">好感度</option>
@@ -1109,11 +1223,16 @@ export const DebugPanel: React.FC = () => {
                         const isSel = cond.operator === op;
                         const opLabel = op === '>=' ? '≥' : op === '<=' ? '≤' : op === '==' ? '=' : op;
                         return (
-                          <button key={op} type="button" onClick={() => {
-                            const next = [...arr];
-                            next[idx].operator = op;
-                            updatePathInfoField(edgeId, direction, 'tempTargetName', serializeNpcConditions(next));
-                          }} className={`px-1 py-0.5 text-[9px] rounded border ${isSel ? 'bg-purple-600 border-purple-500 text-white' : 'bg-black border-purple-500/20 text-purple-300 hover:bg-white/5'}`}>
+                          <button
+                            key={op}
+                            type="button"
+                            onClick={() => {
+                              const next = [...arr];
+                              next[idx].operator = op;
+                              updatePathInfoField(edgeId, direction, 'tempTargetName', serializeNpcConditions(next));
+                            }}
+                            className={`px-1 py-0.5 text-[9px] rounded border ${isSel ? 'bg-purple-600 border-purple-500 text-white' : 'bg-black border-purple-500/20 text-purple-300 hover:bg-white/5'}`}
+                          >
                             {opLabel}
                           </button>
                         );
@@ -1121,23 +1240,43 @@ export const DebugPanel: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-1">
                       <span className="text-gray-500 text-[8px]">目標值</span>
-                      <input type="number" value={cond.value} onChange={e => {
-                        const next = [...arr];
-                        next[idx].value = Number(e.target.value) || 0;
-                        updatePathInfoField(edgeId, direction, 'tempTargetName', serializeNpcConditions(next));
-                      }} className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center" />
+                      <input
+                        type="number"
+                        value={cond.value}
+                        onChange={e => {
+                          const next = [...arr];
+                          next[idx].value = Number(e.target.value) || 0;
+                          updatePathInfoField(edgeId, direction, 'tempTargetName', serializeNpcConditions(next));
+                        }}
+                        className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center"
+                      />
                     </div>
-                    <button type="button" onClick={() => {
-                      const next = arr.filter((_, i) => i !== idx);
-                      updatePathInfoField(edgeId, direction, 'tempTargetName', serializeNpcConditions(next));
-                    }} className="text-[9px] text-red-400 hover:text-red-300">刪除</button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = arr.filter((_, i) => i !== idx);
+                        updatePathInfoField(edgeId, direction, 'tempTargetName', serializeNpcConditions(next));
+                      }}
+                      className="text-[9px] text-red-400 hover:text-red-300"
+                    >
+                      刪除
+                    </button>
                   </div>
                 </div>
               ))}
-              <button type="button" onClick={() => {
-                const next = [...parseNpcConditionString(rawTempTarget), { npcName: npcNames[0] || '', attribute: 'obedience', operator: '>=', value: 0 }];
-                updatePathInfoField(edgeId, direction, 'tempTargetName', serializeNpcConditions(next));
-              }} className="text-[9px] text-purple-400 hover:text-purple-300 underline">+ 新增角色門檻</button>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = [
+                    ...parseNpcConditionString(rawTempTarget),
+                    { npcName: npcNames[0] || '', attribute: 'obedience', operator: '>=', value: 0 },
+                  ];
+                  updatePathInfoField(edgeId, direction, 'tempTargetName', serializeNpcConditions(next));
+                }}
+                className="text-[9px] text-purple-400 hover:text-purple-300 underline"
+              >
+                + 新增角色門檻
+              </button>
             </div>
           )}
 
@@ -1145,37 +1284,76 @@ export const DebugPanel: React.FC = () => {
           {tempType === 'item' && (
             <div className="space-y-1.5 pl-2 border-l border-purple-500/20">
               {parseItemConditionString(rawTempTarget).map((ic, idx, arr) => (
-                <div key={idx} className="flex gap-1 items-center bg-black/40 p-1.5 rounded border border-purple-500/10">
-                  <select value={ic.itemId} onChange={e => {
-                    const next = [...arr];
-                    next[idx].itemId = e.target.value;
-                    updatePathInfoField(edgeId, direction, 'tempTargetName', serializeItemConditions(next));
-                  }} className="bg-black border border-purple-500/20 rounded px-1 text-[9px] text-purple-100 flex-1 min-w-[70px]">
-                    {Object.entries(allItems).map(([id, def]) => <option key={id} value={id}>{(def as any).name}</option>)}
+                <div
+                  key={idx}
+                  className="flex gap-1 items-center bg-black/40 p-1.5 rounded border border-purple-500/10"
+                >
+                  <select
+                    value={ic.itemId}
+                    onChange={e => {
+                      const next = [...arr];
+                      next[idx].itemId = e.target.value;
+                      updatePathInfoField(edgeId, direction, 'tempTargetName', serializeItemConditions(next));
+                    }}
+                    className="bg-black border border-purple-500/20 rounded px-1 text-[9px] text-purple-100 flex-1 min-w-[70px]"
+                  >
+                    {Object.entries(allItems).map(([id, def]) => (
+                      <option key={id} value={id}>
+                        {(def as any).name}
+                      </option>
+                    ))}
                   </select>
-                  <select value={ic.operator} onChange={e => {
-                    const next = [...arr];
-                    next[idx].operator = e.target.value;
-                    updatePathInfoField(edgeId, direction, 'tempTargetName', serializeItemConditions(next));
-                  }} className="bg-black border border-purple-500/20 rounded px-1 text-[9px] text-purple-100 w-10">
-                    {['>=', '<=', '==', '>', '<'].map(op => <option key={op} value={op}>{op === '>=' ? '≥' : op === '<=' ? '≤' : op === '==' ? '=' : op}</option>)}
+                  <select
+                    value={ic.operator}
+                    onChange={e => {
+                      const next = [...arr];
+                      next[idx].operator = e.target.value;
+                      updatePathInfoField(edgeId, direction, 'tempTargetName', serializeItemConditions(next));
+                    }}
+                    className="bg-black border border-purple-500/20 rounded px-1 text-[9px] text-purple-100 w-10"
+                  >
+                    {['>=', '<=', '==', '>', '<'].map(op => (
+                      <option key={op} value={op}>
+                        {op === '>=' ? '≥' : op === '<=' ? '≤' : op === '==' ? '=' : op}
+                      </option>
+                    ))}
                   </select>
-                  <input type="number" value={ic.quantity} onChange={e => {
-                    const next = [...arr];
-                    next[idx].quantity = Number(e.target.value) || 0;
-                    updatePathInfoField(edgeId, direction, 'tempTargetName', serializeItemConditions(next));
-                  }} className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center" />
-                  <button type="button" onClick={() => {
-                    const next = arr.filter((_, i) => i !== idx);
-                    updatePathInfoField(edgeId, direction, 'tempTargetName', serializeItemConditions(next));
-                  }} className="text-[9px] text-red-400 hover:text-red-300 ml-1">刪</button>
+                  <input
+                    type="number"
+                    value={ic.quantity}
+                    onChange={e => {
+                      const next = [...arr];
+                      next[idx].quantity = Number(e.target.value) || 0;
+                      updatePathInfoField(edgeId, direction, 'tempTargetName', serializeItemConditions(next));
+                    }}
+                    className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = arr.filter((_, i) => i !== idx);
+                      updatePathInfoField(edgeId, direction, 'tempTargetName', serializeItemConditions(next));
+                    }}
+                    className="text-[9px] text-red-400 hover:text-red-300 ml-1"
+                  >
+                    刪
+                  </button>
                 </div>
               ))}
-              <button type="button" onClick={() => {
-                const firstItem = Object.keys(allItems)[0] || '';
-                const next = [...parseItemConditionString(rawTempTarget), { itemId: firstItem, operator: '>=', quantity: 0 }];
-                updatePathInfoField(edgeId, direction, 'tempTargetName', serializeItemConditions(next));
-              }} className="text-[9px] text-purple-400 hover:text-purple-300 underline">+ 新增物品通行條件</button>
+              <button
+                type="button"
+                onClick={() => {
+                  const firstItem = Object.keys(allItems)[0] || '';
+                  const next = [
+                    ...parseItemConditionString(rawTempTarget),
+                    { itemId: firstItem, operator: '>=', quantity: 0 },
+                  ];
+                  updatePathInfoField(edgeId, direction, 'tempTargetName', serializeItemConditions(next));
+                }}
+                className="text-[9px] text-purple-400 hover:text-purple-300 underline"
+              >
+                + 新增物品通行條件
+              </button>
             </div>
           )}
 
@@ -1184,9 +1362,10 @@ export const DebugPanel: React.FC = () => {
             <div className="space-y-2 pl-2 border-l border-purple-500/20">
               {parseTimeConditionString(rawTempTarget).map((rule, idx, arr) => {
                 const timePart = getRangeTimePart(rule.type, rule.range);
-                
+
                 // 每月開始/結束日期解析
-                let monthlyStart = 1, monthlyEnd = 30;
+                let monthlyStart = 1,
+                  monthlyEnd = 30;
                 if (rule.type === 'monthly') {
                   const dayStr = rule.range.split(/\s+/)[0] || '1-30';
                   if (dayStr.includes('-')) {
@@ -1200,7 +1379,8 @@ export const DebugPanel: React.FC = () => {
                 }
 
                 // 指定日期範圍開始/結束解析
-                let dateStart = '', dateEnd = '';
+                let dateStart = '',
+                  dateEnd = '';
                 if (rule.type === 'date') {
                   const parts = rule.range.split(' - ');
                   dateStart = parts[0] ? parts[0].replace(' ', 'T') : '';
@@ -1210,10 +1390,17 @@ export const DebugPanel: React.FC = () => {
                 const handleRuleChange = (field: string, val: any) => {
                   const next = [...arr];
                   const currentRule = { ...next[idx] };
-                  
+
                   if (field === 'type') {
                     currentRule.type = val;
-                    currentRule.range = val === 'date' ? '2026-05-01 00:00 - 2026-05-01 23:59' : val === 'weekly' ? '1-5 00:00-23:59' : val === 'monthly' ? '1-30 00:00-23:59' : '00:00-23:59';
+                    currentRule.range =
+                      val === 'date'
+                        ? '2026-05-01 00:00 - 2026-05-01 23:59'
+                        : val === 'weekly'
+                          ? '1-5 00:00-23:59'
+                          : val === 'monthly'
+                            ? '1-30 00:00-23:59'
+                            : '00:00-23:59';
                   } else if (field === 'passable') {
                     currentRule.passable = val;
                   } else if (field === 'timeRange') {
@@ -1251,35 +1438,55 @@ export const DebugPanel: React.FC = () => {
                 return (
                   <div key={idx} className="p-2 bg-black/40 rounded border border-purple-500/10 space-y-2 text-[9px]">
                     <div className="flex items-center justify-between gap-1">
-                      <select value={rule.type} onChange={e => handleRuleChange('type', e.target.value)}
-                        className="bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-purple-100">
+                      <select
+                        value={rule.type}
+                        onChange={e => handleRuleChange('type', e.target.value)}
+                        className="bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-purple-100"
+                      >
                         <option value="daily">每天</option>
                         <option value="weekly">每週</option>
                         <option value="monthly">每月</option>
                         <option value="date">指定日期</option>
                       </select>
-                      
+
                       {/* 通行設定雙態按鈕 */}
-                      <button type="button" onClick={() => handleRuleChange('passable', !rule.passable)}
-                        className={`px-2 py-0.5 rounded font-bold border transition-colors ${rule.passable ? 'bg-emerald-950 border-emerald-500 text-emerald-300' : 'bg-red-950 border-red-500 text-red-300'}`}>
+                      <button
+                        type="button"
+                        onClick={() => handleRuleChange('passable', !rule.passable)}
+                        className={`px-2 py-0.5 rounded font-bold border transition-colors ${rule.passable ? 'bg-emerald-950 border-emerald-500 text-emerald-300' : 'bg-red-950 border-red-500 text-red-300'}`}
+                      >
                         {rule.passable ? '🟢 允許通行' : '🔴 禁止通行'}
                       </button>
 
-                      <button type="button" onClick={() => {
-                        const next = arr.filter((_, i) => i !== idx);
-                        updatePathInfoField(edgeId, direction, 'tempTargetName', serializeTimeConditions(next));
-                      }} className="text-red-400 hover:text-red-300">刪除</button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = arr.filter((_, i) => i !== idx);
+                          updatePathInfoField(edgeId, direction, 'tempTargetName', serializeTimeConditions(next));
+                        }}
+                        className="text-red-400 hover:text-red-300"
+                      >
+                        刪除
+                      </button>
                     </div>
 
                     {/* 時段編輯 */}
                     {rule.type !== 'date' && (
                       <div className="flex items-center gap-1">
                         <span className="text-gray-500">時段</span>
-                        <input type="time" value={timePart.start} onChange={e => handleRuleChange('timeRange', { start: e.target.value, end: timePart.end })}
-                          className="bg-black border border-purple-500/20 rounded px-1 text-purple-100" />
+                        <input
+                          type="time"
+                          value={timePart.start}
+                          onChange={e => handleRuleChange('timeRange', { start: e.target.value, end: timePart.end })}
+                          className="bg-black border border-purple-500/20 rounded px-1 text-purple-100"
+                        />
                         <span className="text-gray-500">➔</span>
-                        <input type="time" value={timePart.end} onChange={e => handleRuleChange('timeRange', { start: timePart.start, end: e.target.value })}
-                          className="bg-black border border-purple-500/20 rounded px-1 text-purple-100" />
+                        <input
+                          type="time"
+                          value={timePart.end}
+                          onChange={e => handleRuleChange('timeRange', { start: timePart.start, end: e.target.value })}
+                          className="bg-black border border-purple-500/20 rounded px-1 text-purple-100"
+                        />
                       </div>
                     )}
 
@@ -1292,10 +1499,17 @@ export const DebugPanel: React.FC = () => {
                             const isSelected = weekList.includes(w);
                             const wLabel = ['一', '二', '三', '四', '五', '六', '日'][w - 1];
                             return (
-                              <button key={w} type="button" onClick={() => {
-                                const nextWeeks = isSelected ? weekList.filter(x => x !== w) : [...weekList, w].sort();
-                                handleRuleChange('weeklyWeeks', nextWeeks.join(','));
-                              }} className={`w-5 h-5 rounded-full border text-[8px] font-bold transition-colors ${isSelected ? 'bg-purple-600 border-purple-500 text-white' : 'bg-black border-purple-500/15 text-purple-300 hover:bg-white/5'}`}>
+                              <button
+                                key={w}
+                                type="button"
+                                onClick={() => {
+                                  const nextWeeks = isSelected
+                                    ? weekList.filter(x => x !== w)
+                                    : [...weekList, w].sort();
+                                  handleRuleChange('weeklyWeeks', nextWeeks.join(','));
+                                }}
+                                className={`w-5 h-5 rounded-full border text-[8px] font-bold transition-colors ${isSelected ? 'bg-purple-600 border-purple-500 text-white' : 'bg-black border-purple-500/15 text-purple-300 hover:bg-white/5'}`}
+                              >
                                 {wLabel}
                               </button>
                             );
@@ -1308,14 +1522,28 @@ export const DebugPanel: React.FC = () => {
                     {rule.type === 'monthly' && (
                       <div className="flex items-center gap-1.5">
                         <span className="text-gray-500">日期</span>
-                        <select value={monthlyStart} onChange={e => handleRuleChange('monthlyStart', Number(e.target.value))}
-                          className="bg-black border border-purple-500/20 rounded text-purple-100">
-                          {Array.from({ length: 31 }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d} 日</option>)}
+                        <select
+                          value={monthlyStart}
+                          onChange={e => handleRuleChange('monthlyStart', Number(e.target.value))}
+                          className="bg-black border border-purple-500/20 rounded text-purple-100"
+                        >
+                          {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                            <option key={d} value={d}>
+                              {d} 日
+                            </option>
+                          ))}
                         </select>
                         <span className="text-gray-500">➔</span>
-                        <select value={monthlyEnd} onChange={e => handleRuleChange('monthlyEnd', Number(e.target.value))}
-                          className="bg-black border border-purple-500/20 rounded text-purple-100">
-                          {Array.from({ length: 31 }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d} 日</option>)}
+                        <select
+                          value={monthlyEnd}
+                          onChange={e => handleRuleChange('monthlyEnd', Number(e.target.value))}
+                          className="bg-black border border-purple-500/20 rounded text-purple-100"
+                        >
+                          {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                            <option key={d} value={d}>
+                              {d} 日
+                            </option>
+                          ))}
                         </select>
                       </div>
                     )}
@@ -1325,23 +1553,40 @@ export const DebugPanel: React.FC = () => {
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-1.5">
                           <span className="text-gray-500 w-10 shrink-0">開始時間</span>
-                          <input type="datetime-local" value={dateStart} onChange={e => handleRuleChange('dateRange', { start: e.target.value, end: dateEnd })}
-                            className="bg-black border border-purple-500/20 rounded px-1 text-purple-100 flex-1" />
+                          <input
+                            type="datetime-local"
+                            value={dateStart}
+                            onChange={e => handleRuleChange('dateRange', { start: e.target.value, end: dateEnd })}
+                            className="bg-black border border-purple-500/20 rounded px-1 text-purple-100 flex-1"
+                          />
                         </div>
                         <div className="flex items-center gap-1.5">
                           <span className="text-gray-500 w-10 shrink-0">結束時間</span>
-                          <input type="datetime-local" value={dateEnd} onChange={e => handleRuleChange('dateRange', { start: dateStart, end: e.target.value })}
-                            className="bg-black border border-purple-500/20 rounded px-1 text-purple-100 flex-1" />
+                          <input
+                            type="datetime-local"
+                            value={dateEnd}
+                            onChange={e => handleRuleChange('dateRange', { start: dateStart, end: e.target.value })}
+                            className="bg-black border border-purple-500/20 rounded px-1 text-purple-100 flex-1"
+                          />
                         </div>
                       </div>
                     )}
                   </div>
                 );
               })}
-              <button type="button" onClick={() => {
-                const next = [...parseTimeConditionString(rawTempTarget), { type: 'daily', range: '00:00-23:59', passable: true }];
-                updatePathInfoField(edgeId, direction, 'tempTargetName', serializeTimeConditions(next));
-              }} className="text-[9px] text-purple-400 hover:text-purple-300 underline">+ 新增時間通行規則</button>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = [
+                    ...parseTimeConditionString(rawTempTarget),
+                    { type: 'daily', range: '00:00-23:59', passable: true },
+                  ];
+                  updatePathInfoField(edgeId, direction, 'tempTargetName', serializeTimeConditions(next));
+                }}
+                className="text-[9px] text-purple-400 hover:text-purple-300 underline"
+              >
+                + 新增時間通行規則
+              </button>
             </div>
           )}
         </div>
@@ -1369,9 +1614,12 @@ export const DebugPanel: React.FC = () => {
             {/* 精確時間 */}
             <div className="p-2 bg-purple-950/10 border border-purple-500/10 rounded-lg">
               <div className="text-[10px] font-bold text-purple-300 mb-1.5">⏱ 系統時間</div>
-              <input type="datetime-local" value={editTime}
+              <input
+                type="datetime-local"
+                value={editTime}
                 onChange={e => setEditTime(e.target.value)}
-                className="w-full bg-black/40 border border-purple-500/20 rounded px-2 py-1 text-[10px] text-purple-100 focus:outline-none focus:border-purple-500/50 mb-1.5" />
+                className="w-full bg-black/40 border border-purple-500/20 rounded px-2 py-1 text-[10px] text-purple-100 focus:outline-none focus:border-purple-500/50 mb-1.5"
+              />
               <div className="flex gap-1 flex-wrap">
                 <AdjustBtn label="時 -1" onClick={() => adjustTime(-1, 0)} color="red" />
                 <AdjustBtn label="時 +1" onClick={() => adjustTime(1, 0)} color="emerald" />
@@ -1385,8 +1633,11 @@ export const DebugPanel: React.FC = () => {
                   { label: '🌙 平日深夜', dt: '2026-05-01 22:00:00' },
                   { label: '💤 週末深夜', dt: '2026-05-02 22:00:00' },
                 ].map(p => (
-                  <button key={p.label} onClick={() => setTimePreset(p.dt)}
-                    className="text-[9px] px-2 py-0.5 bg-purple-950/30 border border-purple-500/20 rounded-full text-purple-300 hover:bg-purple-900/40 transition-all active:scale-95">
+                  <button
+                    key={p.label}
+                    onClick={() => setTimePreset(p.dt)}
+                    className="text-[9px] px-2 py-0.5 bg-purple-950/30 border border-purple-500/20 rounded-full text-purple-300 hover:bg-purple-900/40 transition-all active:scale-95"
+                  >
                     {p.label}
                   </button>
                 ))}
@@ -1396,9 +1647,16 @@ export const DebugPanel: React.FC = () => {
             {/* VIP */}
             <div className="p-2 bg-purple-950/10 border border-purple-500/10 rounded-lg">
               <div className="text-[10px] font-bold text-purple-300 mb-1.5">👑 VIP 等級</div>
-              <select value={editVip} onChange={e => setEditVip(Number(e.target.value))}
-                className="w-full bg-black/40 border border-purple-500/20 rounded px-2 py-1 text-[10px] text-purple-100 focus:outline-none">
-                {[0, 1, 2, 3, 4, 5, 6].map(v => <option key={v} value={v}>VIP {v}</option>)}
+              <select
+                value={editVip}
+                onChange={e => setEditVip(Number(e.target.value))}
+                className="w-full bg-black/40 border border-purple-500/20 rounded px-2 py-1 text-[10px] text-purple-100 focus:outline-none"
+              >
+                {[0, 1, 2, 3, 4, 5, 6].map(v => (
+                  <option key={v} value={v}>
+                    VIP {v}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -1407,13 +1665,20 @@ export const DebugPanel: React.FC = () => {
               <div className="text-[10px] font-bold text-purple-300 mb-1.5">💰 基礎資源</div>
               <NumberAdjustRow label="💵 金幣" value={editMoney} onChange={setEditMoney} steps={[1, 5, 100]} />
               <NumberAdjustRow label="⚡ MC能量" value={editEnergy} onChange={setEditEnergy} steps={[1, 5, 100]} />
-              <NumberAdjustRow label="🔋 能量上限" value={editEnergyMax} onChange={setEditEnergyMax} steps={[1, 5, 100]} />
+              <NumberAdjustRow
+                label="🔋 能量上限"
+                value={editEnergyMax}
+                onChange={setEditEnergyMax}
+                steps={[1, 5, 100]}
+              />
               <NumberAdjustRow label="🪙 MC點" value={editPoints} onChange={setEditPoints} steps={[1, 5, 100]} />
               <NumberAdjustRow label="🚨 可疑度" value={editSuspicion} onChange={setEditSuspicion} steps={[1, 5, 10]} />
             </div>
 
-            <button onClick={applySystemChanges}
-              className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition-all active:scale-95">
+            <button
+              onClick={applySystemChanges}
+              className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition-all active:scale-95"
+            >
               保存系統變更並重載
             </button>
           </div>
@@ -1432,28 +1697,47 @@ export const DebugPanel: React.FC = () => {
                 const hasItem = qty > 0;
                 const isActive = hasItem && !!mockMvuVariables.user?.inventory?.[itemId]?.isActive;
                 return (
-                  <div key={itemId} className={`flex flex-col p-1.5 rounded border transition-all ${hasItem ? 'bg-emerald-950/20 border-emerald-500/20' : 'bg-black/10 border-purple-500/10'}`}>
+                  <div
+                    key={itemId}
+                    className={`flex flex-col p-1.5 rounded border transition-all ${hasItem ? 'bg-emerald-950/20 border-emerald-500/20' : 'bg-black/10 border-purple-500/10'}`}
+                  >
                     <div className="flex items-center gap-1.5 w-full">
-                      <input type="checkbox" checked={hasItem}
+                      <input
+                        type="checkbox"
+                        checked={hasItem}
                         onChange={() => {
-                          if (hasItem) { setPlayerItemQty(itemId, 0); }
-                          else { setPlayerItemQty(itemId, 1); }
+                          if (hasItem) {
+                            setPlayerItemQty(itemId, 0);
+                          } else {
+                            setPlayerItemQty(itemId, 1);
+                          }
                         }}
-                        className="accent-emerald-500 w-3 h-3" />
+                        className="accent-emerald-500 w-3 h-3"
+                      />
                       <span className="text-[9px] text-gray-200 flex-1 truncate" title={itemDef.description}>
                         {itemDef.name} <span className="text-gray-500">({itemId})</span>
                         {hasItem && itemDef.activationType !== 'none' && (
-                          <span className={`ml-1.5 px-1 py-px rounded text-[8px] font-bold ${isActive ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/20 animate-pulse' : 'bg-gray-900 text-gray-400 border border-gray-700/20'}`}>
+                          <span
+                            className={`ml-1.5 px-1 py-px rounded text-[8px] font-bold ${isActive ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/20 animate-pulse' : 'bg-gray-900 text-gray-400 border border-gray-700/20'}`}
+                          >
                             {isActive ? '● 激活中' : '○ 未激活'}
                           </span>
                         )}
                       </span>
                       {hasItem && (
                         <div className="flex items-center gap-0.5 shrink-0">
-                          <AdjustBtn label="-1" onClick={() => setPlayerItemQty(itemId, Math.max(0, qty - 1))} color="red" />
-                          <input type="number" value={qty} min={0}
+                          <AdjustBtn
+                            label="-1"
+                            onClick={() => setPlayerItemQty(itemId, Math.max(0, qty - 1))}
+                            color="red"
+                          />
+                          <input
+                            type="number"
+                            value={qty}
+                            min={0}
                             onChange={e => setPlayerItemQty(itemId, Math.max(0, Number(e.target.value)))}
-                            className="w-10 bg-black/40 border border-purple-500/20 rounded px-1 py-0.5 text-[9px] text-purple-100 text-center focus:outline-none" />
+                            className="w-10 bg-black/40 border border-purple-500/20 rounded px-1 py-0.5 text-[9px] text-purple-100 text-center focus:outline-none"
+                          />
                           <AdjustBtn label="+1" onClick={() => setPlayerItemQty(itemId, qty + 1)} color="emerald" />
                         </div>
                       )}
@@ -1467,8 +1751,10 @@ export const DebugPanel: React.FC = () => {
                 );
               })}
             </div>
-            <button onClick={flushAndSave}
-              className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition-all active:scale-95 mt-2">
+            <button
+              onClick={flushAndSave}
+              className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition-all active:scale-95 mt-2"
+            >
               保存背包變更並重載
             </button>
           </div>
@@ -1482,27 +1768,59 @@ export const DebugPanel: React.FC = () => {
         return (
           <div className="space-y-3">
             <div className="text-[10px] font-bold text-purple-300 mb-1">👥 NPC 設定管理</div>
-            <select value={selectedNpc} onChange={e => setSelectedNpc(e.target.value)}
-              className="w-full bg-black/40 border border-purple-500/20 rounded px-2 py-1 text-[10px] text-purple-100 focus:outline-none">
-              {npcNames.map(name => <option key={name} value={name}>{name} ({(mockMvuVariables.chars[name] as any)?.identity || ''})</option>)}
+            <select
+              value={selectedNpc}
+              onChange={e => setSelectedNpc(e.target.value)}
+              className="w-full bg-black/40 border border-purple-500/20 rounded px-2 py-1 text-[10px] text-purple-100 focus:outline-none"
+            >
+              {npcNames.map(name => (
+                <option key={name} value={name}>
+                  {name} ({(mockMvuVariables.chars[name] as any)?.identity || ''})
+                </option>
+              ))}
             </select>
 
             {/* 基礎屬性編輯 */}
             {currentNpcStat && (
               <div className="p-2 bg-purple-950/10 border border-purple-500/10 rounded-lg space-y-1">
                 <div className="text-[10px] font-bold text-purple-300 mb-1">📊 基礎屬性編輯</div>
-                <NumberAdjustRow label="服從度" value={currentNpcStat.obedience || 0} onChange={v => updateNpcBaseStat(selectedNpc, 'obedience', v)} steps={[1, 5, 20]} />
-                <NumberAdjustRow label="好感度" value={currentNpcStat.affection || 0} onChange={v => updateNpcBaseStat(selectedNpc, 'affection', v)} steps={[1, 5, 20]} />
-                <NumberAdjustRow label="警戒度" value={currentNpcStat.alertness || 0} onChange={v => updateNpcBaseStat(selectedNpc, 'alertness', v)} steps={[1, 5, 20]} />
-                <NumberAdjustRow label="快感值" value={currentNpcStat.arousal || 0} onChange={v => updateNpcBaseStat(selectedNpc, 'arousal', v)} steps={[1, 5, 20]} />
-                <NumberAdjustRow label="淫癖" value={currentNpcStat.lust || 0} onChange={v => updateNpcBaseStat(selectedNpc, 'lust', v)} steps={[1, 5, 20]} />
+                <NumberAdjustRow
+                  label="服從度"
+                  value={currentNpcStat.obedience || 0}
+                  onChange={v => updateNpcBaseStat(selectedNpc, 'obedience', v)}
+                  steps={[1, 5, 20]}
+                />
+                <NumberAdjustRow
+                  label="好感度"
+                  value={currentNpcStat.affection || 0}
+                  onChange={v => updateNpcBaseStat(selectedNpc, 'affection', v)}
+                  steps={[1, 5, 20]}
+                />
+                <NumberAdjustRow
+                  label="警戒度"
+                  value={currentNpcStat.alertness || 0}
+                  onChange={v => updateNpcBaseStat(selectedNpc, 'alertness', v)}
+                  steps={[1, 5, 20]}
+                />
+                <NumberAdjustRow
+                  label="快感值"
+                  value={currentNpcStat.arousal || 0}
+                  onChange={v => updateNpcBaseStat(selectedNpc, 'arousal', v)}
+                  steps={[1, 5, 20]}
+                />
+                <NumberAdjustRow
+                  label="淫癖"
+                  value={currentNpcStat.lust || 0}
+                  onChange={v => updateNpcBaseStat(selectedNpc, 'lust', v)}
+                  steps={[1, 5, 20]}
+                />
               </div>
             )}
             {/* 所在地點與在場描述編輯 */}
             {currentNpcStat && (
               <div className="p-2 bg-purple-950/10 border border-purple-500/10 rounded-lg space-y-2">
                 <div className="text-[10px] font-bold text-purple-300">📍 所在地點與狀態編輯</div>
-                
+
                 <div className="flex items-center gap-1.5 py-1 text-[10px]">
                   <span className="text-gray-400 w-16 shrink-0">所在地點</span>
                   <select
@@ -1512,7 +1830,9 @@ export const DebugPanel: React.FC = () => {
                   >
                     <option value="">無 (不在地圖上)</option>
                     {Object.entries(mockChatVariables.locations || {}).map(([id, node]) => (
-                      <option key={id} value={id}>{(node as any).name} ({id})</option>
+                      <option key={id} value={id}>
+                        {(node as any).name} ({id})
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -1540,7 +1860,12 @@ export const DebugPanel: React.FC = () => {
                     if (!partStat) return null;
 
                     const isSensitivitySupported = partDef ? partDef.hasSensitivity : true;
-                    const isTightnessSupported = partDef ? partDef.hasTightness : partKey.includes('mouth') || partKey.includes('vagina') || partKey.includes('anus') || partKey.includes('urethra');
+                    const isTightnessSupported = partDef
+                      ? partDef.hasTightness
+                      : partKey.includes('mouth') ||
+                        partKey.includes('vagina') ||
+                        partKey.includes('anus') ||
+                        partKey.includes('urethra');
                     const isProficiencySupported = partDef ? partDef.hasProficiency : true;
                     const isOrgasmSupported = partDef ? partDef.canOrgasm : true;
 
@@ -1551,18 +1876,32 @@ export const DebugPanel: React.FC = () => {
 
                     const sensGrade = MockApi.getStatGrade(sensitivity, -100, 100);
                     const sensGradeColor = MockApi.getGradeColor(sensGrade);
-                    
+
                     return (
                       <div key={partKey} className="p-2 bg-black/40 border border-purple-500/10 rounded-lg space-y-1.5">
                         <div className="text-[9px] font-bold text-white/95 border-b border-white/5 pb-1 flex justify-between">
-                          <span>{partDef.name} ({partKey})</span>
+                          <span>
+                            {partDef.name} ({partKey})
+                          </span>
                         </div>
                         <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-[9px]">
                           {/* 敏感度 */}
                           {isSensitivitySupported && (
                             <div className="flex items-center gap-1">
                               <span className="text-gray-400 w-10 shrink-0">敏感度</span>
-                              <input type="number" value={sensitivity} onChange={e => updateNpcBodyPartStat(selectedNpc, partKey, 'sensitivity', Number(e.target.value) || 0)} className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center" />
+                              <input
+                                type="number"
+                                value={sensitivity}
+                                onChange={e =>
+                                  updateNpcBodyPartStat(
+                                    selectedNpc,
+                                    partKey,
+                                    'sensitivity',
+                                    Number(e.target.value) || 0,
+                                  )
+                                }
+                                className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center"
+                              />
                               <span className={`text-[8px] font-bold ${sensGradeColor}`}>{sensGrade}</span>
                             </div>
                           )}
@@ -1570,23 +1909,57 @@ export const DebugPanel: React.FC = () => {
                           {isTightnessSupported && (
                             <div className="flex items-center gap-1">
                               <span className="text-gray-400 w-10 shrink-0">松紧度</span>
-                              <input type="number" value={tightness} onChange={e => updateNpcBodyPartStat(selectedNpc, partKey, 'tightness', Number(e.target.value) || 0)} className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center" />
-                              <span className={`text-[8px] font-bold ${MockApi.getGradeColor(MockApi.getStatGrade(tightness, -100, 100))}`}>{MockApi.getStatGrade(tightness, -100, 100)}</span>
+                              <input
+                                type="number"
+                                value={tightness}
+                                onChange={e =>
+                                  updateNpcBodyPartStat(selectedNpc, partKey, 'tightness', Number(e.target.value) || 0)
+                                }
+                                className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center"
+                              />
+                              <span
+                                className={`text-[8px] font-bold ${MockApi.getGradeColor(MockApi.getStatGrade(tightness, -100, 100))}`}
+                              >
+                                {MockApi.getStatGrade(tightness, -100, 100)}
+                              </span>
                             </div>
                           )}
                           {/* 熟練度 */}
                           {isProficiencySupported && (
                             <div className="flex items-center gap-1">
                               <span className="text-gray-400 w-10 shrink-0">熟练度</span>
-                              <input type="number" value={proficiency} onChange={e => updateNpcBodyPartStat(selectedNpc, partKey, 'proficiency', Number(e.target.value) || 0)} className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center" />
-                              <span className={`text-[8px] font-bold ${MockApi.getGradeColor(MockApi.getStatGrade(proficiency, 0, 100))}`}>{MockApi.getStatGrade(proficiency, 0, 100)}</span>
+                              <input
+                                type="number"
+                                value={proficiency}
+                                onChange={e =>
+                                  updateNpcBodyPartStat(
+                                    selectedNpc,
+                                    partKey,
+                                    'proficiency',
+                                    Number(e.target.value) || 0,
+                                  )
+                                }
+                                className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center"
+                              />
+                              <span
+                                className={`text-[8px] font-bold ${MockApi.getGradeColor(MockApi.getStatGrade(proficiency, 0, 100))}`}
+                              >
+                                {MockApi.getStatGrade(proficiency, 0, 100)}
+                              </span>
                             </div>
                           )}
                           {/* 高潮次數 */}
                           {isOrgasmSupported && (
                             <div className="flex items-center gap-1">
                               <span className="text-gray-400 w-10 shrink-0">高潮次</span>
-                              <input type="number" value={orgasms} onChange={e => updateNpcBodyPartStat(selectedNpc, partKey, 'orgasms', Number(e.target.value) || 0)} className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center" />
+                              <input
+                                type="number"
+                                value={orgasms}
+                                onChange={e =>
+                                  updateNpcBodyPartStat(selectedNpc, partKey, 'orgasms', Number(e.target.value) || 0)
+                                }
+                                className="w-10 bg-black border border-purple-500/20 rounded text-[9px] text-purple-100 text-center"
+                              />
                             </div>
                           )}
                         </div>
@@ -1605,31 +1978,55 @@ export const DebugPanel: React.FC = () => {
                   {Object.entries(allItems).map(([itemId, itemDef]) => {
                     const qty = getNpcItemQty(selectedNpc, itemId);
                     const hasItem = qty > 0;
-                    const isActive = hasItem && !!(mockMvuVariables.chars?.[selectedNpc]?.inventory as any)?.[itemId]?.isActive;
+                    const isActive =
+                      hasItem && !!(mockMvuVariables.chars?.[selectedNpc]?.inventory as any)?.[itemId]?.isActive;
                     return (
-                      <div key={itemId} className={`flex flex-col p-1.5 rounded border transition-all ${hasItem ? 'bg-emerald-950/20 border-emerald-500/20' : 'bg-black/10 border-purple-500/10'}`}>
+                      <div
+                        key={itemId}
+                        className={`flex flex-col p-1.5 rounded border transition-all ${hasItem ? 'bg-emerald-950/20 border-emerald-500/20' : 'bg-black/10 border-purple-500/10'}`}
+                      >
                         <div className="flex items-center gap-1.5 w-full">
-                          <input type="checkbox" checked={hasItem}
+                          <input
+                            type="checkbox"
+                            checked={hasItem}
                             onChange={() => {
-                              if (hasItem) { setNpcItemQty(selectedNpc, itemId, 0); }
-                              else { setNpcItemQty(selectedNpc, itemId, 1); }
+                              if (hasItem) {
+                                setNpcItemQty(selectedNpc, itemId, 0);
+                              } else {
+                                setNpcItemQty(selectedNpc, itemId, 1);
+                              }
                             }}
-                            className="accent-emerald-500 w-3 h-3" />
+                            className="accent-emerald-500 w-3 h-3"
+                          />
                           <span className="text-[9px] text-gray-200 flex-1 truncate">
                             {itemDef.name}
                             {hasItem && itemDef.activationType !== 'none' && (
-                              <span className={`ml-1.5 px-1 py-px rounded text-[8px] font-bold ${isActive ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/20 animate-pulse' : 'bg-gray-900 text-gray-400 border border-gray-700/20'}`}>
+                              <span
+                                className={`ml-1.5 px-1 py-px rounded text-[8px] font-bold ${isActive ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/20 animate-pulse' : 'bg-gray-900 text-gray-400 border border-gray-700/20'}`}
+                              >
                                 {isActive ? '● 激活中' : '○ 未激活'}
                               </span>
                             )}
                           </span>
                           {hasItem && (
                             <div className="flex items-center gap-0.5 shrink-0">
-                              <AdjustBtn label="-1" onClick={() => setNpcItemQty(selectedNpc, itemId, Math.max(0, qty - 1))} color="red" />
-                              <input type="number" value={qty} min={0}
+                              <AdjustBtn
+                                label="-1"
+                                onClick={() => setNpcItemQty(selectedNpc, itemId, Math.max(0, qty - 1))}
+                                color="red"
+                              />
+                              <input
+                                type="number"
+                                value={qty}
+                                min={0}
                                 onChange={e => setNpcItemQty(selectedNpc, itemId, Math.max(0, Number(e.target.value)))}
-                                className="w-8 bg-black/40 border border-purple-500/20 rounded px-1 py-0.5 text-[9px] text-purple-100 text-center focus:outline-none" />
-                              <AdjustBtn label="+1" onClick={() => setNpcItemQty(selectedNpc, itemId, qty + 1)} color="emerald" />
+                                className="w-8 bg-black/40 border border-purple-500/20 rounded px-1 py-0.5 text-[9px] text-purple-100 text-center focus:outline-none"
+                              />
+                              <AdjustBtn
+                                label="+1"
+                                onClick={() => setNpcItemQty(selectedNpc, itemId, qty + 1)}
+                                color="emerald"
+                              />
                             </div>
                           )}
                         </div>
@@ -1651,28 +2048,34 @@ export const DebugPanel: React.FC = () => {
             {selectedNpc && currentNpcStat && (
               <div className="p-2 bg-purple-950/10 border border-purple-500/10 rounded-lg space-y-2">
                 <div className="text-[10px] font-bold text-purple-300">🧬 身體改造狀態管理</div>
-                
+
                 {/* 新增改造選單 */}
                 <div className="flex items-center gap-1.5 p-1.5 bg-black/40 rounded border border-purple-500/15">
-                  <select 
+                  <select
                     id="new-mod-select"
                     className="flex-1 bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-[9px] text-purple-100 focus:outline-none"
                     defaultValue=""
                   >
-                    <option value="" disabled>選擇要加裝的身體改造...</option>
+                    <option value="" disabled>
+                      選擇要加裝的身體改造...
+                    </option>
                     {Object.entries(localBodyMods).map(([id, def]: [string, any]) => {
                       const isInstalled = currentNpcStat.ownedBodyModifications?.[id] !== undefined;
                       if (isInstalled) return null;
-                      return <option key={id} value={id}>{def.name} ({id})</option>;
+                      return (
+                        <option key={id} value={id}>
+                          {def.name} ({id})
+                        </option>
+                      );
                     })}
                   </select>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => {
                       const sel = document.getElementById('new-mod-select') as HTMLSelectElement;
                       if (sel && sel.value) {
                         addNpcBodyMod(selectedNpc, sel.value);
-                        sel.value = ""; // 重設 selection
+                        sel.value = ''; // 重設 selection
                       }
                     }}
                     className="px-2 py-0.5 bg-purple-600 hover:bg-purple-500 text-white text-[9px] font-bold rounded border border-purple-500/30 transition-all active:scale-95 shrink-0"
@@ -1683,43 +2086,49 @@ export const DebugPanel: React.FC = () => {
 
                 {/* 已有改造列表 */}
                 <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1 hypno-scrollbar">
-                  {!currentNpcStat.ownedBodyModifications || Object.keys(currentNpcStat.ownedBodyModifications).length === 0 ? (
+                  {!currentNpcStat.ownedBodyModifications ||
+                  Object.keys(currentNpcStat.ownedBodyModifications).length === 0 ? (
                     <div className="text-[9px] text-gray-500 italic text-center py-2">目前無 any 已安裝改造。</div>
                   ) : (
                     Object.entries(currentNpcStat.ownedBodyModifications).map(([modId, modState]: [string, any]) => {
                       const def = localBodyMods[modId] || { name: modId, description: '未定義方案' };
                       const isAdaptCompleted = !modState.adaptation;
                       return (
-                        <div key={modId} className="p-2 bg-black/30 border border-purple-500/10 rounded-lg space-y-1.5 text-[9px]">
+                        <div
+                          key={modId}
+                          className="p-2 bg-black/30 border border-purple-500/10 rounded-lg space-y-1.5 text-[9px]"
+                        >
                           <div className="flex items-center justify-between border-b border-purple-500/5 pb-1">
                             <span className="font-bold text-purple-200">{def.name}</span>
-                            <button 
-                              type="button" 
+                            <button
+                              type="button"
                               onClick={() => removeNpcBodyMod(selectedNpc, modId)}
                               className="text-[9px] text-red-400 hover:text-red-300 transition-colors font-semibold"
                             >
                               移除
                             </button>
                           </div>
-                          
+
                           <div className="grid grid-cols-2 gap-2">
                             {/* 啟用/關閉 */}
                             <label className="flex items-center gap-1.5 text-gray-300 cursor-pointer">
-                              <input 
-                                type="checkbox" 
+                              <input
+                                type="checkbox"
                                 checked={!!modState.isActive}
-                                onChange={(e) => updateNpcBodyModProp(selectedNpc, modId, 'isActive', e.target.checked)}
+                                onChange={e => updateNpcBodyModProp(selectedNpc, modId, 'isActive', e.target.checked)}
                                 className="accent-purple-500 w-3 h-3"
                               />
                               啟用狀態
                             </label>
-                            
+
                             {/* 適應狀態 */}
                             <label className="flex items-center gap-1.5 text-gray-300 cursor-pointer">
-                              <input 
-                                type="checkbox" 
+                              <input
+                                type="checkbox"
                                 checked={isAdaptCompleted}
-                                onChange={(e) => updateNpcBodyModProp(selectedNpc, modId, 'adaptation_complete', e.target.checked)}
+                                onChange={e =>
+                                  updateNpcBodyModProp(selectedNpc, modId, 'adaptation_complete', e.target.checked)
+                                }
                                 className="accent-purple-500 w-3 h-3"
                               />
                               已完全適應
@@ -1729,10 +2138,12 @@ export const DebugPanel: React.FC = () => {
                           {/* AI 註釋 */}
                           <div className="flex items-center gap-1">
                             <span className="text-gray-500 shrink-0">AI 註釋:</span>
-                            <input 
-                              type="text" 
+                            <input
+                              type="text"
                               value={modState.customDescription || ''}
-                              onChange={(e) => updateNpcBodyModProp(selectedNpc, modId, 'customDescription', e.target.value)}
+                              onChange={e =>
+                                updateNpcBodyModProp(selectedNpc, modId, 'customDescription', e.target.value)
+                              }
                               placeholder="輸入對 AI 演繹的故事註釋..."
                               className="flex-1 bg-black/50 border border-purple-500/20 rounded px-1.5 py-0.5 text-[9px] text-purple-100 focus:outline-none focus:border-purple-500/50"
                             />
@@ -1745,8 +2156,10 @@ export const DebugPanel: React.FC = () => {
               </div>
             )}
 
-            <button onClick={flushAndSave}
-              className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition-all active:scale-95 mt-2">
+            <button
+              onClick={flushAndSave}
+              className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition-all active:scale-95 mt-2"
+            >
               保存 NPC 設定並重載
             </button>
           </div>
@@ -1787,7 +2200,7 @@ export const DebugPanel: React.FC = () => {
           anus: '肛門括約肌',
           urethra: '尿道腺體',
           clitoris: '陰蒂敏感核',
-          womb: '子宮腔體'
+          womb: '子宮腔體',
         };
 
         const allPartKeysSet = new Set(defaultPartKeys);
@@ -1826,7 +2239,7 @@ export const DebugPanel: React.FC = () => {
           { key: 'sensitivity', name: '敏感度' },
           { key: 'tightness', name: '鬆緊度' },
           { key: 'proficiency', name: '熟練度' },
-          { key: 'orgasms', name: '高潮次數' }
+          { key: 'orgasms', name: '高潮次數' },
         ];
 
         const partOptions: { value: string; label: string }[] = [];
@@ -1835,13 +2248,13 @@ export const DebugPanel: React.FC = () => {
           bodyPartAttrs.forEach(attr => {
             partOptions.push({
               value: `bodyParts.${part}.${attr.key}`,
-              label: `🧬 ${partLabel} - ${attr.name} (${attr.key})`
+              label: `🧬 ${partLabel} - ${attr.name} (${attr.key})`,
             });
           });
         });
 
         const allTargetOptions = [...presetTargets, ...partOptions];
-        
+
         const toggleHasAddedPart = (hasPart: boolean) => {
           if (hasPart) {
             updateModDef(selectedModId, ['addedBodyPart'], {
@@ -1852,7 +2265,7 @@ export const DebugPanel: React.FC = () => {
               hasProficiency: true,
               canOrgasm: true,
               description: '手術移植的部位',
-              initialStats: { sensitivity: 20, tightness: 0, proficiency: 10, orgasms: 0 }
+              initialStats: { sensitivity: 20, tightness: 0, proficiency: 10, orgasms: 0 },
             });
           } else {
             setLocalBodyMods(prev => {
@@ -1869,32 +2282,35 @@ export const DebugPanel: React.FC = () => {
         return (
           <div className="space-y-3">
             <div className="text-[10px] font-bold text-purple-300 mb-1">🧬 身體改造方案編輯器</div>
-            
+
             {/* 方案選擇 */}
             <div className="flex gap-1">
-              <select 
-                value={selectedModId} 
+              <select
+                value={selectedModId}
                 onChange={e => setSelectedModId(e.target.value)}
                 className="flex-1 bg-black/40 border border-purple-500/20 rounded px-2 py-1 text-[10px] text-purple-100 focus:outline-none"
               >
                 {Object.entries(localBodyMods).map(([id, def]: [string, any]) => (
-                  <option key={id} value={id}>{def.name} ({id})</option>
+                  <option key={id} value={id}>
+                    {def.name} ({id})
+                  </option>
                 ))}
               </select>
             </div>
 
             {currentModDef ? (
               <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1 hypno-scrollbar">
-                
                 {/* 1. 基本資訊 */}
                 <div className="p-2 bg-purple-950/10 border border-purple-500/10 rounded-lg space-y-2">
-                  <div className="text-[9px] font-bold text-purple-300 border-b border-purple-500/5 pb-1">📄 基本資訊</div>
-                  
+                  <div className="text-[9px] font-bold text-purple-300 border-b border-purple-500/5 pb-1">
+                    📄 基本資訊
+                  </div>
+
                   <div className="flex items-center gap-1.5 text-[9px]">
                     <span className="text-gray-400 w-16 shrink-0 font-bold">改造名稱</span>
-                    <input 
-                      type="text" 
-                      value={currentModDef.name || ''} 
+                    <input
+                      type="text"
+                      value={currentModDef.name || ''}
                       onChange={e => updateModDef(selectedModId, ['name'], e.target.value)}
                       className="flex-1 bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-purple-100 focus:outline-none focus:border-purple-500/50"
                     />
@@ -1902,8 +2318,8 @@ export const DebugPanel: React.FC = () => {
 
                   <div className="flex items-start gap-1.5 text-[9px]">
                     <span className="text-gray-400 w-16 shrink-0 mt-1 font-bold">改造說明</span>
-                    <textarea 
-                      value={currentModDef.description || ''} 
+                    <textarea
+                      value={currentModDef.description || ''}
                       onChange={e => updateModDef(selectedModId, ['description'], e.target.value)}
                       rows={2}
                       className="flex-1 bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-purple-100 resize-none focus:outline-none focus:border-purple-500/50 font-sans"
@@ -1912,9 +2328,9 @@ export const DebugPanel: React.FC = () => {
 
                   <div className="flex items-center gap-1.5 text-[9px]">
                     <span className="text-gray-400 w-16 shrink-0 font-bold">肉體負荷</span>
-                    <input 
-                      type="number" 
-                      value={currentModDef.loadCost || 0} 
+                    <input
+                      type="number"
+                      value={currentModDef.loadCost || 0}
                       onChange={e => updateModDef(selectedModId, ['loadCost'], Number(e.target.value) || 0)}
                       className="w-16 bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-purple-100 text-center focus:outline-none"
                     />
@@ -1922,8 +2338,8 @@ export const DebugPanel: React.FC = () => {
 
                   <div className="flex items-start gap-1.5 text-[9px]">
                     <span className="text-gray-400 w-16 shrink-0 mt-1 font-bold">Prompt 注入</span>
-                    <textarea 
-                      value={currentModDef.promptInjection || ''} 
+                    <textarea
+                      value={currentModDef.promptInjection || ''}
                       onChange={e => updateModDef(selectedModId, ['promptInjection'], e.target.value)}
                       rows={3}
                       className="flex-1 bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-purple-100 resize-none focus:outline-none focus:border-purple-500/50 font-sans"
@@ -1934,32 +2350,34 @@ export const DebugPanel: React.FC = () => {
 
                 {/* 2. 手術花費 */}
                 <div className="p-2 bg-purple-950/10 border border-purple-500/10 rounded-lg space-y-2">
-                  <div className="text-[9px] font-bold text-purple-300 border-b border-purple-500/5 pb-1">💰 手術花費與材料</div>
-                  
+                  <div className="text-[9px] font-bold text-purple-300 border-b border-purple-500/5 pb-1">
+                    💰 手術花費與材料
+                  </div>
+
                   <div className="grid grid-cols-3 gap-1.5">
                     <div className="flex flex-col text-[8px]">
                       <span className="text-gray-400 mb-0.5">金幣 (¥)</span>
-                      <input 
-                        type="number" 
-                        value={currentModDef.cost?.money || 0} 
+                      <input
+                        type="number"
+                        value={currentModDef.cost?.money || 0}
                         onChange={e => updateModDef(selectedModId, ['cost', 'money'], Number(e.target.value) || 0)}
                         className="w-full bg-black border border-purple-500/20 rounded px-1 py-0.5 text-purple-100 text-center focus:outline-none"
                       />
                     </div>
                     <div className="flex flex-col text-[8px]">
                       <span className="text-gray-400 mb-0.5">MC點數 (PTS)</span>
-                      <input 
-                        type="number" 
-                        value={currentModDef.cost?.pts || 0} 
+                      <input
+                        type="number"
+                        value={currentModDef.cost?.pts || 0}
                         onChange={e => updateModDef(selectedModId, ['cost', 'pts'], Number(e.target.value) || 0)}
                         className="w-full bg-black border border-purple-500/20 rounded px-1 py-0.5 text-purple-100 text-center focus:outline-none"
                       />
                     </div>
                     <div className="flex flex-col text-[8px]">
                       <span className="text-gray-400 mb-0.5">MC能量 (⚡)</span>
-                      <input 
-                        type="number" 
-                        value={currentModDef.cost?.mcEnergy || 0} 
+                      <input
+                        type="number"
+                        value={currentModDef.cost?.mcEnergy || 0}
                         onChange={e => updateModDef(selectedModId, ['cost', 'mcEnergy'], Number(e.target.value) || 0)}
                         className="w-full bg-black border border-purple-500/20 rounded px-1 py-0.5 text-purple-100 text-center focus:outline-none"
                       />
@@ -1970,9 +2388,12 @@ export const DebugPanel: React.FC = () => {
                   <div className="space-y-1 mt-1.5">
                     <span className="text-[8px] text-gray-400 block font-semibold">所需物品材料:</span>
                     {(currentModDef.cost?.requiredItems || []).map((item: any, idx: number) => (
-                      <div key={idx} className="flex gap-1 items-center bg-black/40 p-1 rounded border border-purple-500/10">
-                        <select 
-                          value={item.itemId} 
+                      <div
+                        key={idx}
+                        className="flex gap-1 items-center bg-black/40 p-1 rounded border border-purple-500/10"
+                      >
+                        <select
+                          value={item.itemId}
                           onChange={e => {
                             const list = [...(currentModDef.cost.requiredItems || [])];
                             list[idx].itemId = e.target.value;
@@ -1981,12 +2402,14 @@ export const DebugPanel: React.FC = () => {
                           className="bg-black border border-purple-500/20 rounded px-1 text-[8px] text-purple-100 flex-1 min-w-[70px] focus:outline-none"
                         >
                           {Object.entries(allItems).map(([id, def]: [string, any]) => (
-                            <option key={id} value={id}>{def.name}</option>
+                            <option key={id} value={id}>
+                              {def.name}
+                            </option>
                           ))}
                         </select>
-                        <input 
-                          type="number" 
-                          value={item.quantity} 
+                        <input
+                          type="number"
+                          value={item.quantity}
                           onChange={e => {
                             const list = [...(currentModDef.cost.requiredItems || [])];
                             list[idx].quantity = Number(e.target.value) || 0;
@@ -1994,10 +2417,12 @@ export const DebugPanel: React.FC = () => {
                           }}
                           className="w-10 bg-black border border-purple-500/20 rounded text-[8px] text-purple-100 text-center focus:outline-none"
                         />
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           onClick={() => {
-                            const list = (currentModDef.cost.requiredItems || []).filter((_: any, i: number) => i !== idx);
+                            const list = (currentModDef.cost.requiredItems || []).filter(
+                              (_: any, i: number) => i !== idx,
+                            );
                             updateModDef(selectedModId, ['cost', 'requiredItems'], list);
                           }}
                           className="text-[8px] text-red-400 hover:text-red-300 px-1 font-semibold"
@@ -2006,8 +2431,8 @@ export const DebugPanel: React.FC = () => {
                         </button>
                       </div>
                     ))}
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => {
                         const firstItem = Object.keys(allItems)[0] || '';
                         const list = [...(currentModDef.cost?.requiredItems || []), { itemId: firstItem, quantity: 1 }];
@@ -2022,8 +2447,10 @@ export const DebugPanel: React.FC = () => {
 
                 {/* 3. 前置條件 */}
                 <div className="p-2 bg-purple-950/10 border border-purple-500/10 rounded-lg space-y-2">
-                  <div className="text-[9px] font-bold text-purple-300 border-b border-purple-500/5 pb-1">🔓 前置條件 (Conditions)</div>
-                  
+                  <div className="text-[9px] font-bold text-purple-300 border-b border-purple-500/5 pb-1">
+                    🔓 前置條件 (Conditions)
+                  </div>
+
                   <div className="space-y-1">
                     {(currentModDef.conditions || []).map((cond: any, idx: number) => {
                       const isPreset = allTargetOptions.some(opt => opt.value === cond.target);
@@ -2031,7 +2458,7 @@ export const DebugPanel: React.FC = () => {
                       return (
                         <div key={idx} className="bg-black/40 p-1.5 rounded border border-purple-500/10 space-y-1">
                           <div className="flex gap-1 items-center flex-wrap">
-                            <select 
+                            <select
                               value={selectValue}
                               onChange={e => {
                                 const val = e.target.value;
@@ -2046,15 +2473,23 @@ export const DebugPanel: React.FC = () => {
                               className="bg-black border border-purple-500/20 rounded px-1 text-[8px] text-purple-100 flex-1 min-w-[120px] focus:outline-none"
                             >
                               <optgroup label="全域與基礎屬性">
-                                {presetTargets.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                                {presetTargets.map(opt => (
+                                  <option key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                  </option>
+                                ))}
                               </optgroup>
                               <optgroup label="身體部位開發">
-                                {partOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                                {partOptions.map(opt => (
+                                  <option key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                  </option>
+                                ))}
                               </optgroup>
                               <option value="custom">⚙️ 自定義輸入...</option>
                             </select>
-                            <select 
-                              value={cond.operator} 
+                            <select
+                              value={cond.operator}
                               onChange={e => {
                                 const list = [...currentModDef.conditions];
                                 list[idx].operator = e.target.value;
@@ -2062,11 +2497,15 @@ export const DebugPanel: React.FC = () => {
                               }}
                               className="bg-black border border-purple-500/20 rounded px-1 text-[8px] text-purple-100 w-12 focus:outline-none text-center"
                             >
-                              {['>=', '<=', '==', '!=', '>', '<'].map(op => <option key={op} value={op}>{op}</option>)}
+                              {['>=', '<=', '==', '!=', '>', '<'].map(op => (
+                                <option key={op} value={op}>
+                                  {op}
+                                </option>
+                              ))}
                             </select>
-                            <input 
-                              type="number" 
-                              value={cond.value} 
+                            <input
+                              type="number"
+                              value={cond.value}
                               onChange={e => {
                                 const list = [...currentModDef.conditions];
                                 list[idx].value = Number(e.target.value) || 0;
@@ -2074,8 +2513,8 @@ export const DebugPanel: React.FC = () => {
                               }}
                               className="w-10 bg-black border border-purple-500/20 rounded text-[8px] text-purple-100 text-center focus:outline-none"
                             />
-                            <button 
-                              type="button" 
+                            <button
+                              type="button"
                               onClick={() => {
                                 const list = currentModDef.conditions.filter((_: any, i: number) => i !== idx);
                                 updateModDef(selectedModId, ['conditions'], list);
@@ -2088,9 +2527,9 @@ export const DebugPanel: React.FC = () => {
                           {!isPreset && (
                             <div className="flex items-center gap-1.5 mt-1">
                               <span className="text-[8px] text-gray-500 shrink-0">自定義目標:</span>
-                              <input 
-                                type="text" 
-                                value={cond.target} 
+                              <input
+                                type="text"
+                                value={cond.target}
                                 onChange={e => {
                                   const list = [...currentModDef.conditions];
                                   list[idx].target = e.target.value;
@@ -2104,10 +2543,13 @@ export const DebugPanel: React.FC = () => {
                         </div>
                       );
                     })}
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => {
-                        const list = [...(currentModDef.conditions || []), { target: 'obedience', operator: '>=', value: 30 }];
+                        const list = [
+                          ...(currentModDef.conditions || []),
+                          { target: 'obedience', operator: '>=', value: 30 },
+                        ];
                         updateModDef(selectedModId, ['conditions'], list);
                       }}
                       className="text-[8px] text-purple-400 hover:text-purple-300 underline"
@@ -2119,8 +2561,10 @@ export const DebugPanel: React.FC = () => {
 
                 {/* 4. 常駐影響 */}
                 <div className="p-2 bg-purple-950/10 border border-purple-500/10 rounded-lg space-y-2">
-                  <div className="text-[9px] font-bold text-purple-300 border-b border-purple-500/5 pb-1">⚡ 常駐屬性影響 (Modifiers)</div>
-                  
+                  <div className="text-[9px] font-bold text-purple-300 border-b border-purple-500/5 pb-1">
+                    ⚡ 常駐屬性影響 (Modifiers)
+                  </div>
+
                   <div className="space-y-1.5">
                     {(currentModDef.modifiers || []).map((mod: any, idx: number) => {
                       const globalAttrOptions = [
@@ -2129,14 +2573,14 @@ export const DebugPanel: React.FC = () => {
                         { value: 'alertness', label: '警戒度 (alertness)' },
                         { value: 'arousal', label: '快感值 (arousal)' },
                         { value: 'lust', label: '淫癖 (lust)' },
-                        { value: 'suspicion', label: '可疑度 (suspicion)' }
+                        { value: 'suspicion', label: '可疑度 (suspicion)' },
                       ];
-                      
+
                       const partAttrOptions = [
                         { value: 'sensitivity', label: '敏感度 (sensitivity)' },
                         { value: 'tightness', label: '鬆緊度 (tightness)' },
                         { value: 'proficiency', label: '熟練度 (proficiency)' },
-                        { value: 'orgasms', label: '高潮次數 (orgasms)' }
+                        { value: 'orgasms', label: '高潮次數 (orgasms)' },
                       ];
 
                       const currentAttrOptions = mod.targetType === 'global_stat' ? globalAttrOptions : partAttrOptions;
@@ -2144,14 +2588,17 @@ export const DebugPanel: React.FC = () => {
                       const selectAttrValue = isPresetAttr ? mod.statName : 'custom';
 
                       const isPresetPart = ['slots', ...bodyPartKeys].includes(mod.bodyPartId || '');
-                      const selectPartValue = isPresetPart ? (mod.bodyPartId || 'slots') : 'custom';
+                      const selectPartValue = isPresetPart ? mod.bodyPartId || 'slots' : 'custom';
 
                       return (
-                        <div key={idx} className="bg-black/40 p-1.5 rounded border border-purple-500/10 space-y-1 text-[8px]">
+                        <div
+                          key={idx}
+                          className="bg-black/40 p-1.5 rounded border border-purple-500/10 space-y-1 text-[8px]"
+                        >
                           <div className="flex gap-1 items-center flex-wrap">
                             {/* 影響範圍 */}
-                            <select 
-                              value={mod.targetType} 
+                            <select
+                              value={mod.targetType}
                               onChange={e => {
                                 const list = [...currentModDef.modifiers];
                                 const nextTarget = e.target.value;
@@ -2172,7 +2619,7 @@ export const DebugPanel: React.FC = () => {
                             </select>
 
                             {/* 屬性名稱 */}
-                            <select 
+                            <select
                               value={selectAttrValue}
                               onChange={e => {
                                 const val = e.target.value;
@@ -2187,15 +2634,17 @@ export const DebugPanel: React.FC = () => {
                               className="bg-black border border-purple-500/20 rounded px-1 text-[8px] text-purple-100 focus:outline-none"
                             >
                               {currentAttrOptions.map(opt => (
-                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                <option key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </option>
                               ))}
                               <option value="custom">⚙️ 自定義...</option>
                             </select>
 
                             {!isPresetAttr && (
-                              <input 
-                                type="text" 
-                                value={mod.statName} 
+                              <input
+                                type="text"
+                                value={mod.statName}
                                 onChange={e => {
                                   const list = [...currentModDef.modifiers];
                                   list[idx].statName = e.target.value;
@@ -2207,8 +2656,8 @@ export const DebugPanel: React.FC = () => {
                             )}
 
                             {/* 運算子 */}
-                            <select 
-                              value={mod.operator} 
+                            <select
+                              value={mod.operator}
                               onChange={e => {
                                 const list = [...currentModDef.modifiers];
                                 list[idx].operator = e.target.value;
@@ -2216,13 +2665,17 @@ export const DebugPanel: React.FC = () => {
                               }}
                               className="bg-black border border-purple-500/20 rounded px-1 text-[8px] text-purple-100 w-8 text-center font-bold focus:outline-none"
                             >
-                              {['+', '-', '*'].map(op => <option key={op} value={op}>{op}</option>)}
+                              {['+', '-', '*'].map(op => (
+                                <option key={op} value={op}>
+                                  {op}
+                                </option>
+                              ))}
                             </select>
 
                             {/* 調整數值 */}
-                            <input 
-                              type="number" 
-                              value={mod.value} 
+                            <input
+                              type="number"
+                              value={mod.value}
                               onChange={e => {
                                 const list = [...currentModDef.modifiers];
                                 list[idx].value = Number(e.target.value) || 0;
@@ -2231,8 +2684,8 @@ export const DebugPanel: React.FC = () => {
                               className="w-10 bg-black border border-purple-500/20 rounded text-[8px] text-purple-100 text-center focus:outline-none"
                             />
 
-                            <button 
-                              type="button" 
+                            <button
+                              type="button"
                               onClick={() => {
                                 const list = currentModDef.modifiers.filter((_: any, i: number) => i !== idx);
                                 updateModDef(selectedModId, ['modifiers'], list);
@@ -2264,15 +2717,19 @@ export const DebugPanel: React.FC = () => {
                                 <option value="slots">slots (佔用部位)</option>
                                 {bodyPartKeys.map(partKey => {
                                   const label = bodyPartNames[partKey] || partKey;
-                                  return <option key={partKey} value={partKey}>{label} ({partKey})</option>;
+                                  return (
+                                    <option key={partKey} value={partKey}>
+                                      {label} ({partKey})
+                                    </option>
+                                  );
                                 })}
                                 <option value="custom">⚙️ 自定義...</option>
                               </select>
 
                               {!isPresetPart && (
-                                <input 
-                                  type="text" 
-                                  value={mod.bodyPartId || ''} 
+                                <input
+                                  type="text"
+                                  value={mod.bodyPartId || ''}
                                   onChange={e => {
                                     const list = [...currentModDef.modifiers];
                                     list[idx].bodyPartId = e.target.value;
@@ -2287,10 +2744,19 @@ export const DebugPanel: React.FC = () => {
                         </div>
                       );
                     })}
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => {
-                        const list = [...(currentModDef.modifiers || []), { targetType: 'body_part_stat', statName: 'sensitivity', bodyPartId: 'slots', operator: '+', value: 10 }];
+                        const list = [
+                          ...(currentModDef.modifiers || []),
+                          {
+                            targetType: 'body_part_stat',
+                            statName: 'sensitivity',
+                            bodyPartId: 'slots',
+                            operator: '+',
+                            value: 10,
+                          },
+                        ];
                         updateModDef(selectedModId, ['modifiers'], list);
                       }}
                       className="text-[8px] text-purple-400 hover:text-purple-300 underline"
@@ -2304,8 +2770,8 @@ export const DebugPanel: React.FC = () => {
                 <div className="p-2 bg-purple-950/10 border border-purple-500/10 rounded-lg space-y-2">
                   <div className="text-[9px] font-bold text-purple-300 border-b border-purple-500/5 pb-1 flex justify-between items-center">
                     <span>🧬 部位加裝設定 (addedBodyPart)</span>
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={currentModDef.addedBodyPart !== undefined}
                       onChange={e => toggleHasAddedPart(e.target.checked)}
                       className="accent-purple-500 w-3 h-3 cursor-pointer"
@@ -2316,9 +2782,9 @@ export const DebugPanel: React.FC = () => {
                     <div className="space-y-2 pl-1 border-l border-purple-500/10 mt-1.5 text-[8px]">
                       <div className="flex items-center gap-1.5">
                         <span className="text-gray-400 w-16 shrink-0">部位唯一 ID</span>
-                        <input 
-                          type="text" 
-                          value={currentModDef.addedBodyPart.id || ''} 
+                        <input
+                          type="text"
+                          value={currentModDef.addedBodyPart.id || ''}
                           onChange={e => updateModDef(selectedModId, ['addedBodyPart', 'id'], e.target.value)}
                           placeholder="例如 tail"
                           className="flex-1 bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-purple-100 focus:outline-none focus:border-purple-500/50"
@@ -2327,9 +2793,9 @@ export const DebugPanel: React.FC = () => {
 
                       <div className="flex items-center gap-1.5">
                         <span className="text-gray-400 w-16 shrink-0">顯示名稱</span>
-                        <input 
-                          type="text" 
-                          value={currentModDef.addedBodyPart.name || ''} 
+                        <input
+                          type="text"
+                          value={currentModDef.addedBodyPart.name || ''}
                           onChange={e => updateModDef(selectedModId, ['addedBodyPart', 'name'], e.target.value)}
                           placeholder="例如 尾巴"
                           className="flex-1 bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-purple-100 focus:outline-none focus:border-purple-500/50"
@@ -2338,9 +2804,9 @@ export const DebugPanel: React.FC = () => {
 
                       <div className="flex items-center gap-1.5">
                         <span className="text-gray-400 w-16 shrink-0">部位描述</span>
-                        <input 
-                          type="text" 
-                          value={currentModDef.addedBodyPart.description || ''} 
+                        <input
+                          type="text"
+                          value={currentModDef.addedBodyPart.description || ''}
                           onChange={e => updateModDef(selectedModId, ['addedBodyPart', 'description'], e.target.value)}
                           className="flex-1 bg-black border border-purple-500/20 rounded px-1.5 py-0.5 text-purple-100 focus:outline-none focus:border-purple-500/50"
                         />
@@ -2351,37 +2817,45 @@ export const DebugPanel: React.FC = () => {
                         <span className="text-gray-400 block font-semibold">功能支援:</span>
                         <div className="grid grid-cols-2 gap-1.5">
                           <label className="flex items-center gap-1.5 cursor-pointer text-gray-300">
-                            <input 
-                              type="checkbox" 
+                            <input
+                              type="checkbox"
                               checked={!!currentModDef.addedBodyPart.hasSensitivity}
-                              onChange={e => updateModDef(selectedModId, ['addedBodyPart', 'hasSensitivity'], e.target.checked)}
+                              onChange={e =>
+                                updateModDef(selectedModId, ['addedBodyPart', 'hasSensitivity'], e.target.checked)
+                              }
                               className="accent-purple-500 w-3.5 h-3.5"
                             />
                             敏感度
                           </label>
                           <label className="flex items-center gap-1.5 cursor-pointer text-gray-300">
-                            <input 
-                              type="checkbox" 
+                            <input
+                              type="checkbox"
                               checked={!!currentModDef.addedBodyPart.hasTightness}
-                              onChange={e => updateModDef(selectedModId, ['addedBodyPart', 'hasTightness'], e.target.checked)}
+                              onChange={e =>
+                                updateModDef(selectedModId, ['addedBodyPart', 'hasTightness'], e.target.checked)
+                              }
                               className="accent-purple-500 w-3.5 h-3.5"
                             />
                             鬆緊度
                           </label>
                           <label className="flex items-center gap-1.5 cursor-pointer text-gray-300">
-                            <input 
-                              type="checkbox" 
+                            <input
+                              type="checkbox"
                               checked={!!currentModDef.addedBodyPart.hasProficiency}
-                              onChange={e => updateModDef(selectedModId, ['addedBodyPart', 'hasProficiency'], e.target.checked)}
+                              onChange={e =>
+                                updateModDef(selectedModId, ['addedBodyPart', 'hasProficiency'], e.target.checked)
+                              }
                               className="accent-purple-500 w-3.5 h-3.5"
                             />
                             熟練度
                           </label>
                           <label className="flex items-center gap-1.5 cursor-pointer text-gray-300">
-                            <input 
-                              type="checkbox" 
+                            <input
+                              type="checkbox"
                               checked={!!currentModDef.addedBodyPart.canOrgasm}
-                              onChange={e => updateModDef(selectedModId, ['addedBodyPart', 'canOrgasm'], e.target.checked)}
+                              onChange={e =>
+                                updateModDef(selectedModId, ['addedBodyPart', 'canOrgasm'], e.target.checked)
+                              }
                               className="accent-purple-500 w-3.5 h-3.5"
                             />
                             高潮次數
@@ -2396,10 +2870,16 @@ export const DebugPanel: React.FC = () => {
                           {currentModDef.addedBodyPart.hasSensitivity && (
                             <div className="flex items-center gap-1">
                               <span className="text-gray-400 w-12 truncate">初始敏感度</span>
-                              <input 
-                                type="number" 
+                              <input
+                                type="number"
                                 value={currentModDef.addedBodyPart.initialStats?.sensitivity ?? 0}
-                                onChange={e => updateModDef(selectedModId, ['addedBodyPart', 'initialStats', 'sensitivity'], Number(e.target.value) || 0)}
+                                onChange={e =>
+                                  updateModDef(
+                                    selectedModId,
+                                    ['addedBodyPart', 'initialStats', 'sensitivity'],
+                                    Number(e.target.value) || 0,
+                                  )
+                                }
                                 className="w-10 bg-black border border-purple-500/20 rounded text-center text-purple-100 focus:outline-none"
                               />
                             </div>
@@ -2407,10 +2887,16 @@ export const DebugPanel: React.FC = () => {
                           {currentModDef.addedBodyPart.hasTightness && (
                             <div className="flex items-center gap-1">
                               <span className="text-gray-400 w-12 truncate">初始鬆緊度</span>
-                              <input 
-                                type="number" 
+                              <input
+                                type="number"
                                 value={currentModDef.addedBodyPart.initialStats?.tightness ?? 0}
-                                onChange={e => updateModDef(selectedModId, ['addedBodyPart', 'initialStats', 'tightness'], Number(e.target.value) || 0)}
+                                onChange={e =>
+                                  updateModDef(
+                                    selectedModId,
+                                    ['addedBodyPart', 'initialStats', 'tightness'],
+                                    Number(e.target.value) || 0,
+                                  )
+                                }
                                 className="w-10 bg-black border border-purple-500/20 rounded text-center text-purple-100 focus:outline-none"
                               />
                             </div>
@@ -2418,10 +2904,16 @@ export const DebugPanel: React.FC = () => {
                           {currentModDef.addedBodyPart.hasProficiency && (
                             <div className="flex items-center gap-1">
                               <span className="text-gray-400 w-12 truncate">初始熟練度</span>
-                              <input 
-                                type="number" 
+                              <input
+                                type="number"
                                 value={currentModDef.addedBodyPart.initialStats?.proficiency ?? 0}
-                                onChange={e => updateModDef(selectedModId, ['addedBodyPart', 'initialStats', 'proficiency'], Number(e.target.value) || 0)}
+                                onChange={e =>
+                                  updateModDef(
+                                    selectedModId,
+                                    ['addedBodyPart', 'initialStats', 'proficiency'],
+                                    Number(e.target.value) || 0,
+                                  )
+                                }
                                 className="w-10 bg-black border border-purple-500/20 rounded text-center text-purple-100 focus:outline-none"
                               />
                             </div>
@@ -2429,10 +2921,16 @@ export const DebugPanel: React.FC = () => {
                           {currentModDef.addedBodyPart.canOrgasm && (
                             <div className="flex items-center gap-1">
                               <span className="text-gray-400 w-12 truncate">初始高潮數</span>
-                              <input 
-                                type="number" 
+                              <input
+                                type="number"
                                 value={currentModDef.addedBodyPart.initialStats?.orgasms ?? 0}
-                                onChange={e => updateModDef(selectedModId, ['addedBodyPart', 'initialStats', 'orgasms'], Number(e.target.value) || 0)}
+                                onChange={e =>
+                                  updateModDef(
+                                    selectedModId,
+                                    ['addedBodyPart', 'initialStats', 'orgasms'],
+                                    Number(e.target.value) || 0,
+                                  )
+                                }
                                 className="w-10 bg-black border border-purple-500/20 rounded text-center text-purple-100 focus:outline-none"
                               />
                             </div>
@@ -2442,14 +2940,15 @@ export const DebugPanel: React.FC = () => {
                     </div>
                   )}
                 </div>
-
               </div>
             ) : (
               <div className="text-[10px] text-gray-500 italic text-center py-4">請選取一個改造項目。</div>
             )}
-            
-            <button onClick={flushAndSave}
-              className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition-all active:scale-95">
+
+            <button
+              onClick={flushAndSave}
+              className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition-all active:scale-95"
+            >
               保存改造定義並重載
             </button>
           </div>
@@ -2466,21 +2965,31 @@ export const DebugPanel: React.FC = () => {
             <div className="p-2 bg-purple-950/10 border border-purple-500/10 rounded-lg">
               <div className="text-[10px] font-bold text-purple-300 mb-1.5">🚀 地點傳送</div>
               <div className="flex gap-1">
-                <select value={teleportTarget} onChange={e => setTeleportTarget(e.target.value)}
-                  className="flex-1 bg-black/40 border border-purple-500/20 rounded px-1.5 py-1 text-[9px] text-purple-100 focus:outline-none">
+                <select
+                  value={teleportTarget}
+                  onChange={e => setTeleportTarget(e.target.value)}
+                  className="flex-1 bg-black/40 border border-purple-500/20 rounded px-1.5 py-1 text-[9px] text-purple-100 focus:outline-none"
+                >
                   <option value="">選擇目標...</option>
                   {Object.entries(allLocations).map(([id, node]) => (
-                    <option key={id} value={id}>{node.name} ({id})</option>
+                    <option key={id} value={id}>
+                      {node.name} ({id})
+                    </option>
                   ))}
                 </select>
-                <button onClick={handleTeleport}
-                  className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[9px] font-bold transition-all active:scale-95">
+                <button
+                  onClick={handleTeleport}
+                  className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[9px] font-bold transition-all active:scale-95"
+                >
                   傳送
                 </button>
               </div>
               {mapState && (
                 <div className="text-[9px] text-gray-400 mt-1">
-                  目前位置：<span className="text-emerald-300">{allLocations[mapState.currentLocationId]?.name || mapState.currentLocationId}</span>
+                  目前位置：
+                  <span className="text-emerald-300">
+                    {allLocations[mapState.currentLocationId]?.name || mapState.currentLocationId}
+                  </span>
                 </div>
               )}
             </div>
@@ -2493,11 +3002,15 @@ export const DebugPanel: React.FC = () => {
                   const isDiscovered = localDiscovered.includes(id);
                   return (
                     <div key={id} className="flex items-center gap-1.5 p-1 rounded bg-black/10">
-                      <input type="checkbox" checked={isDiscovered}
+                      <input
+                        type="checkbox"
+                        checked={isDiscovered}
                         onChange={() => toggleDiscovered(id)}
-                        className="accent-emerald-500 w-3 h-3" />
+                        className="accent-emerald-500 w-3 h-3"
+                      />
                       <span className={`text-[9px] ${isDiscovered ? 'text-gray-200' : 'text-gray-500'}`}>
-                        {node.name} <span className="text-gray-600">({(allZones[node.zoneId] as any)?.name || node.zoneId})</span>
+                        {node.name}{' '}
+                        <span className="text-gray-600">({(allZones[node.zoneId] as any)?.name || node.zoneId})</span>
                       </span>
                     </div>
                   );
@@ -2505,8 +3018,10 @@ export const DebugPanel: React.FC = () => {
               </div>
             </div>
 
-            <button onClick={flushAndSave}
-              className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition-all active:scale-95">
+            <button
+              onClick={flushAndSave}
+              className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition-all active:scale-95"
+            >
               保存探索狀態並重載
             </button>
           </div>
@@ -2525,10 +3040,16 @@ export const DebugPanel: React.FC = () => {
                 {Object.entries(allLocations).map(([id, node]) => {
                   const isHidden = !!localHiddenNodes[id];
                   return (
-                    <div key={id} className={`flex items-center gap-1.5 p-1 rounded ${isHidden ? 'bg-red-950/20 border border-red-500/20' : 'bg-black/10'}`}>
-                      <input type="checkbox" checked={isHidden}
+                    <div
+                      key={id}
+                      className={`flex items-center gap-1.5 p-1 rounded ${isHidden ? 'bg-red-950/20 border border-red-500/20' : 'bg-black/10'}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isHidden}
                         onChange={() => toggleNodeHidden(id)}
-                        className="accent-red-500 w-3 h-3" />
+                        className="accent-red-500 w-3 h-3"
+                      />
                       <span className={`text-[9px] ${isHidden ? 'text-red-300 line-through' : 'text-gray-200'}`}>
                         {node.name}
                       </span>
@@ -2541,32 +3062,47 @@ export const DebugPanel: React.FC = () => {
             {/* 屬性修改 */}
             <div className="p-2 bg-purple-950/10 border border-purple-500/10 rounded-lg">
               <div className="text-[10px] font-bold text-purple-300 mb-1.5">✏️ 節點屬性修改</div>
-              <select value={editNodeId} onChange={e => {
-                setEditNodeId(e.target.value);
-                const n = allLocations[e.target.value];
-                setEditNodeName(n?.name || '');
-                setEditNodeDesc(n?.description || '');
-              }}
-                className="w-full bg-black/40 border border-purple-500/20 rounded px-2 py-1 text-[9px] text-purple-100 focus:outline-none mb-1">
+              <select
+                value={editNodeId}
+                onChange={e => {
+                  setEditNodeId(e.target.value);
+                  const n = allLocations[e.target.value];
+                  setEditNodeName(n?.name || '');
+                  setEditNodeDesc(n?.description || '');
+                }}
+                className="w-full bg-black/40 border border-purple-500/20 rounded px-2 py-1 text-[9px] text-purple-100 focus:outline-none mb-1"
+              >
                 <option value="">選擇節點...</option>
                 {Object.entries(allLocations).map(([id, node]) => (
-                  <option key={id} value={id}>{node.name}</option>
+                  <option key={id} value={id}>
+                    {node.name}
+                  </option>
                 ))}
               </select>
               {editNodeId && (
                 <div className="space-y-1">
-                  <input type="text" value={editNodeName} onChange={e => setEditNodeName(e.target.value)}
+                  <input
+                    type="text"
+                    value={editNodeName}
+                    onChange={e => setEditNodeName(e.target.value)}
                     placeholder="節點名稱"
-                    className="w-full bg-black/40 border border-purple-500/20 rounded px-2 py-1 text-[9px] text-purple-100 focus:outline-none" />
-                  <textarea value={editNodeDesc} onChange={e => setEditNodeDesc(e.target.value)}
-                    placeholder="節點描述" rows={3}
-                    className="w-full bg-black/40 border border-purple-500/20 rounded px-2 py-1 text-[9px] text-purple-100 focus:outline-none resize-none" />
+                    className="w-full bg-black/40 border border-purple-500/20 rounded px-2 py-1 text-[9px] text-purple-100 focus:outline-none"
+                  />
+                  <textarea
+                    value={editNodeDesc}
+                    onChange={e => setEditNodeDesc(e.target.value)}
+                    placeholder="節點描述"
+                    rows={3}
+                    className="w-full bg-black/40 border border-purple-500/20 rounded px-2 py-1 text-[9px] text-purple-100 focus:outline-none resize-none"
+                  />
                 </div>
               )}
             </div>
 
-            <button onClick={editNodeId ? applyNodeEdit : flushAndSave}
-              className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition-all active:scale-95">
+            <button
+              onClick={editNodeId ? applyNodeEdit : flushAndSave}
+              className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition-all active:scale-95"
+            >
               {editNodeId ? '保存屬性修改並重載' : '保存屏蔽設定並重載'}
             </button>
           </div>
@@ -2580,10 +3116,15 @@ export const DebugPanel: React.FC = () => {
         return (
           <div className="space-y-2">
             <div className="text-[10px] font-bold text-purple-300 mb-1">🔗 通路連線設定</div>
-            <select value={selectedZoneFilter} onChange={e => setSelectedZoneFilter(e.target.value)}
-              className="w-full bg-black/40 border border-purple-500/20 rounded px-2 py-1 text-[9px] text-purple-100 focus:outline-none">
+            <select
+              value={selectedZoneFilter}
+              onChange={e => setSelectedZoneFilter(e.target.value)}
+              className="w-full bg-black/40 border border-purple-500/20 rounded px-2 py-1 text-[9px] text-purple-100 focus:outline-none"
+            >
               {Object.entries(allZones).map(([id, zone]) => (
-                <option key={id} value={id}>{(zone as any).name}</option>
+                <option key={id} value={id}>
+                  {(zone as any).name}
+                </option>
               ))}
             </select>
             <div className="max-h-[360px] overflow-y-auto space-y-1 pr-1 hypno-scrollbar">
@@ -2593,9 +3134,14 @@ export const DebugPanel: React.FC = () => {
                 const isExpanded = expandedEdge === edge.id;
                 return (
                   <div key={edge.id} className="border border-purple-500/10 rounded-lg overflow-hidden">
-                    <button onClick={() => setExpandedEdge(isExpanded ? '' : edge.id)}
-                      className="w-full flex items-center gap-1.5 p-1.5 bg-purple-950/10 hover:bg-purple-950/20 transition-colors text-left">
-                      <ChevronRight size={10} className={`text-purple-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                    <button
+                      onClick={() => setExpandedEdge(isExpanded ? '' : edge.id)}
+                      className="w-full flex items-center gap-1.5 p-1.5 bg-purple-950/10 hover:bg-purple-950/20 transition-colors text-left"
+                    >
+                      <ChevronRight
+                        size={10}
+                        className={`text-purple-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                      />
                       <span className="text-[9px] text-gray-200 flex-1">
                         {fromName} <span className="text-purple-400">➔</span> {toName}
                       </span>
@@ -2611,8 +3157,10 @@ export const DebugPanel: React.FC = () => {
                 );
               })}
             </div>
-            <button onClick={flushAndSave}
-              className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition-all active:scale-95">
+            <button
+              onClick={flushAndSave}
+              className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition-all active:scale-95"
+            >
               保存通路修改並重載
             </button>
           </div>
@@ -2643,12 +3191,12 @@ export const DebugPanel: React.FC = () => {
       {isOpen && (
         <div
           className="fixed z-[9998] bg-[#0c091d]/95 border border-purple-500/30 rounded-2xl shadow-2xl backdrop-blur-lg flex flex-col overflow-hidden text-gray-200 font-sans"
-          style={panelPos
-            ? { left: panelPos.x, top: panelPos.y, width: panelSize.width, height: panelSize.height }
-            : { right: 16, bottom: 64, width: panelSize.width, height: panelSize.height }
+          style={
+            panelPos
+              ? { left: panelPos.x, top: panelPos.y, width: panelSize.width, height: panelSize.height }
+              : { right: 16, bottom: 64, width: panelSize.width, height: panelSize.height }
           }
         >
-
           {/* 面板標題列 (拖曳手把) */}
           <div
             className="shrink-0 p-4 border-b border-purple-500/20 bg-purple-950/40 flex justify-between items-center select-none"
@@ -2673,7 +3221,8 @@ export const DebugPanel: React.FC = () => {
           {/* 分頁選擇列 */}
           <div className="shrink-0 flex border-b border-purple-500/10 bg-black/30 p-1">
             {(['tavern', 'mockMvu', 'mockChat', 'actions'] as const).map(tab => (
-              <button key={tab}
+              <button
+                key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
                   activeTab === tab
@@ -2681,7 +3230,13 @@ export const DebugPanel: React.FC = () => {
                     : 'text-gray-400 hover:text-gray-200'
                 }`}
               >
-                {tab === 'tavern' ? '真實 Tavern' : tab === 'mockMvu' ? '模擬 Mvu' : tab === 'mockChat' ? '模擬 Chat' : '快捷動作'}
+                {tab === 'tavern'
+                  ? '真實 Tavern'
+                  : tab === 'mockMvu'
+                    ? '模擬 Mvu'
+                    : tab === 'mockChat'
+                      ? '模擬 Chat'
+                      : '快捷動作'}
               </button>
             ))}
           </div>
@@ -2696,7 +3251,6 @@ export const DebugPanel: React.FC = () => {
 
           {/* 分頁內容 */}
           <div className="flex-1 overflow-y-auto p-4 bg-[#0a0717]/50 font-mono text-xs">
-
             {/* Tab: 真實 Tavern */}
             {activeTab === 'tavern' && (
               <div className="space-y-4 h-full flex flex-col">
@@ -2705,21 +3259,27 @@ export const DebugPanel: React.FC = () => {
                   <div>
                     <h4 className="font-bold text-gray-200 text-sm">Tavern 執行環境檢測</h4>
                     <p className="text-[10px] text-gray-400 mt-0.5">
-                      {(tavernMvu || tavernChat) ? '🟢 已成功對接酒館宿主變數介面' : '⚪ 未偵測到 Tavern 環境（目前運行於純模擬模式）'}
+                      {tavernMvu || tavernChat
+                        ? '🟢 已成功對接酒館宿主變數介面'
+                        : '⚪ 未偵測到 Tavern 環境（目前運行於純模擬模式）'}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex-1 flex flex-col gap-3 min-h-0">
                   <div className="flex-1 flex flex-col min-h-0">
-                    <span className="text-[10px] text-purple-400 font-bold mb-1 uppercase tracking-wider">Real Mvu State:</span>
+                    <span className="text-[10px] text-purple-400 font-bold mb-1 uppercase tracking-wider">
+                      Real Mvu State:
+                    </span>
                     <pre className="flex-1 bg-black/40 border border-purple-500/10 p-3 rounded-lg overflow-auto text-[10px] text-gray-300">
                       {tavernMvu ? JSON.stringify(tavernMvu, null, 2) : 'No Mvu Defined (globalThis.Mvu is undefined)'}
                     </pre>
                   </div>
 
                   <div className="flex-1 flex flex-col min-h-0">
-                    <span className="text-[10px] text-purple-400 font-bold mb-1 uppercase tracking-wider">Real Chat Variables:</span>
+                    <span className="text-[10px] text-purple-400 font-bold mb-1 uppercase tracking-wider">
+                      Real Chat Variables:
+                    </span>
                     <pre className="flex-1 bg-black/40 border border-purple-500/10 p-3 rounded-lg overflow-auto text-[10px] text-gray-300">
                       {tavernChat ? JSON.stringify(tavernChat, null, 2) : 'No Chat Variables Defined'}
                     </pre>
@@ -2735,14 +3295,19 @@ export const DebugPanel: React.FC = () => {
                   <span className="text-[10px] text-purple-400 font-bold uppercase tracking-wider">
                     編輯 mockMvuVariables (JSON)
                   </span>
-                  <button onClick={handleApplyMvu}
-                    className="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded text-[10px] font-semibold transition-colors active:scale-95">
+                  <button
+                    onClick={handleApplyMvu}
+                    className="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded text-[10px] font-semibold transition-colors active:scale-95"
+                  >
                     套用並重新載入
                   </button>
                 </div>
-                <textarea value={mvuText} onChange={e => setMvuText(e.target.value)}
+                <textarea
+                  value={mvuText}
+                  onChange={e => setMvuText(e.target.value)}
                   className="flex-1 w-full bg-black/60 border border-purple-500/20 rounded-xl p-3 focus:outline-none focus:border-purple-500/50 resize-none font-mono text-[10px] text-purple-100"
-                  spellCheck={false} />
+                  spellCheck={false}
+                />
                 {mvuError && (
                   <div className="p-2.5 bg-red-950/80 border border-red-500/30 rounded-lg text-red-300 text-[10px] flex items-center gap-1.5">
                     <ShieldAlert size={14} className="shrink-0" />
@@ -2759,14 +3324,19 @@ export const DebugPanel: React.FC = () => {
                   <span className="text-[10px] text-purple-400 font-bold uppercase tracking-wider">
                     編輯 mockChatVariables (JSON)
                   </span>
-                  <button onClick={handleApplyChat}
-                    className="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded text-[10px] font-semibold transition-colors active:scale-95">
+                  <button
+                    onClick={handleApplyChat}
+                    className="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded text-[10px] font-semibold transition-colors active:scale-95"
+                  >
                     套用並重新載入
                   </button>
                 </div>
-                <textarea value={chatText} onChange={e => setChatText(e.target.value)}
+                <textarea
+                  value={chatText}
+                  onChange={e => setChatText(e.target.value)}
                   className="flex-1 w-full bg-black/60 border border-purple-500/20 rounded-xl p-3 focus:outline-none focus:border-purple-500/50 resize-none font-mono text-[10px] text-purple-100"
-                  spellCheck={false} />
+                  spellCheck={false}
+                />
                 {chatError && (
                   <div className="p-2.5 bg-red-950/80 border border-red-500/30 rounded-lg text-red-300 text-[10px] flex items-center gap-1.5">
                     <ShieldAlert size={14} className="shrink-0" />
@@ -2782,7 +3352,8 @@ export const DebugPanel: React.FC = () => {
                 {/* 左側次選單 */}
                 <div className="w-20 shrink-0 space-y-0.5">
                   {SUB_PANEL_CONFIG.map(sp => (
-                    <button key={sp.key}
+                    <button
+                      key={sp.key}
                       onClick={() => setActionSubPanel(sp.key)}
                       className={`w-full flex items-center gap-1 px-1.5 py-1.5 rounded-lg text-[9px] font-semibold transition-all ${
                         actionSubPanel === sp.key
@@ -2797,20 +3368,19 @@ export const DebugPanel: React.FC = () => {
 
                   {/* 危險操作 */}
                   <div className="border-t border-red-500/10 pt-1 mt-2">
-                    <button onClick={handleResetAll}
-                      className="w-full py-1.5 bg-red-950/30 hover:bg-red-900/40 border border-red-500/20 text-red-300 rounded-lg text-[8px] font-bold transition-all active:scale-95">
+                    <button
+                      onClick={handleResetAll}
+                      className="w-full py-1.5 bg-red-950/30 hover:bg-red-900/40 border border-red-500/20 text-red-300 rounded-lg text-[8px] font-bold transition-all active:scale-95"
+                    >
                       🔄 重置全部
                     </button>
                   </div>
                 </div>
 
                 {/* 右側內容 */}
-                <div className="flex-1 overflow-y-auto hypno-scrollbar">
-                  {renderActionSubPanel()}
-                </div>
+                <div className="flex-1 overflow-y-auto hypno-scrollbar">{renderActionSubPanel()}</div>
               </div>
             )}
-
           </div>
 
           {/* 底部狀態列 */}
@@ -2825,7 +3395,12 @@ export const DebugPanel: React.FC = () => {
             className="absolute right-0 bottom-0 w-4 h-4 cursor-se-resize flex items-end justify-end p-0.5 z-[9999]"
             title="調整大小"
           >
-            <svg width="8" height="8" viewBox="0 0 8 8" className="text-gray-400 fill-current opacity-60 hover:opacity-100 transition-opacity">
+            <svg
+              width="8"
+              height="8"
+              viewBox="0 0 8 8"
+              className="text-gray-400 fill-current opacity-60 hover:opacity-100 transition-opacity"
+            >
               <path d="M6 0 L8 0 L8 8 L0 8 L0 6 L6 6 Z" />
             </svg>
           </div>

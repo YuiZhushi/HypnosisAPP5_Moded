@@ -164,34 +164,36 @@ export interface MvuVariables {
     // 玩家背包
     inventory: Record<string, InventoryItemState>;
   };
-  chars: Record<string, {
-    identity?: string;
-    alertness: number;
-    affection: number;
-    obedience: number;
-    lust: number;
-    arousal: number;
-    bodyParts: CharBodyPartsDefs;
-    ownedHypnosisEffects: Record<
-      string,
-      { endTime: string; hypnosisType: 'temporary' | 'permanent' | 'oneTime'; description: string }
-    >;
+  chars: Record<
+    string,
+    {
+      identity?: string;
+      alertness: number;
+      affection: number;
+      obedience: number;
+      lust: number;
+      arousal: number;
+      bodyParts: CharBodyPartsDefs;
+      ownedHypnosisEffects: Record<
+        string,
+        { endTime: string; hypnosisType: 'temporary' | 'permanent' | 'oneTime'; description: string }
+      >;
 
-    // 主要 NPC 背包
-    inventory: Record<string, InventoryItemState>;
-    ownedBodyModifications: Record<string, NPCBodyModState>;
-    locationState?: {
-      locationId: string;
-      locationStatus: string;
-    };
-  }>;
+      // 主要 NPC 背包
+      inventory: Record<string, InventoryItemState>;
+      ownedBodyModifications: Record<string, NPCBodyModState>;
+      locationState?: {
+        locationId: string;
+        locationStatus: string;
+      };
+    }
+  >;
 }
 
 export interface DevRuntimeVariables {
   prompts: PromptTemplate[];
   charBackgrounds: Record<string, CharacterBackgroundData>;
 }
-
 
 // ============================================================================
 // 第二區：資料類定義 (StaticData / 世界書解析變數)
@@ -220,44 +222,44 @@ export type ItemRarity = 'common' | 'rare' | 'epic' | 'legendary';
 export type ItemActivationType = 'periodic' | 'conditional' | 'permanent' | 'none';
 
 export interface ItemDef {
-  id: string;               // 唯一識別碼 (例如: item_old_key, item_mc_potion_s)
-  name: string;             // 物品名稱 (例如: "老舊鑰匙", "低階能量藥水")
-  description: string;      // 物品詳細描述
-  type: ItemType;           // 物品類型
-  rarity: ItemRarity;       // 稀有度
+  id: string; // 唯一識別碼 (例如: item_old_key, item_mc_potion_s)
+  name: string; // 物品名稱 (例如: "老舊鑰匙", "低階能量藥水")
+  description: string; // 物品詳細描述
+  type: ItemType; // 物品類型
+  rarity: ItemRarity; // 稀有度
 
   // 經濟與商店屬性
   cost?: {
-    money?: number;         // 購買所需的零花錢
-    pts?: number;           // 購買所需的 MC 點
+    money?: number; // 購買所需的零花錢
+    pts?: number; // 購買所需的 MC 點
   };
-  isSellable: boolean;      // 是否可以出售
-  vipTierLimit?: number;    // 購買或使用所需的 VIP 等級限制 (0 ~ 5)
-  isPurchasable: boolean;   // 是否可直接在商店中購買
+  isSellable: boolean; // 是否可以出售
+  vipTierLimit?: number; // 購買或使用所需的 VIP 等級限制 (0 ~ 5)
+  isPurchasable: boolean; // 是否可直接在商店中購買
 
   // 堆疊限制
-  isStackable: boolean;     // 是否可堆疊 (若是，quantity 可大於 1)
-  maxStack?: number;        // 堆疊上限 (例如 99，預設為 99)
+  isStackable: boolean; // 是否可堆疊 (若是，quantity 可大於 1)
+  maxStack?: number; // 堆疊上限 (例如 99，預設為 99)
 
   // 使用效果 (純文字描述，保留 AI 靈活性與被動效果描述)
   effectDescription?: string; // 物品使用效果、被動效果或裝備影響的純文字說明
 
   // 激活屬性與規則 (擴充欄位)
-  activationType: ItemActivationType;          // 激活類型 (none / periodic / conditional / permanent)
-  activationTimeRule?: string;                // (僅週期性) 時間激活條件規則 (JSON 格式)
-  activationCondition?: ConditionOnProgram[];  // (僅條件性) 屬性變數激活條件
-  activationDescription?: string;             // 激活效果純文字描述
+  activationType: ItemActivationType; // 激活類型 (none / periodic / conditional / permanent)
+  activationTimeRule?: string; // (僅週期性) 時間激活條件規則 (JSON 格式)
+  activationCondition?: ConditionOnProgram[]; // (僅條件性) 屬性變數激活條件
+  activationDescription?: string; // 激活效果純文字描述
 }
 
 // 背包項目狀態定義 (包含數量、裝備狀態、部位與自訂臨時描述)
 export interface InventoryItemState {
-  quantity: number;             // 持有數量
-  isEquipped?: boolean;         // (僅裝備) 是否正被玩家或 NPC 裝備/穿戴中
-  equipSlot?: string;           // (僅裝備) 裝備部位描述 (如: "head", "eyes", "body", "crotch" 等)
-  customDescription?: string;    // 物品可選的附加臨時描述 (例如: "沾著泥土的鑰匙")
+  quantity: number; // 持有數量
+  isEquipped?: boolean; // (僅裝備) 是否正被玩家或 NPC 裝備/穿戴中
+  equipSlot?: string; // (僅裝備) 裝備部位描述 (如: "head", "eyes", "body", "crotch" 等)
+  customDescription?: string; // 物品可選的附加臨時描述 (例如: "沾著泥土的鑰匙")
 
   // 運行時激活狀態 (擴充欄位)
-  isActive?: boolean;           // 該物品當前是否處於激活狀態
+  isActive?: boolean; // 該物品當前是否處於激活狀態
 }
 
 export interface HypnosisDef {
@@ -373,21 +375,21 @@ export interface MockCalendarData {
 // 角色屬性微定義 (身體部位管理)
 // ==========================================
 export interface BodyPartsDef {
-  id: string;          // 唯一識別碼 (如: 'mouth', 'breastLeft', 'tail')
-  name: string;        // 顯示名稱 (如: '口腔', '左乳房', '尾巴')
-  isCustom: boolean;   // 是否為自訂部位
-  hasSensitivity?: boolean;   // 是否有敏感度屬性 (預設為 false)
-  hasTightness?: boolean;     // 是否有鬆緊度屬性 (預設為 false)
-  hasProficiency?: boolean;   // 是否有熟練度屬性 (預設為 false)
-  canOrgasm?: boolean;        // 是否能高潮屬性 (預設為 false)
+  id: string; // 唯一識別碼 (如: 'mouth', 'breastLeft', 'tail')
+  name: string; // 顯示名稱 (如: '口腔', '左乳房', '尾巴')
+  isCustom: boolean; // 是否為自訂部位
+  hasSensitivity?: boolean; // 是否有敏感度屬性 (預設為 false)
+  hasTightness?: boolean; // 是否有鬆緊度屬性 (預設為 false)
+  hasProficiency?: boolean; // 是否有熟練度屬性 (預設為 false)
+  canOrgasm?: boolean; // 是否能高潮屬性 (預設為 false)
   description: string; // 基礎描述
 }
 
 export interface BodyPartStat {
-  sensitivity?: number;  // 敏感度: 可正可負 (-100 ~ 100，超過 100 或低於 -100 為特殊情況)
-  tightness?: number;   // 鬆緊度: 可選，可正可負 (-100 ~ 100，0為正常，正數為緊緻，負數為鬆弛)
-  proficiency?: number;  // 熟練度: (0 ~ 100)
-  orgasms?: number;      // 高潮次數: (>= 0)
+  sensitivity?: number; // 敏感度: 可正可負 (-100 ~ 100，超過 100 或低於 -100 為特殊情況)
+  tightness?: number; // 鬆緊度: 可選，可正可負 (-100 ~ 100，0為正常，正數為緊緻，負數為鬆弛)
+  proficiency?: number; // 熟練度: (0 ~ 100)
+  orgasms?: number; // 高潮次數: (>= 0)
 }
 
 export interface CharBodyPartsDefs {
@@ -501,17 +503,17 @@ export interface AppSettings {
 // ==========================================
 export type BodyModScope = 'global' | 'local';
 
-export type BodyModCategory = 
-  | 'material'    // 材質類改造 (如：史萊姆化、金屬化。同部位同分類互斥)
-  | 'shape'       // 形狀/尺寸類改造 (如：桃心型乳房、乳房擴張。同部位同分類互斥)
-  | 'stackable';  // 可疊加類改造 (如：穿刺類乳環、功能性腺體改造。可無限共存)
+export type BodyModCategory =
+  | 'material' // 材質類改造 (如：史萊姆化、金屬化。同部位同分類互斥)
+  | 'shape' // 形狀/尺寸類改造 (如：桃心型乳房、乳房擴張。同部位同分類互斥)
+  | 'stackable'; // 可疊加類改造 (如：穿刺類乳環、功能性腺體改造。可無限共存)
 
 // ==========================================
 // 屬性修改器結構
 // ==========================================
 export interface AttrModifier {
   targetType: 'global_stat' | 'body_part_stat';
-  statName: string;              // 屬性名稱 (例如 'obedience', 'sensitivity', 'tightness' 等)
+  statName: string; // 屬性名稱 (例如 'obedience', 'sensitivity', 'tightness' 等)
   bodyPartId?: string | 'slots'; // 目標部位 (若是 'slots' 則自動套用所有佔用的 slots)
   operator: '+' | '-' | '*';
   value: number;
@@ -521,37 +523,38 @@ export interface AttrModifier {
 // 身體改造定義 (Static Data / 靜態常數庫)
 // ==========================================
 export interface BodyModificationDef {
-  id: string;                    // 方案唯一 ID (如 'mod_breast_milk', 'mod_slime_body')
-  name: string;                  // 改造名稱
-  description: string;           // 改造詳細說明
-  scope: BodyModScope;           // 改造的影響範圍 ('global' 或 'local')
-  category: BodyModCategory;     // 改造的分類 (材質、形狀或可疊加)
-  slots: string[];               // 佔用的部位 IDs (若 scope 為 'global' 則為空陣列)
-  
+  id: string; // 方案唯一 ID (如 'mod_breast_milk', 'mod_slime_body')
+  name: string; // 改造名稱
+  description: string; // 改造詳細說明
+  scope: BodyModScope; // 改造的影響範圍 ('global' 或 'local')
+  category: BodyModCategory; // 改造的分類 (材質、形狀或可疊加)
+  slots: string[]; // 佔用的部位 IDs (若 scope 為 'global' 則為空陣列)
+
   cost: {
-    money?: number;              // 零花錢消耗
-    pts?: number;                // MC點數 (PTS) 消耗
-    mcEnergy?: number;           // MC能量一次性消耗
+    money?: number; // 零花錢消耗
+    pts?: number; // MC點數 (PTS) 消耗
+    mcEnergy?: number; // MC能量一次性消耗
     requiredItems?: Array<{ itemId: string; quantity: number }>; // 背包材料消耗
   };
-  
+
   conditions: ConditionOnProgram[]; // 改造前置條件
 
-  loadCost: number;              // 該改造佔用的部位肉體負荷值
-  modifiers: AttrModifier[];     // 啟用後的常駐屬性影響
-  
-  eventTags?: string[];          // 事件標籤 (如 ['lactation', 'estrus']，對接通用事件系統)
-  
+  loadCost: number; // 該改造佔用的部位肉體負荷值
+  modifiers: AttrModifier[]; // 啟用後的常駐屬性影響
+
+  eventTags?: string[]; // 事件標籤 (如 ['lactation', 'estrus']，對接通用事件系統)
+
   // 動態新增自訂部位的結構
   addedBodyPart?: {
-    id: string;                  // 新增部位 ID (如 'tail')
-    name: string;                // 部位顯示名稱
-    hasSensitivity: boolean;     // 是否有敏感度
-    hasTightness?: boolean;      // 是否有鬆緊度
-    hasProficiency?: boolean;    // 是否有熟練度
-    canOrgasm?: boolean;         // 是否能高潮
-    description: string;         // 部位基礎描述
-    initialStats?: {             // 實體化初始值
+    id: string; // 新增部位 ID (如 'tail')
+    name: string; // 部位顯示名稱
+    hasSensitivity: boolean; // 是否有敏感度
+    hasTightness?: boolean; // 是否有鬆緊度
+    hasProficiency?: boolean; // 是否有熟練度
+    canOrgasm?: boolean; // 是否能高潮
+    description: string; // 部位基礎描述
+    initialStats?: {
+      // 實體化初始值
       sensitivity?: number;
       tightness?: number;
       proficiency?: number;
@@ -567,25 +570,22 @@ export interface BodyModificationDef {
     description: string;
   }>;
 
-  promptInjection?: string;      // 注入 AI Prompt 的故事描述文本
+  promptInjection?: string; // 注入 AI Prompt 的故事描述文本
 }
 
 // ==========================================
 // NPC 執行期身體改造狀態 (Runtime / MVU Variables)
 // ==========================================
 export interface NPCBodyModState {
-  id: string;                    // 對應 BodyModificationDef.id
-  installedVirtualTime: string;  // 安裝時的虛擬時間 (格式 "YYYY-MM-DD HH:mm:ss")
-  isActive: boolean;             // 當前是否啟用
-  selectedTraits: string[];      // 此次改造產生的特徵/副作用
-  
+  id: string; // 對應 BodyModificationDef.id
+  installedVirtualTime: string; // 安裝時的虛擬時間 (格式 "YYYY-MM-DD HH:mm:ss")
+  isActive: boolean; // 當前是否啟用
+  selectedTraits: string[]; // 此次改造產生的特徵/副作用
+
   adaptation?: {
-    endVirtualTime: string;      // 適應期結束的虛擬時間
+    endVirtualTime: string; // 適應期結束的虛擬時間
     extraModifiers: AttrModifier[]; // 適應期內額外的排異數值影響
   };
-  
-  customDescription?: string;    // 玩家自訂的改造描述備註 (會注入 prompt)
+
+  customDescription?: string; // 玩家自訂的改造描述備註 (會注入 prompt)
 }
-
-
-

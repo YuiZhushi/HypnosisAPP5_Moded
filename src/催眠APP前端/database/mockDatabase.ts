@@ -1,10 +1,4 @@
-import {
-  ChatVariables,
-  MvuVariables,
-  DevRuntimeVariables,
-  MockLocationNode,
-  BodyPartsDef,
-} from '../models';
+import { ChatVariables, MvuVariables, DevRuntimeVariables, MockLocationNode, BodyPartsDef } from '../models';
 
 import {
   HYPNOSIS_DICTIONARY,
@@ -163,7 +157,7 @@ export function loadSimulationVariables() {
   console.info('[HypnoOS][mockDatabase] 啟動載入模擬資料流程 (database > staticData)...');
 
   // 1. 載入 staticData 作為底層預設資料 (StaticData -> Chat/Mvu)
-  
+
   // 聊天靜態資料
   mockChatVariables.hypnosis = { ...HYPNOSIS_DICTIONARY };
   mockChatVariables.hypnoModules = { ...HYPNO_MODULE_DICTIONARY };
@@ -173,7 +167,7 @@ export function loadSimulationVariables() {
   mockChatVariables.calendarEvents = { ...CALENDAR_STATIC_EVENTS };
   mockChatVariables.bodyParts = { ...BODY_PARTS_DICTIONARY };
   mockChatVariables.bodyModifications = { ...BODY_MODIFICATIONS_DICTIONARY };
-  
+
   // 地圖靜態資料轉換 (Array -> Record)
   const locRecord: Record<string, MockLocationNode> = {};
   MAP_LOCATION_NODES.forEach(node => {
@@ -190,7 +184,7 @@ export function loadSimulationVariables() {
 
   // 開發期臨時 Runtime 變數初始化
   mockDevRuntimeVariables.prompts = [...mockPrompts];
-  
+
   const charBgRecord: Record<string, any> = {};
   mockCharacters.forEach(c => {
     const name = Object.keys(c.basic)[0];

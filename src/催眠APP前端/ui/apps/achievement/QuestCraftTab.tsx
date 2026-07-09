@@ -280,7 +280,7 @@ export const QuestCraftTab: React.FC<QuestCraftTabProps> = ({ userData, onCraftC
                           <optgroup label="角色狀態">
                             <option value="totalSensitivity">總敏感度</option>
                             <option value="totalOrgasms">總高潮次數</option>
-                            
+
                             {Object.keys(bodyPartsDefs).length > 0 ? (
                               Object.entries(bodyPartsDefs).map(([id, def]) => (
                                 <React.Fragment key={id}>
