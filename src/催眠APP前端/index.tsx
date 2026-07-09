@@ -1,10 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { logger } from '../催眠APP共用/debug/loggerService';
-import App from './App';
+import App from './ui/os/App';
 import './index.css';
-import * as MvuBridge from './shared/mvu/mvuBridge';
-import { waitForMvuReady } from './shared/mvu/mvuBridge';
+import { waitForMvuReady } from './shared/api/mvuBridge';
 
 let root: ReactDOM.Root | undefined;
 
@@ -28,14 +27,13 @@ function unmount() {
 
 $(() => {
   void (async () => {
-    logger.info('前端入口初始化?');
+    logger.info('前端入口初始化 (模擬模式)');
 
     try {
       await waitForMvuReady({ timeoutMs: 5000, pollMs: 150 });
     } catch {
       // ignore
     }
-    void MvuBridge.resetThisTurnAppOperationLog();
     mount();
     $(window).on('pagehide', unmount);
   })();
